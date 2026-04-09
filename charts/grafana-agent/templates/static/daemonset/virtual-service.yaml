@@ -1,0 +1,56 @@
+{{- if .Capabilities.APIVersions.Has "networking.istio.io/v1beta1" }}
+{{- if .Values.agent.static.daemonset.integrationsConfig.frontendMonitoring.enabled }}
+{{- with .Values.agent.static.daemonset.integrationsConfig.frontendMonitoring }}
+---
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: grafana-agent-frontend-monitoring
+  labels:
+    {{- include "grafana-agent.labels" $ | nindent 4 }}
+    agent-type: daemonset
+    mode: static
+    {{- with $.Values.serviceMonitor.static.daemonset.additionalLabels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  gateways:
+    - {{ .istioIngress.namespace }}/default-gateway
+  hosts:
+  {{- range .istioIngress.domains }}
+    - {{ . }}
+  {{- end }}
+  http:
+    - corsPolicy:
+        allowCredentials: true
+        allowHeaders:
+          - authorization
+          - content-type
+          - accept
+          - origin
+          - user-agent
+          - referer
+          - sec-fetch-mode
+          - x-api-key
+          - x-faro-session-id
+        allowMethods:
+          - POST
+          - GET
+          - PUT
+          - DELETE
+          - OPTIONS
+        allowOrigins:
+          {{- range .corsAllowedOrigins }}
+          - regex: https://{{ . }}/*
+          {{- end }}
+      match:
+        - uri:
+            prefix: /collect
+      route:
+        - destination:
+            host: {{ include "grafana-agent.fullname" $ }}-static-daemonset.{{ $.Release.Namespace }}.svc.cluster.local
+            port:
+              number: 12347
+{{- end }}
+{{- end }}
+{{- end }}

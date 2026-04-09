@@ -1,0 +1,16 @@
+{{- if .Values.agent.flow.statefulset.configMap.create }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "grafana-agent.fullname" . }}-flow-statefulset
+  labels:
+    {{- include "grafana-agent.labels" . | nindent 4 }}
+    agent-type: statefulset
+    mode: flow
+data:
+  {{- if .Values.agent.flow.statefulset.configMap.content }}
+  config.river: |- {{- (tpl  .Values.agent.flow.statefulset.configMap.content .) | nindent 4 }}
+  {{- else }}
+  config.river: |- {{- .Files.Get "config/config.river" | trim | nindent 4 }}
+  {{- end }}
+{{- end }}

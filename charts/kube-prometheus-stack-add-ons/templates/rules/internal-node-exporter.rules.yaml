@@ -1,0 +1,65 @@
+{{- $kubeTargetVersion := default .Capabilities.KubeVersion.GitVersion .Values.kubeTargetVersionOverride }}
+{{- if and (semverCompare ">=1.14.0-0" $kubeTargetVersion) (semverCompare "<9.9.9-9" $kubeTargetVersion) .Values.defaultRules.rules.internalNodeExporter }}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ template "kube-prometheus-stack-add-ons.fullname" . }}-internal-node-exporter
+  namespace: {{ template "kube-prometheus-stack-add-ons.namespace" . }}
+  labels:
+{{ include "kube-prometheus-stack-add-ons.labels" . | indent 4 }}
+spec:
+  groups:
+    - name: internal-node-exporter.rules
+      rules:
+        {{- if not (.Values.defaultRules.disabled.L2MacFilesystemAlmostOutOfSpace5PercentLeft | default false) }}
+        - alert: L2MacFilesystemAlmostOutOfSpace5PercentLeft
+          annotations:
+            description: Filesystem on {{`{{`}} $labels.device {{`}}`}}, mounted on {{`{{`}} $labels.mountpoint {{`}}`}}, at {{`{{`}} $labels.instance {{`}}`}} has only {{`{{`}} printf "%.2f" $value {{`}}`}}% available space left.
+            runbook_url: https://runbooks.prometheus-operator.dev/runbooks/node/nodefilesystemalmostoutofspace
+            summary: Filesystem has less than 5% space left.
+          expr: |-
+            (
+              node_filesystem_avail_bytes{job="node-exporter",fstype!="",mountpoint!="",domain!=""} / node_filesystem_size_bytes{job="node-exporter",fstype!="",mountpoint!="",domain!=""} * 100 < 5
+            and
+              node_filesystem_readonly{job="node-exporter",fstype!="",mountpoint!="",domain!=""} == 0
+            )
+            and
+            (
+              node_filesystem_avail_bytes{job="node-exporter",fstype!="",mountpoint!="",domain!=""} / node_filesystem_size_bytes{job="node-exporter",fstype!="",mountpoint!="",domain!=""} * 100 > 3
+            and
+              node_filesystem_readonly{job="node-exporter",fstype!="",mountpoint!="",domain!=""} == 0
+            )
+          for: 30m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+            {{- with .Values.defaultRules.extraLabels.l2Support }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.L2MacFilesystemAlmostOutOfSpace3PercentLeft | default false) }}
+        - alert: L2MacFilesystemAlmostOutOfSpace3PercentLeft
+          annotations:
+            description: Filesystem on {{`{{`}} $labels.device {{`}}`}}, mounted on {{`{{`}} $labels.mountpoint {{`}}`}}, at {{`{{`}} $labels.instance {{`}}`}} has only {{`{{`}} printf "%.2f" $value {{`}}`}}% available space left.
+            runbook_url: https://runbooks.prometheus-operator.dev/runbooks/node/nodefilesystemalmostoutofspace
+            summary: Filesystem has less than 3% space left.
+          expr: |-
+            (
+              node_filesystem_avail_bytes{job="node-exporter",fstype!="",mountpoint!="",domain!=""} / node_filesystem_size_bytes{job="node-exporter",fstype!="",mountpoint!="",domain!=""} * 100 < 3
+            and
+              node_filesystem_readonly{job="node-exporter",fstype!="",mountpoint!="",domain!=""} == 0
+            )
+          for: 30m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+            {{- with .Values.defaultRules.extraLabels.l2Support }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+{{- end }}

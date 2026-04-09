@@ -1,0 +1,125 @@
+{{- $kubeTargetVersion := default .Capabilities.KubeVersion.GitVersion .Values.kubeTargetVersionOverride }}
+{{- if and (semverCompare ">=1.14.0-0" $kubeTargetVersion) (semverCompare "<9.9.9-9" $kubeTargetVersion) .Values.defaultRules.rules.eventhubs }}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ template "kube-prometheus-stack-add-ons.fullname" . }}-eventhubs
+  namespace: {{ template "kube-prometheus-stack-add-ons.namespace" . }}
+  labels:
+{{ include "kube-prometheus-stack-add-ons.labels" . | indent 4 }}
+spec:
+  groups:
+    - name: eventhubs.rules
+      rules:
+        {{- if not .Values.defaultRules.disabled.EventHubsConsumerGroupLag | default false }}
+        {{- $defaultThreshold := .Values.kafkaDefaultThreshold.threshold }}
+        {{- $defaultDuration := .Values.kafkaDefaultThreshold.duration }}
+        {{- $excludedTopics := list "cache" "__" "strimzi" "integrated-user-.*-cache-eviction" }}
+        {{- range .Values.kafkaLagThreshold }}
+          {{- range .topics }}
+              {{- $excludedTopics = append $excludedTopics . | uniq }}
+          {{- end }}
+        {{- end }}
+        - alert: EventHubsConsumerGroupLagDefault{{ $defaultThreshold }}MessagesFor{{ $defaultDuration | upper }}
+          expr: |
+            sum by (app, cluster, consumer_group, topic) (
+              eventhubs_consumer_group_lag{topic!~"^({{ join "|" $excludedTopics }}).*"}
+            ) > {{ $defaultThreshold }}
+          for: {{ $defaultDuration }}
+          labels:
+            severity: critical
+            {{- with $.Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+            {{- with $.Values.defaultRules.extraLabels.l2Support }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          annotations:
+            description: |
+              Event Hubs consumer group {{`{{`}}$labels.consumer_group{{`}}`}} is lagging {{`{{`}}$value{{`}}`}} on topic {{`{{`}}$labels.topic{{`}}`}} for the last {{ $defaultDuration | upper }}.
+              Please check if consuming service is running properly.
+            {{- if $.Values.runbook.enabled }}
+            runbook_url: "{{ $.Values.runbook.runbookUrl }}alert-name-eventhubsconsumergrouplag"
+            {{- end }}
+        {{- end }}
+        {{- if not .Values.defaultRules.disabled.EventHubsConsumerGroupLag | default false }}
+        {{- range .Values.kafkaLagThreshold }}
+        {{- $listTopics := list }}
+        {{- $listConsumerGroups := list }}
+        {{- $duration := .duration }}
+        {{- $matchedThreshold := .matchedThreshold }}
+        {{- $excludeThreshold := .excludeThreshold }}
+        {{- range .topics }}
+        {{- $listTopics = append $listTopics . | uniq }}
+        {{- end }}
+        {{- range .consumerGroups }}
+        {{- $listConsumerGroups = append $listConsumerGroups . | uniq }}
+        {{- end }}
+        - alert: EventHubsConsumerGroupLag{{ $matchedThreshold }}MessagesFor{{ $duration | upper }}
+          expr: |
+            sum by (app, cluster, consumer_group, topic) (
+              eventhubs_consumer_group_lag{topic=~"^({{ join "|" $listTopics }}).*"{{ if gt (len $listConsumerGroups) 0 }},consumer_group=~"^({{ join "|" $listConsumerGroups }}).*"{{ end }}}
+            ) > {{ $matchedThreshold }}
+          for: {{ $duration }}
+          labels:
+            severity: critical
+            {{- with $.Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+            {{- with $.Values.defaultRules.extraLabels.l2Support }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          annotations:
+            description: |
+              Event Hubs consumer group {{`{{`}}$labels.consumer_group{{`}}`}} is lagging {{`{{`}}$value{{`}}`}} on topic {{`{{`}}$labels.topic{{`}}`}} for the last {{ $duration | upper }}
+              Please check if consuming service is running properly.
+            {{- if $.Values.runbook.enabled }}
+            runbook_url: "{{ $.Values.runbook.runbookUrl }}alert-name-eventhubsconsumergrouplag"
+            {{- end }}
+        {{- if and ($excludeThreshold) (gt (len $listConsumerGroups) 0) }}
+        - alert: EventHubsConsumerGroupLag{{ $excludeThreshold }}MessagesFor{{ $duration | upper }}
+          expr: |
+            sum by (app, cluster, consumer_group, topic) (
+              eventhubs_consumer_group_lag{topic=~"^({{ join "|" $listTopics }}).*"{{ if gt (len $listConsumerGroups) 0 }},consumer_group!~"^({{ join "|" $listConsumerGroups }}).*"{{ end }}}
+            ) > {{ $excludeThreshold }}
+          for: {{ $duration }}
+          labels:
+            severity: critical
+            {{- with $.Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+            {{- with $.Values.defaultRules.extraLabels.l2Support }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          annotations:
+            description: |
+              Event Hubs consumer group {{`{{`}}$labels.consumer_group{{`}}`}} is lagging {{`{{`}}$value{{`}}`}} on topic {{`{{`}}$labels.topic{{`}}`}} for the last {{ $duration | upper }}
+              Please check if consuming service is running properly.
+            {{- if $.Values.runbook.enabled }}
+            runbook_url: "{{ $.Values.runbook.runbookUrl }}alert-name-eventhubsconsumergrouplag"
+            {{- end }}
+        {{- end }}
+        {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.EventHubsNumberOfTopicsLimit  | default false) }}
+        - alert: EventHubsNumberOfTopicsLimit
+          annotations:
+            description: |
+              The number of EventHubs topics is going to reach the limit of 100. Event Hubs {{ `{{` }} $labels.server {{ `}}` }}.
+              Current number of topics is {{ `{{` }} $value {{ `}}` }}.
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-eventhubsnumberoftopicslimit"
+            {{- end }}
+          expr: sum by (app, cluster, server) (eventhubs_number_of_topics) >= 95
+          for: 1h
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+            {{- with .Values.defaultRules.extraLabels.l2Support }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+{{- end }}

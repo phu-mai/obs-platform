@@ -1,0 +1,141 @@
+{{- $kubeTargetVersion := default .Capabilities.KubeVersion.GitVersion .Values.kubeTargetVersionOverride }}
+{{- if and (semverCompare ">=1.14.0-0" $kubeTargetVersion) (semverCompare "<9.9.9-9" $kubeTargetVersion) .Values.defaultRules.rules.appImessageArchivingIntegration }}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ template "kube-prometheus-stack-add-ons.fullname" . }}-app-imessage-archiving-integration
+  namespace: {{ template "kube-prometheus-stack-add-ons.namespace" . }}
+  labels:
+{{ include "kube-prometheus-stack-add-ons.labels" . | indent 4 }}
+spec:
+  groups:
+    - name: app-imessage-archiving-integration.rules
+      rules:
+        {{- if not (.Values.defaultRules.disabled.ImessageTranscodeImageFailed | default false) }}
+        - alert: ImessageTranscodeImageFailed
+          annotations:
+            summary: imessage-archived-integration has many failed register requests.
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-ImessageTranscodeImageFailed"
+            {{- end }}
+            description: |
+              This alert will be triggered when the total fails of image transcoding are higher than 5 in last 1 hour.
+              Check the health of the transcoder service and logs. Current is {{`{{`}} $value {{`}}`}}.
+          expr: |
+              sum by (app,cluster,lxp_version) (
+                delta(imessage_number_of_transcode_image_failed_total{app="imessage-archiving-integration"}[1h])
+              ) >= 5
+          for: 0m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.ImessageTranscodeAudioFailed | default false) }}
+        - alert: ImessageTranscodeAudioFailed
+          annotations:
+            summary: imessage-archived-integration has many failed register requests.
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-ImessageTranscodeAudioFailed"
+            {{- end }}
+            description: |
+              This alert will be triggered when the total fails of audio transcoding are higher than 5 in last 1 hour.
+              Check the health of the transcoder service and logs. Current is {{`{{`}} $value {{`}}`}}.
+          expr: |
+              sum by (app,cluster,lxp_version) (
+                delta(imessage_number_of_transcode_audio_failed_total{app="imessage-archiving-integration"}[1h])
+              ) >= 5
+          for: 0m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.ImessageGenerateThumbnailFailed | default false) }}
+        - alert: ImessageGenerateThumbnailFailed
+          annotations:
+            summary: imessage-archived-integration has many failed register requests.
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-ImessageGenerateThumbnailFailed"
+            {{- end }}
+            description: |
+              This alert will be triggered when the total fails of thumbnail generating are higher than 5 in last 1 hour.
+              Check the health of the transcoder service and logs. Current is {{`{{`}} $value {{`}}`}}.
+          expr: |
+              sum by (app,cluster,lxp_version) (
+                delta(imessage_number_of_generate_thumbnail_failed_total{app="imessage-archiving-integration"}[1h])
+              ) >= 5
+          for: 0m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.ImessageIncomingMessagesFailed | default false) }}
+        - alert: ImessageIncomingMessagesFailed
+          annotations:
+            summary: imessage-archived-integration has many failed register requests.
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-imessageincomingmessagesfailed"
+            {{- end }}
+            description: |
+              This alert will be triggered when the total incoming messages with message type {{`{{`}} $labels.message_type {{`}}`}}
+              in the last 3 hours are higher than 100. Current is {{`{{`}} $value {{`}}`}}.
+          expr: |
+            sum by (app,cluster,message_type,lxp_version) (
+              delta(imessage_number_of_incoming_message_failed_sum_total[3h])
+            ) > 100
+          for: 0m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.ImessageNumberOfIncomingMessageFailedDaily | default false) }}
+        - alert: ImessageNumberOfIncomingMessageFailedDaily
+          annotations:
+            summary: imessage-archived-integration has many failed register requests.
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-imessagenumberofincomingmessagefaileddaily"
+            {{- end }}
+            description: |
+              This alert will be triggered when the total daily incoming messages have been failed in the last 24 hours higher than 100.
+              The integration service is retrying but not able to process the messages.
+              Current is {{`{{`}} $value {{`}}`}}.
+          expr: sum by (app,cluster,lxp_version) (imessage_number_of_incoming_message_failed_daily{app="imessage-archiving-integration"}) > 100
+          for: 3h
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.ImessageDownstreamServiceFailed | default false) }}
+        - alert: ImessageDownstreamServiceFailed
+          annotations:
+            summary: imessage-archived-integration has many failed register requests.
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-imessagedownstreamservicefailed"
+            {{- end }}
+            description: |
+              This alert will be triggered when the imessage-archived-integration service failed to call
+              downstream service  {{`{{`}} $labels.downstream_service {{`}}`}} with method {{`{{`}} $labels.method {{`}}`}}
+              and error message {{`{{`}} $labels.error {{`}}`}} 5 times in the last 1 hour.
+              Current is {{`{{`}} $value {{`}}`}}.
+          expr: |
+            sum by (app,cluster,downstream_service,error,method,lxp_version) (
+              delta(imessage_downstream_service_failed{container="imessage-archiving-integration"}[1h])
+            ) > 5
+          for: 0m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+{{- end }}

@@ -1,0 +1,14 @@
+---
+apiVersion: v2
+name: kube-prometheus-stack-add-ons
+description: A Helm chart for Kubernetes
+type: application
+version: 1.0.0
+appVersion: "0.2.1"
+keywords:
+  - grafana-dashboards
+  - prometheus-rules
+  - prometheus-recording-rules
+  - prometheus-operator-service-monitor
+  - prometheus-operator-pod-monitor
+  - istio-telemetry

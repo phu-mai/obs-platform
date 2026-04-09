@@ -1,0 +1,40 @@
+{{- if and (.Values.podMonitor.enabled) (.Capabilities.APIVersions.Has "monitoring.coreos.com/v1") }}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: {{ include "azure-metrics-exporter.fullname" . }}
+  labels:
+    {{- include "azure-metrics-exporter.labels" . | nindent 4 }}
+    {{- if .Values.podMonitor.additionalLabels }}
+{{ toYaml .Values.podMonitor.additionalLabels | indent 4 }}
+    {{- end }}
+spec:
+  podMetricsEndpoints:
+    # Azure metrics for Azure Postgres Flexible Server
+    {{- include "azure-metrics-exporter.azureMetricsPostgresFlexible" . | nindent 4 }}
+    # Azure metrics for Azure EventHub
+    {{- include "azure-metrics-exporter.azureMetricsEventHub" . | nindent 4 }}
+    # Azure metrics for Azure Cache for Redis
+    {{- include "azure-metrics-exporter.azureMetricsCacheRedis" . | nindent 4 }}
+    # Azure metrics for Azure Cosmo MongoDB
+    {{- include "azure-metrics-exporter.azureMetricsCosmoMongodb" . | nindent 4 }}
+    # Azure metrics for Azure Frontdoor
+    {{- include "azure-metrics-exporter.azureFrontdoor" . | nindent 4 }}
+    - interval: {{ $.Values.podMonitor.podMetricsEndpoints.interval }}
+      scrapeTimeout: {{ $.Values.podMonitor.podMetricsEndpoints.scrapeTimeout }}
+      port: http
+      path: /metrics
+      relabelings:
+        - sourceLabels: [__meta_kubernetes_pod_label_app_kubernetes_io_name]
+          action: replace
+          replacement: $1
+          regex: (.*)
+          targetLabel: app
+  namespaceSelector:
+    matchNames:
+      - monitoring
+  selector:
+    matchLabels:
+      {{- include "azure-metrics-exporter.selectorLabels" . | nindent 6 }}
+{{- end }}

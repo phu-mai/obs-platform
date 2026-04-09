@@ -1,0 +1,194 @@
+{{- if .Values.agent.static.statefulset.enabled }}
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "grafana-agent.fullname" . }}-static-statefulset
+  labels:
+    {{- include "grafana-agent.labels" . | nindent 4 }}
+    agent-type: statefulset
+    mode: static
+spec:
+  replicas: {{ .Values.agent.static.statefulset.replicas }}
+  {{- if .Values.agent.static.statefulset.parallelRollout }}
+  podManagementPolicy: Parallel
+  {{- end }}
+  {{- if ge (int .Capabilities.KubeVersion.Minor) 22 }}
+  minReadySeconds: 10
+  {{- end }}
+  serviceName: {{ include "grafana-agent.fullname" . }}-static-statefulset
+  selector:
+    matchLabels:
+      {{- include "grafana-agent.selectorLabels" . | nindent 6 }}
+      agent-type: statefulset
+      mode: static
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/static/statefulset/configmap.yaml") . | sha256sum }}
+      {{- with .Values.agent.common.podAnnotations }}
+        {{- toYaml . | nindent 4 }}
+      {{- end }}
+      labels:
+        {{- include "grafana-agent.selectorLabels" . | nindent 8 }}
+        agent-type: statefulset
+        mode: static
+        {{- with .Values.agent.common.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- with .Values.global.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "grafana-agent.serviceAccountName" . }}
+      {{- if or .Values.global.image.pullSecrets .Values.image.pullSecrets }}
+      imagePullSecrets:
+        {{- if .Values.global.image.pullSecrets }}
+        {{- toYaml .Values.global.image.pullSecrets | nindent 8 }}
+        {{- else }}
+        {{- toYaml .Values.image.pullSecrets | nindent 8 }}
+        {{- end }}
+      {{- end }}
+      {{- if .Values.agent.static.statefulset.initContainers }}
+      initContainers:
+        {{- with .Values.agent.static.statefulset.initContainers }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- end }}
+      containers:
+        - name: grafana-agent
+          image: {{ .Values.global.image.registry | default .Values.image.registry }}/{{ .Values.image.repository }}{{ include "grafana-agent.imageId" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args:
+            {{- if not .Values.agent.common.enableReporting }}
+            - --disable-reporting
+            {{- end}}
+            - -config.file=/etc/agent/config.yaml
+            - -server.http.address={{ .Values.agent.common.listenAddr }}:{{ .Values.agent.common.listenPort }}
+            {{- range .Values.agent.static.statefulset.extraArgs }}
+            - {{ . }}
+            {{- end}}
+          env:
+            - name: AGENT_MODE
+              value: static
+            - name: HOSTNAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            {{- with .Values.agent.static.statefulset.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          {{- with .Values.agent.envFrom }}
+          envFrom:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          ports:
+            - containerPort: {{ .Values.agent.common.listenPort }}
+              name: http-metrics
+            {{- range $portMap := .Values.agent.static.statefulset.extraPorts }}
+            - containerPort: {{ $portMap.targetPort }}
+              {{- if $portMap.hostPort }}
+              hostPort: {{ $portMap.hostPort }}
+              {{- end}}
+              name: {{ $portMap.name }}
+              protocol: {{ coalesce $portMap.protocol "TCP" }}
+            {{- end }}
+          readinessProbe:
+            httpGet:
+              path: /-/ready
+              port: {{ .Values.agent.common.listenPort }}
+              scheme: {{ .Values.agent.common.listenScheme }}
+            initialDelaySeconds: 10
+            timeoutSeconds: 1
+          {{- with .Values.agent.static.statefulset.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.agent.static.statefulset.securityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+            - name: config
+              mountPath: /etc/agent
+            {{- if .Values.agent.static.statefulset.mounts.varlog }}
+            - name: varlog
+              mountPath: /var/log
+              readOnly: true
+            {{- end }}
+            {{- if .Values.agent.static.statefulset.mounts.dockercontainers }}
+            - name: dockercontainers
+              mountPath: /var/lib/docker/containers
+              readOnly: true
+            {{- end }}
+            {{- if .Values.agent.static.statefulset.snmpMonitoring.enabled }}
+            - name: secret
+              mountPath: /tmp/secret
+            {{- end }}
+            {{- range .Values.agent.static.statefulset.mounts.extra }}
+            - {{- toYaml . | nindent 14 }}
+            {{- end }}
+      {{- if .Values.agent.common.priorityClassName }}
+      priorityClassName: {{ .Values.agent.common.priorityClassName }}
+      {{- end }}
+      {{- if .Values.agent.common.hostNetwork }}
+      hostNetwork: {{ .Values.agent.common.hostNetwork }}
+      {{- end }}
+      {{- if .Values.agent.static.statefulset.hostPID }}
+      hostPID: {{ .Values.agent.static.statefulset.hostPID }}
+      {{- end }}
+      dnsPolicy: {{ .Values.agent.common.dnsPolicy }}
+      {{- with .Values.agent.common.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.agent.static.statefulset.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.agent.common.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      volumes:
+        - name: config
+          configMap:
+            name: {{ include "grafana-agent.fullname" . }}-static-statefulset
+        {{- if .Values.agent.static.statefulset.mounts.varlog }}
+        - name: varlog
+          hostPath:
+            path: /var/log
+        {{- end }}
+        {{- if .Values.agent.static.statefulset.mounts.dockercontainers }}
+        - name: dockercontainers
+          hostPath:
+            path: /var/lib/docker/containers
+        {{- end }}
+        {{- if .Values.agent.static.statefulset.snmpMonitoring.enabled }}
+        - name: secret
+          secret:
+            secretName: {{ include "grafana-agent.fullname" . }}-static-statefulset
+        {{- end }}
+        {{- if .Values.agent.static.statefulset.volumes.extra }}
+        {{- toYaml .Values.agent.static.statefulset.volumes.extra | nindent 8 }}
+        {{- end }}
+  {{- with .Values.agent.static.statefulset.updateStrategy }}
+  updateStrategy:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with .Values.agent.static.statefulset.volumeClaimTemplates }}
+  volumeClaimTemplates:
+    {{- range . }}
+    - {{ toYaml . | nindent 6 }}
+    {{- end }}
+  {{- end }}
+  {{- if and (semverCompare ">= 1.23-0" .Capabilities.KubeVersion.Version) (.Values.agent.static.statefulset.enableStatefulSetAutoDeletePVC)  }}
+  {{- /*
+    Data on the read nodes is easy to replace, so we want to always delete PVCs to make
+    operation easier, and will rely on re-fetching data when needed.
+  */}}
+  persistentVolumeClaimRetentionPolicy:
+    whenDeleted: Delete
+    whenScaled: Delete
+  {{- end }}
+{{- end }}

@@ -1,0 +1,29 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ template "prometheus-cloudwatch-exporter.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: {{ template "prometheus-cloudwatch-exporter.name" . }}
+    chart: {{ template "prometheus-cloudwatch-exporter.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+data:
+  config.yml: |
+    region: {{ .Values.region }}
+    period_seconds: {{ .Values.periodSeconds }}
+    list_metrics_cache_ttl: {{ .Values.listMetricsCacheTtl }}
+    metrics:
+      {{- if .Values.services.docdb.enabled }}
+      {{- include "prometheus-cloudwatch-exporter.docdb" . | nindent 6 }}
+      {{- end }}
+      {{- if .Values.services.elasticache.enabled }}
+      {{- include "prometheus-cloudwatch-exporter.elasticache" . | nindent 6 }}
+      {{- end }}
+      {{- if .Values.services.msk.enabled }}
+      {{- include "prometheus-cloudwatch-exporter.msk" . | nindent 6 }}
+      {{- end }}
+      {{- if .Values.services.rds.enabled }}
+      {{- include "prometheus-cloudwatch-exporter.rds" . | nindent 6 }}
+      {{- end }}

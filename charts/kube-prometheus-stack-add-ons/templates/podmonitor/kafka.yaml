@@ -1,0 +1,123 @@
+{{- if and .Values.namespaceSelector.kafka.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: kafka-metrics
+  namespace: {{ template "kube-prometheus-stack-add-ons.namespace" . }}
+  labels:
+{{ include "kube-prometheus-stack-add-ons.labels" . | indent 4 }}
+spec:
+  namespaceSelector:
+    matchNames:
+      - {{ .Values.namespaceSelector.kafka.namespace }}
+  selector:
+    matchExpressions:
+      - key: app.kubernetes.io/name
+        operator: In
+        values:
+          - entity-operator
+          - kafka
+          - zookeeper
+  podMetricsEndpoints:
+    - path: /
+      port: tcp-prometheus
+      interval: {{ .Values.global.scrapeInterval }}
+      scrapeTimeout: {{ .Values.global.scrapeTimeout }}
+      metricRelabelings:
+      # Drop kafka metrics in the top 30 list
+      - sourceLabels: [__name__]
+        regex: '(kafka_network_requestmetrics_remotetimems|kafka_network_requestmetrics_requestqueuetimems|kafka_network_requestmetrics_localtimems|kafka_network_requestmetrics_throttletimems|kafka_network_requestmetrics_responsequeuetimems|kafka_network_requestmetrics_requestbytes|kafka_network_requestmetrics_responsesendtimems)'
+        action: drop
+      - sourceLabels: [__name__]
+        regex: "jvm_(.*)"
+        targetLabel: __name__
+        replacement: kafka_jvm_$1
+      relabelings:
+        - sourceLabels: [__meta_kubernetes_pod_label_strimzi_io_cluster]
+          separator: ;
+          regex: (.*)
+          targetLabel: strimzi_io_cluster
+          replacement: $1
+          action: replace
+        - sourceLabels: [__meta_kubernetes_pod_label_strimzi_io_name]
+          separator: ;
+          regex: (.*)
+          targetLabel: strimzi_io_name
+          replacement: $1
+          action: replace
+        - sourceLabels: [__meta_kubernetes_pod_label_strimzi_io_kind]
+          separator: ;
+          regex: (.*)
+          targetLabel: strimzi_io_kind
+          replacement: $1
+          action: replace
+        - sourceLabels: [__meta_kubernetes_pod_label_app_kubernetes_io_name]
+          action: replace
+          replacement: $1
+          regex: (.*)
+          targetLabel: app
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: kafka-exporter
+  namespace: {{ template "kube-prometheus-stack-add-ons.namespace" . }}
+  labels:
+{{ include "kube-prometheus-stack-add-ons.labels" . | indent 4 }}
+spec:
+  namespaceSelector:
+    matchNames:
+      - {{ .Values.namespaceSelector.kafka.namespace }}
+  selector:
+    matchExpressions:
+      - key: app.kubernetes.io/name
+        operator: In
+        values:
+          - kafka-exporter
+  podMetricsEndpoints:
+    - path: /metrics
+      port: tcp-prometheus
+      relabelings:
+        - sourceLabels: [__meta_kubernetes_pod_label_strimzi_io_cluster]
+          separator: ;
+          regex: (.*)
+          targetLabel: strimzi_io_cluster
+          replacement: $1
+          action: replace
+        - sourceLabels: [__meta_kubernetes_pod_label_app_kubernetes_io_name]
+          action: replace
+          replacement: $1
+          regex: (.*)
+          targetLabel: app
+      interval: {{ .Values.global.scrapeInterval }}
+      scrapeTimeout: {{ .Values.global.scrapeTimeout }}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: kafka-operator
+  namespace: {{ template "kube-prometheus-stack-add-ons.namespace" . }}
+  labels:
+{{ include "kube-prometheus-stack-add-ons.labels" . | indent 4 }}
+spec:
+  namespaceSelector:
+    matchNames:
+      - {{ .Values.namespaceSelector.kafka.namespace }}
+  selector:
+    matchExpressions:
+      - key: name
+        operator: In
+        values:
+          - strimzi-cluster-operator
+  podMetricsEndpoints:
+    - path: /metrics
+      port: http
+      interval: {{ .Values.global.scrapeInterval }}
+      scrapeTimeout: {{ .Values.global.scrapeTimeout }}
+      relabelings:
+        - sourceLabels: [__meta_kubernetes_pod_label_app_kubernetes_io_name]
+          action: replace
+          replacement: $1
+          regex: (.*)
+          targetLabel: app
+{{- end }}

@@ -1,0 +1,36 @@
+{{- $kubeTargetVersion := default .Capabilities.KubeVersion.GitVersion .Values.kubeTargetVersionOverride }}
+{{- if and (semverCompare ">=1.14.0-0" $kubeTargetVersion) (semverCompare "<9.9.9-9" $kubeTargetVersion) .Values.defaultRules.rules.recordingDataplaneKafka }}
+{{- if and .Values.slo.enabled .Values.namespaceSelector.kafka.enabled }}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ template "kube-prometheus-stack-add-ons.fullname" . }}-kafka-recording
+  namespace: {{ template "kube-prometheus-stack-add-ons.namespace" . }}
+  labels:
+{{ include "kube-prometheus-stack-add-ons.labels" . | indent 4 }}
+spec:
+  groups:
+    - name: kafka-recording.rules
+      interval: 1m
+      rules:
+        - record: slo:kafka:kafka_up
+          expr: (vector(1) and on() (kafka_server_replicamanager_underminisrpartitioncount == 0 or kafka_controller_kafkacontroller_offlinepartitionscount == 0)) or on() vector(0)
+        - record: slo:kafka:kafka_up_5m
+          expr: sum_over_time(slo:kafka:kafka_up[5m:]) / count_over_time(slo:kafka:kafka_up[5m:]) * 100
+        - record: slo:kafka:kafka_up_30m
+          expr: sum_over_time(slo:kafka:kafka_up[30m:]) / count_over_time(slo:kafka:kafka_up[30m:]) * 100
+        - record: slo:kafka:kafka_up_1h
+          expr: sum_over_time(slo:kafka:kafka_up[1h:]) / count_over_time(slo:kafka:kafka_up[1h:]) * 100
+        - record: slo:kafka:kafka_up_2h
+          expr: sum_over_time(slo:kafka:kafka_up[2h:]) / count_over_time(slo:kafka:kafka_up[2h:]) * 100
+        - record: slo:kafka:kafka_up_6h
+          expr: sum_over_time(slo:kafka:kafka_up[6h:]) / count_over_time(slo:kafka:kafka_up[6h:]) * 100
+        - record: slo:kafka:kafka_up_1d
+          expr: sum_over_time(slo:kafka:kafka_up[1d:]) / count_over_time(slo:kafka:kafka_up[1d:]) * 100
+        - record: slo:kafka:kafka_up_3d
+          expr: sum_over_time(slo:kafka:kafka_up[3d:]) / count_over_time(slo:kafka:kafka_up[3d:]) * 100
+        - record: slo:kafka:kafka_up_30d
+          expr: sum_over_time(slo:kafka:kafka_up[30d:]) / count_over_time(slo:kafka:kafka_up[30d:]) * 100
+{{- end }}
+{{- end }}

@@ -1,0 +1,73 @@
+{{- $kubeTargetVersion := default .Capabilities.KubeVersion.GitVersion .Values.kubeTargetVersionOverride }}
+{{- if and (semverCompare ">=1.14.0-0" $kubeTargetVersion) (semverCompare "<9.9.9-9" $kubeTargetVersion) .Values.defaultRules.rules.cloudAwsSnapshots }}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ template "kube-prometheus-stack-add-ons.fullname" . }}-aws-snapshots
+  namespace: {{ template "kube-prometheus-stack-add-ons.namespace" . }}
+  labels:
+{{ include "kube-prometheus-stack-add-ons.labels" . | indent 4 }}
+spec:
+  groups:
+    - name: aws-snapshots.rules
+      interval: 6m
+      rules:
+        {{- if not (.Values.defaultRules.disabled.AWSRdsSnapshotsMissing | default false) }}
+        - alert: AWSRdsSnapshotsMissing
+          annotations:
+            summary: "The number of available RDS snapshots is less than 7"
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-awsrdssnapshotsmissing"
+            {{- end }}
+            description: |
+              This alert will be triggered when AWS RDS for Postgres has less than available snapshots.
+              Run this command to check details of all snapshots
+                aws rds describe-db-snapshots --region <region>
+          expr: rds_snapshots < 7 or aws_rds_snapshots < 7
+          for: 10m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.AWSElastiCacheSnapshotsMissing | default false) }}
+        - alert: AWSElastiCacheSnapshotsMissing
+          annotations:
+            summary: "The number of available RDS snapshots is less than 7"
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-awselasticachesnapshotsmissing"
+            {{- end }}
+            description: |
+              This alert will be triggered when AWS ElastiCache has less than available snapshots.
+              Run this command to check details of all snapshots
+                aws elasticache describe-snapshots --region <region>
+          expr: elasticache_snapshots < 7 or aws_elasticache_snapshots < 7
+          for: 10m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.AWSDocDBSnapshotsMissing | default false) }}
+        - alert: AWSDocDBSnapshotsMissing
+          annotations:
+            summary: "The number of available RDS snapshots is less than 7"
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-awsdocdbsnapshotsmissing"
+            {{- end }}
+            description: |
+              This alert will be triggered when AWS DocumentDB has less than available snapshots.
+              Run this command to check details of all snapshots
+                aws docdb describe-db-cluster-snapshots --region <region>
+          expr: docdb_snapshots < 7 or aws_docdb_snapshots < 7
+          for: 10m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+{{- end }}

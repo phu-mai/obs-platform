@@ -1,0 +1,227 @@
+{{- $kubeTargetVersion := default .Capabilities.KubeVersion.GitVersion .Values.kubeTargetVersionOverride }}
+{{- if and (semverCompare ">=1.14.0-0" $kubeTargetVersion) (semverCompare "<9.9.9-9" $kubeTargetVersion) .Values.defaultRules.rules.appCustomermodelsync }}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ template "kube-prometheus-stack-add-ons.fullname" . }}-app-customermodelsync
+  namespace: {{ template "kube-prometheus-stack-add-ons.namespace" . }}
+  labels:
+{{ include "kube-prometheus-stack-add-ons.labels" . | indent 4 }}
+spec:
+  groups:
+    - name: app-customermodelsync.rules
+      rules:
+        {{- if not (.Values.defaultRules.disabled.CustomerModelSyncGraphAPIFailed | default false) }}
+        - alert: CustomerModelSyncGraphAPIFailed
+          annotations:
+            summary: "customermodelsync service has failed Graph API events"
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-customermodelsyncgraphapifailed"
+            {{- end }}
+            description: |
+              This alert will be triggered when customermodelsync has detected failed events from Microsoft Graph API.
+              Execute Prometheus query customermodelsync_graph_api_total{app="customermodelsync",result!="success"} for more information
+          expr: |
+            (
+              increase(
+                (sum by (app,cluster,lxp_version) (customermodelsync_graph_api_total{app="customermodelsync",result!="success"}))[5m:])
+              > 0
+            )
+              or
+            (
+              sum by (app,cluster,lxp_version) (customermodelsync_graph_api_total{app="customermodelsync",result!="success"})
+                unless
+              sum by (app,cluster,lxp_version) (customermodelsync_graph_api_total{app="customermodelsync",result!="success"} offset 5m)
+            )
+          for: 2m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+            {{- with .Values.defaultRules.extraLabels.l2Support }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.CustomerModelSyncAntiphonyFailed | default false) }}
+        - alert: CustomerModelSyncAntiphonyFailed
+          annotations:
+            summary: "customermodelsync service has failed periodical sync events from Antiphony"
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-customermodelsyncantiphonyfailed"
+            {{- end }}
+            description: |
+              This alert will be triggered when customermodelsync has failed periodical sync events with Antiphony.
+              Execute Prometheus query customermodelsync_antiphony_pull_changes_total{app="customermodelsync",result!="success"} for more information
+          expr: |
+            (
+              increase(
+                (sum by (app,cluster,lxp_version) (customermodelsync_antiphony_pull_changes_total{app="customermodelsync",result!="success"}))[5m:])
+              > 0
+            )
+              or
+            (
+              sum by (app,cluster,lxp_version) (customermodelsync_antiphony_pull_changes_total{app="customermodelsync",result!="success"})
+                unless
+              sum by (app,cluster,lxp_version) (customermodelsync_antiphony_pull_changes_total{app="customermodelsync",result!="success"} offset 5m)
+            )
+          for: 2m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.CustomerModelSyncAADFailed | default false) }}
+        - alert: CustomerModelSyncAADFailed
+          annotations:
+            summary: "customermodelsync service has failed periodical sync events from Microsoft AAD"
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-customermodelsyncaadfailed"
+            {{- end }}
+            description: |
+              This alert will be triggered when customermodelsync has failed periodical sync events with Microsoft AAD.
+              Execute Prometheus query customermodelsync_aad_pull_changes_total{app="customermodelsync",result!="success"} for more information
+          expr: |
+            (
+              increase(
+                (sum by (app,cluster,lxp_version) (customermodelsync_aad_pull_changes_total{app="customermodelsync",result!="success"}))[5m:])
+              > 0
+            )
+              or
+            (
+              sum by (app,cluster,lxp_version) (customermodelsync_aad_pull_changes_total{app="customermodelsync",result!="success"})
+                unless
+              sum by (app,cluster,lxp_version) (customermodelsync_aad_pull_changes_total{app="customermodelsync",result!="success"} offset 5m)
+            )
+          for: 5m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+            {{- with .Values.defaultRules.extraLabels.l2Support }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.CustomerModelSyncMosaicFailed | default false) }}
+        - alert: CustomerModelSyncMosaicFailed
+          annotations:
+            summary: "customermodelsync service has failed periodical sync events from Mosaic"
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-customermodelsyncaadfailed"
+            {{- end }}
+            description: |
+              This alert will be triggered when customermodelsync has failed periodical sync events with Mosaic.
+              Execute Prometheus query customermodelsync_mosaic_pull_changes_total{app="customermodelsync",result!="success"} for more information
+          expr: |
+            (
+              increase(
+                (sum by (app,cluster,lxp_version) (customermodelsync_mosaic_pull_changes_total{app="customermodelsync",result!="success"}))[5m:])
+              > 0
+            )
+              or
+            (
+              sum by (app,cluster,lxp_version) (customermodelsync_mosaic_pull_changes_total{app="customermodelsync",result!="success"})
+                unless
+              sum by (app,cluster,lxp_version) (customermodelsync_mosaic_pull_changes_total{app="customermodelsync",result!="success"} offset 5m)
+            )
+          for: 2m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.CustomerModelSyncSalesForcePullChangesFailed | default false) }}
+        - alert: CustomerModelSyncSalesforcePullChangesFailed
+          annotations:
+            summary: "customermodelsync service has failed pull changes from Salesforce."
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-customermodelsyncsalesforcepullchangesfailed"
+            {{- end }}
+            description: |
+              This alert will be triggered when customermodelsync has failed pull changes {{`{{`}} $labels.result {{`}}`}} event from Salesforce
+              with error {{`{{`}} $labels.error {{`}}`}} and HTTP code {{`{{`}} $labels.http_code {{`}}`}} on tenantId {{`{{`}} $labels.tenantId {{`}}`}}.
+              Execute Prometheus query customermodelsync_mosaic_pull_changes_total{app="customermodelsync",result!="success"} for more information.
+          expr: |
+            (
+              increase(
+                (sum by (app,cluster,lxp_version,tenantId,http_code,error,result) (customermodelsync_salesforce_pull_changes_total{app="customermodelsync",result!="success"}))[5m:])
+              > 0
+            )
+              or
+            (
+              sum by (app,cluster,lxp_version,tenantId,http_code,error,result) (customermodelsync_salesforce_pull_changes_total{app="customermodelsync",result!="success"})
+                unless
+              sum by (app,cluster,lxp_version,tenantId,http_code,error,result) (customermodelsync_salesforce_pull_changes_total{app="customermodelsync",result!="success"} offset 5m)
+            )
+          for: 2m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.CustomerModelSyncSalesforceOauthFailed | default false) }}
+        - alert: CustomerModelSyncSalesforceOauthFailed
+          annotations:
+            summary: "customermodelsync service has failed OAuth with Salesforce."
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-customermodelsyncsalesforceoauthfailed"
+            {{- end }}
+            description: |
+              This alert will be triggered when customermodelsync has failed Oauth with Salesforce
+              with error {{`{{`}} $labels.error {{`}}`}} and HTTP code {{`{{`}} $labels.http_code {{`}}`}} on tenantId {{`{{`}} $labels.tenantId {{`}}`}}.
+              Execute Prometheus query customermodelsync_salesforce_oauth_total{app="customermodelsync",result!="success"} for more information.
+          expr: |
+            (
+              increase(
+                (sum by (app,cluster,lxp_version,tenantId,http_code,error) (customermodelsync_salesforce_oauth_total{app="customermodelsync",success!="true"}))[5m:])
+              > 0
+            )
+              or
+            (
+              sum by (app,cluster,lxp_version,tenantId,http_code,error) (customermodelsync_salesforce_oauth_total{app="customermodelsync",success!="true"})
+                unless
+              sum by (app,cluster,lxp_version,tenantId,http_code,error) (customermodelsync_salesforce_oauth_total{app="customermodelsync",success!="true"} offset 5m)
+            )
+          for: 2m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.CustomerModelSyncSalesforceQueryFailed | default false) }}
+        - alert: CustomerModelSyncSalesforceQueryFailed
+          annotations:
+            summary: "customermodelsync service has failed query from Salesforce."
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-customermodelsyncsalesforcequeryfailed"
+            {{- end }}
+            description: |
+              This alert will be triggered when customermodelsync has failed query from Salesforce
+              with error {{`{{`}} $labels.error {{`}}`}} with HTTP code {{`{{`}} $labels.http_code {{`}}`}} on tenantId {{`{{`}} $labels.tenantId {{`}}`}}.
+              Execute Prometheus query customermodelsync_salesforce_query_total{app="customermodelsync",result!="success"} for more information.
+          expr: |
+            (
+              increase(
+                (sum by (app,cluster,lxp_version,tenantId,http_code,error) (customermodelsync_salesforce_query_total{app="customermodelsync",success!="true"}))[5m:])
+              > 0
+            )
+              or
+            (
+              sum by (app,cluster,lxp_version,tenantId,http_code,error) (customermodelsync_salesforce_query_total{app="customermodelsync",success!="true"})
+                unless
+              sum by (app,cluster,lxp_version,tenantId,http_code,error) (customermodelsync_salesforce_query_total{app="customermodelsync",success!="true"} offset 5m)
+            )
+          for: 2m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+{{- end }}

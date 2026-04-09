@@ -1,0 +1,111 @@
+{{- $kubeTargetVersion := default .Capabilities.KubeVersion.GitVersion .Values.kubeTargetVersionOverride }}
+{{- if and (semverCompare ">=1.14.0-0" $kubeTargetVersion) (semverCompare "<9.9.9-9" $kubeTargetVersion) .Values.defaultRules.rules.internalKubernetesStorage }}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ template "kube-prometheus-stack-add-ons.fullname" . }}-internal-kubernetes-storage
+  namespace: {{ template "kube-prometheus-stack-add-ons.namespace" . }}
+  labels:
+{{ include "kube-prometheus-stack-add-ons.labels" . | indent 4 }}
+spec:
+  groups:
+    - name: internal-kubernetes-storage.rules
+      rules:
+        {{- if not (.Values.defaultRules.disabled.L3KubePersistentVolumeFillingUp10PercentLeft | default false) }}
+        - alert: L3KubePersistentVolumeFillingUp10PercentLeft
+          annotations:
+            description: The PersistentVolume claimed by {{`{{`}} $labels.persistentvolumeclaim {{`}}`}} in Namespace {{`{{`}} $labels.namespace {{`}}`}} is only {{`{{`}} $value | humanizePercentage {{`}}`}} free.
+            runbook_url: https://runbooks.prometheus-operator.dev/runbooks/kubernetes/kubepersistentvolumefillingup
+            summary: PersistentVolume is filling up.
+          expr: |-
+            (
+              kubelet_volume_stats_available_bytes{job="kubelet", namespace=~".*", metrics_path="/metrics"}
+                /
+              kubelet_volume_stats_capacity_bytes{job="kubelet", namespace=~".*", metrics_path="/metrics"}
+            ) < 0.1
+            and
+            (
+              kubelet_volume_stats_available_bytes{job="kubelet", namespace=~".*", metrics_path="/metrics"}
+                /
+              kubelet_volume_stats_capacity_bytes{job="kubelet", namespace=~".*", metrics_path="/metrics"}
+            ) > 0.05
+            and
+            kubelet_volume_stats_used_bytes{job="kubelet", namespace=~".*", metrics_path="/metrics"} > 0
+            unless on (namespace, persistentvolumeclaim)
+            kube_persistentvolumeclaim_access_mode{ access_mode="ReadOnlyMany"} == 1
+            unless on (namespace, persistentvolumeclaim)
+            kube_persistentvolumeclaim_labels{label_excluded_from_alerts="true"} == 1
+          for: 1m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+            {{- with .Values.defaultRules.extraLabels.devopsSupport }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.L2KubePersistentVolumeFillingUp5PercentLeft | default false) }}
+        - alert: L2KubePersistentVolumeFillingUp5PercentLeft
+          annotations:
+            description: The PersistentVolume claimed by {{`{{`}} $labels.persistentvolumeclaim {{`}}`}} in Namespace {{`{{`}} $labels.namespace {{`}}`}} is only {{`{{`}} $value | humanizePercentage {{`}}`}} free.
+            runbook_url: https://runbooks.prometheus-operator.dev/runbooks/kubernetes/kubepersistentvolumefillingup
+            summary: PersistentVolume is filling up.
+          expr: |-
+            (
+              kubelet_volume_stats_available_bytes{job="kubelet", namespace=~".*", metrics_path="/metrics"}
+                /
+              kubelet_volume_stats_capacity_bytes{job="kubelet", namespace=~".*", metrics_path="/metrics"}
+            ) < 0.05
+            and
+            (
+              kubelet_volume_stats_available_bytes{job="kubelet", namespace=~".*", metrics_path="/metrics"}
+                /
+              kubelet_volume_stats_capacity_bytes{job="kubelet", namespace=~".*", metrics_path="/metrics"}
+            ) > 0.03
+            and
+            kubelet_volume_stats_used_bytes{job="kubelet", namespace=~".*", metrics_path="/metrics"} > 0
+            unless on (namespace, persistentvolumeclaim)
+            kube_persistentvolumeclaim_access_mode{ access_mode="ReadOnlyMany"} == 1
+            unless on (namespace, persistentvolumeclaim)
+            kube_persistentvolumeclaim_labels{label_excluded_from_alerts="true"} == 1
+          for: 1m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+            {{- with .Values.defaultRules.extraLabels.l2Support }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.L2KubePersistentVolumeFillingUp3PercentLeft | default false) }}
+        - alert: L2KubePersistentVolumeFillingUp3PercentLeft
+          annotations:
+            description: The PersistentVolume claimed by {{`{{`}} $labels.persistentvolumeclaim {{`}}`}} in Namespace {{`{{`}} $labels.namespace {{`}}`}} is only {{`{{`}} $value | humanizePercentage {{`}}`}} free.
+            runbook_url: https://runbooks.prometheus-operator.dev/runbooks/kubernetes/kubepersistentvolumefillingup
+            summary: PersistentVolume is filling up.
+          expr: |-
+            (
+              kubelet_volume_stats_available_bytes{job="kubelet", namespace=~".*", metrics_path="/metrics"}
+                /
+              kubelet_volume_stats_capacity_bytes{job="kubelet", namespace=~".*", metrics_path="/metrics"}
+            ) < 0.03
+            and
+            kubelet_volume_stats_used_bytes{job="kubelet", namespace=~".*", metrics_path="/metrics"} > 0
+            unless on (namespace, persistentvolumeclaim)
+            kube_persistentvolumeclaim_access_mode{ access_mode="ReadOnlyMany"} == 1
+            unless on (namespace, persistentvolumeclaim)
+            kube_persistentvolumeclaim_labels{label_excluded_from_alerts="true"} == 1
+          for: 1m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+            {{- with .Values.defaultRules.extraLabels.l2Support }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+{{- end }}

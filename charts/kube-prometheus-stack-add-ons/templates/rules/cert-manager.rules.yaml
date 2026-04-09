@@ -1,0 +1,110 @@
+{{- $kubeTargetVersion := default .Capabilities.KubeVersion.GitVersion .Values.kubeTargetVersionOverride }}
+{{- if .Capabilities.APIVersions.Has "cert-manager.io/v1" }}
+{{- if and (semverCompare ">=1.14.0-0" $kubeTargetVersion) (semverCompare "<9.9.9-9" $kubeTargetVersion) .Values.defaultRules.rules.certManager }}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ template "kube-prometheus-stack-add-ons.fullname" . }}-cert-manager
+  namespace: {{ template "kube-prometheus-stack-add-ons.namespace" . }}
+  labels:
+{{ include "kube-prometheus-stack-add-ons.labels" . | indent 4 }}
+spec:
+  groups:
+    - name: cert-manager.rules
+      rules:
+        {{- if not (.Values.defaultRules.disabled.CertManagerAbsent | default false) }}
+        - alert: CertManagerAbsent
+          annotations:
+            summary: "cert-manager in namespace {{`{{`}} $labels.namespace {{`}}`}} has disappeared from prometheus service discovery for 10m"
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-certmanagerabsent"
+            {{- end }}
+          expr: up{job="cert-manager"} == 0
+          for: 10m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.CertManagerCertExpirySoon | default false) }}
+        - alert: CertManagerCertExpirySoon
+          annotations:
+            summary: "Certification name {{`{{`}} $labels.name {{`}}`}} is {{`{{`}} $value | humanizeDuration {{`}}`}} from expiry"
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-certmanagercertexpirysoon"
+            {{- end }}
+          expr: |
+            avg by (app,cluster,exported_namespace,namespace,name) (
+                label_replace(certmanager_certificate_expiration_timestamp_seconds,"app","$1","job", "(.+)") - time()
+            ) < (10 * 24 * 3600)
+          for: 1h
+          labels:
+            severity: warning
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+
+        - alert: CertManagerCertExpirySoon
+          annotations:
+            summary: "Certificate {{`{{`}} $labels.name {{`}}`}} is {{`{{`}} $value | humanizeDuration {{`}}`}} from expiry"
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-certmanagercertexpirysoon"
+            {{- end }}
+          expr: |
+            avg by (app,cluster,exported_namespace,namespace,name) (
+                label_replace(certmanager_certificate_expiration_timestamp_seconds,"app","$1","job", "(.+)") - time()
+            ) < (7 * 24 * 3600)
+          for: 1h
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.CertManagerCertNotReady | default false) }}
+        - alert: CertManagerCertNotReady
+          annotations:
+            summary: "Certificate {{`{{`}} $labels.name {{`}}`}} is not ready to serve traffic."
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-certmanagercertnotready"
+            {{- end }}
+            description: This certificate has not been ready to serve traffic for at least 10m.
+              If the cert is being renewed or there is another valid cert, the ingress controller
+              _may_ be able to serve that instead.
+          expr: |
+            max by (app,cluster,name,exported_namespace,namespace,condition) (
+                label_replace(certmanager_certificate_ready_status{condition!="True"},"app","$1","job", "(.+)") == 1
+            )
+          for: 10m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+            {{- with .Values.defaultRules.extraLabels.CertManagerCertNotReady }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.CertManagerHittingRateLimits | default false) }}
+        - alert: CertManagerHittingRateLimits
+          annotations:
+            summary: "cert-manager hitting LetsEncrypt rate limits."
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-certmanagerhittingratelimits"
+            {{- end }}
+            description: Depending on the rate limit, cert-manager may be unable to generate certificates for up to a week.
+          expr: |
+            sum by (app,cluster,host) (
+              label_replace(rate(certmanager_http_acme_client_request_count{status="429"}[5m]),"app","$1","job", "(.+)")
+            ) > 0
+          for: 5m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+{{- end }}
+{{- end }}

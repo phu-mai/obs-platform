@@ -1,0 +1,85 @@
+---
+replicaCount: 1
+
+image:
+  repository: jaegertracing/all-in-one
+  pullPolicy: IfNotPresent
+  tag: ""
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: "jaeger"
+
+serviceAccount:
+  create: true
+  annotations: {}
+  name: "jaeger"
+
+podAnnotations: {}
+
+podSecurityContext:
+  fsGroup: 10001
+
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+service:
+  type: ClusterIP
+
+containerPorts:
+  - name: zipkin
+    port: 9411
+    protocol: TCP
+  - name: otel-http
+    port: 4318
+    protocol: TCP
+  - name: otel-grpc
+    port: 4317
+    protocol: TCP
+  - name: jaeger-thrift
+    port: 14268
+    protocol: TCP
+  - name: admin-ui
+    port: 16686
+    protocol: TCP
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 1Gi
+  limits:
+    cpu: 1000m
+    memory: 2.5Gi
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+persistence:
+  enabled: true
+  storageClassName: default
+  accessModes:
+    - ReadWriteOnce
+  size: 30Gi
+
+env:
+  - name: SPAN_STORAGE_TYPE
+    value: "badger"
+  - name: BADGER_EPHEMERAL
+    value: "false"
+  - name: BADGER_DIRECTORY_VALUE
+    value: "/badger/data"
+  - name: BADGER_DIRECTORY_KEY
+    value: "/badger/key"
+  - name: COLLECTOR_ZIPKIN_HOST_PORT
+    value: ":9411"
+
+config:
+  dataRetention: 168h0m0s

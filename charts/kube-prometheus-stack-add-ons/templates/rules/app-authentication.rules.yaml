@@ -1,0 +1,165 @@
+{{- $kubeTargetVersion := default .Capabilities.KubeVersion.GitVersion .Values.kubeTargetVersionOverride }}
+{{- if and (semverCompare ">=1.14.0-0" $kubeTargetVersion) (semverCompare "<9.9.9-9" $kubeTargetVersion) .Values.defaultRules.rules.appAuthentication }}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ template "kube-prometheus-stack-add-ons.fullname" . }}-app-authentication
+  namespace: {{ template "kube-prometheus-stack-add-ons.namespace" . }}
+  labels:
+{{ include "kube-prometheus-stack-add-ons.labels" . | indent 4 }}
+spec:
+  groups:
+    - name: app-authentication.rules
+      rules:
+        {{- if not (.Values.defaultRules.disabled.AuthenticationLoginFailed | default false) }}
+        - alert: AuthenticationLoginFailed
+          annotations:
+            summary: Authentication has many failed login requests
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-authenticationloginfailed"
+            {{- end }}
+            description: |
+              Authentication has many login failed requests.
+              Execute PromQL query increase(login_request_total{app="authentication",success="false"}[5m]) for more information.
+              Execute LogQL queries for more information.
+                - {container="authentication",level="ERROR"}
+                - {container="authentication"} |= "Failed authenticating user role"
+          expr: increase((sum by (app,cluster,lxp_version) (login_request_total{app="authentication",success="false"}) OR vector(0))[5m:]) > 0
+          for: 2m
+          labels:
+            severity: warning
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+            {{- with .Values.defaultRules.extraLabels.l2Support }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        - alert: AuthenticationLoginFailed
+          annotations:
+            summary: Authentication has many failed login requests
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-authenticationloginfailed"
+            {{- end }}
+            description: |
+              Authentication has many login failed requests.
+              Execute PromQL query increase(login_request_total{app="authentication",success="false"}[5m]) for more information.
+              Execute LogQL queries for more information.
+                - {container="authentication",level="ERROR"}
+                - {container="authentication"} |= "Failed authenticating user role"
+          expr: increase((sum by (app,cluster,lxp_version) (login_request_total{app="authentication",success="false"}) OR vector(0))[5m:]) > 0
+          for: 5m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+            {{- with .Values.defaultRules.extraLabels.l2Support }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.AuthorizationRequestFailed | default false) }}
+        - alert: AuthorizationRequestFailed
+          annotations:
+            summary: Authentication has many failed authorization requests.
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-authorizationrequestfailed"
+            {{- end }}
+            description: |
+              Authentication has many failed authorization requests with type {{`{{`}} $labels.service_request_type {{`}}`}}
+              Execute PromQL query increase(authorization_request_total{app="authentication",success="false"}[5m]) for more information.
+              Execute LogQL queries:
+                - {container="authentication"} |= "Received authorization request with content userIdentifier|Authorizing for user role|Replying to authorization request with id"
+          expr: increase((sum by (app,cluster,service_request_type,lxp_version) (authorization_request_total{app="authentication",success="false"}) OR vector(0))[5m:]) > 0
+          for: 5m
+          labels:
+            severity: warning
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        - alert: AuthorizationRequestFailed
+          annotations:
+            summary: Authentication has many failed authorization requests.
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-authorizationrequestfailed"
+            {{- end }}
+            description: |
+              Authentication has many failed authorization requests with type {{`{{`}} $labels.service_request_type {{`}}`}}
+              Execute PromQL query increase(authorization_request_total{app="authentication",success="false"}[5m]) for more information.
+              Execute LogQL queries:
+                - {container="authentication"} |= "Received authorization request with content userIdentifier|Authorizing for user role|Replying to authorization request with id"
+          expr: increase((sum by (app,cluster,service_request_type,lxp_version) (authorization_request_total{app="authentication",success="false"}) OR vector(0))[5m:]) > 0
+          for: 10m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.AuthenticationVaultRequestFailed | default false) }}
+        - alert: AuthenticationVaultRequestFailed
+          annotations:
+            summary: Authentication has many failed requests to Vault.
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-authenticationvaultrequestfailed"
+            {{- end }}
+            description: |
+              Authentication has many failed requests to Vault with status code {{`{{`}} $labels.status_code {{`}}`}}
+              Exception {{`{{`}} $labels.status_code {{`}}`}} might be found.
+              Execute PromQL query increase(authentication_request_to_vault_total{app="authentication",success="false"}[5m]) for more information.
+              Execute LogQL query {container="authentication"} |= "Vault responded with HTTP status code:" for more information about status code and message.
+          expr: increase((sum by (app,cluster,status_code,exception,lxp_version) (authentication_request_to_vault_total{app="authentication",success="false",status_code=~"5[0-9][0-9]"}) OR vector(0))[5m:]) > 0
+          for: 2m
+          labels:
+            severity: warning
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+            {{- with .Values.defaultRules.extraLabels.l2Support }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        - alert: AuthenticationVaultRequestFailed
+          annotations:
+            summary: Authentication has many failed requests to Vault.
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-authenticationvaultrequestfailed"
+            {{- end }}
+            description: |
+              Authentication has many failed requests to Vault with status code {{`{{`}} $labels.status_code {{`}}`}}
+              Exception {{`{{`}} $labels.status_code {{`}}`}} might be found.
+              Execute PromQL query increase(authentication_request_to_vault_total{app="authentication",success="false"}[5m]) for more information.
+              Execute LogQL query {container="authentication"} |= "Vault responded with HTTP status code:" for more information about status code and message.
+          expr: increase((sum by (app,cluster,status_code,exception,lxp_version) (authentication_request_to_vault_total{app="authentication",success="false",status_code=~"5[0-9][0-9]"}) OR vector(0))[5m:]) > 0
+          for: 5m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+            {{- with .Values.defaultRules.extraLabels.l2Support }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.AuthenticationKeycloakRequestFailed | default false) }}
+        - alert: AuthenticationKeycloakRequestFailed
+          annotations:
+            summary: Authentication has many failed requests to Keycloak.
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-authenticationkeycloakrequestfailed"
+            {{- end }}
+            description: |
+              Authentication has many failed requests to Keycloak.
+              Execute PromQL query increase(authentication_request_to_keycloak_total{app="authentication",success="false"}[5m]) for more information.
+              Execute LogQL query {container="authentication"} |= "KeycloakServiceClient" for more information.
+          expr: increase((sum by (app,cluster,lxp_version) (authentication_request_to_keycloak_total{app="authentication",success="false"}) OR vector(0))[5m:]) > 0
+          for: 2m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+            {{- with .Values.defaultRules.extraLabels.l2Support }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+{{- end }}

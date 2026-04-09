@@ -1,0 +1,156 @@
+{{- $kubeTargetVersion := default .Capabilities.KubeVersion.GitVersion .Values.kubeTargetVersionOverride }}
+{{- if and (semverCompare ">=1.14.0-0" $kubeTargetVersion) (semverCompare "<9.9.9-9" $kubeTargetVersion) .Values.defaultRules.rules.additionalKubeStateMetrics }}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ template "kube-prometheus-stack-add-ons.fullname" . }}-additional-kube-state-metrics
+  namespace: {{ template "kube-prometheus-stack-add-ons.namespace" . }}
+  labels:
+{{ include "kube-prometheus-stack-add-ons.labels" . | indent 4 }}
+spec:
+  groups:
+    - name: additional-kube-state-metrics.rules
+      rules:
+        {{- if not (.Values.defaultRules.disabled.KubeContainerOOMKilled | default false) }}
+        - alert: KubeContainerOOMKilled
+          annotations:
+            summary: "Container {{`{{`}} $labels.container {{`}}`}} of pod {{`{{`}} $labels.pod {{`}}`}} in namespace {{`{{`}} $labels.namespace {{`}}`}} has been OOMKilled in the last 5 minutes"
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-kubecontaineroomkilled"
+            {{- end }}
+          expr: |
+            (
+              increase(
+                (
+                  kube_pod_container_status_restarts_total
+                    -
+                  kube_pod_container_status_restarts_total offset 15m >= 1)[15m:]
+                )
+              and ignoring (reason)
+              min_over_time(
+                kube_pod_container_status_last_terminated_reason{reason="OOMKilled"}[15m]
+              )
+            ) > 3
+          for: 0m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.KubeInitContainerOOMKilled | default false) }}
+        - alert: KubeInitContainerOOMKilled
+          annotations:
+            summary: "Init container {{`{{`}} $labels.container {{`}}`}} of pod {{`{{`}} $labels.pod {{`}}`}} in namespace {{`{{`}} $labels.namespace {{`}}`}} has been OOMKilled in the last 5 minutes"
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-kubeinitcontaineroomkilled"
+            {{- end }}
+          expr: |-
+            (
+              increase(
+                (
+                  kube_pod_init_container_status_restarts_total
+                    -
+                  kube_pod_init_container_status_restarts_total offset 15m >= 1)[15m:]
+                )
+              and ignoring (reason)
+              min_over_time(
+                kube_pod_init_container_status_terminated_reason{reason="OOMKilled"}[15m]
+              )
+            ) > 3
+          for: 0m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.KubeContainerLivenessProbeFailed | default false) }}
+        - alert: KubeContainerLivenessProbeFailed
+          annotations:
+            summary: "Container {{`{{`}} $labels.container {{`}}`}} of pod {{`{{`}} $labels.pod {{`}}`}} in namespace {{`{{`}} $labels.namespace {{`}}`}} has liveness probe failed in the last 5 minutes"
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-kubecontainerlivenessprobefailed"
+            {{- end }}
+          expr: |
+            (
+              increase(
+                (
+                  kube_pod_container_status_restarts_total
+                    -
+                  kube_pod_container_status_restarts_total offset 15m >= 1)[15m:]
+                )
+              and ignoring (reason)
+              min_over_time(
+                kube_pod_container_status_last_terminated_reason{reason="Error"}[15m]
+              )
+            ) > 3
+          for: 0m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.KubeManyNodesNotReady | default false) }}
+        - alert: KubeManyNodesNotReady
+          annotations:
+            summary: "{{`{{`}} $value | humanizePercentage {{`}}`}} percent of kubernetes nodes are not ready"
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-kubemanynodesnotready"
+            {{- end }}
+          expr: |
+            count by (cluster) (kube_node_status_condition{condition="Ready",status="true"} == 0) > 1
+              and
+            (
+              count by (cluster) (kube_node_status_condition{condition="Ready",status="true"} == 0)
+                /
+              count by (cluster) (kube_node_status_condition{condition="Ready",status="true"})
+            ) * 100 > 20
+          for: 1m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.KubePodMemoryLimitUnSet | default false) }}
+        - alert: KubePodMemoryLimitUnSet
+          annotations:
+            summary: "Container {{`{{`}} $labels.container {{`}}`}} of pod {{`{{`}} $labels.pod {{`}}`}} in namespace {{`{{`}} $labels.namespace {{`}}`}} has memory usage over 100% of memory limit for 5m."
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-kubepodmemlimitunset"
+            {{- end }}
+            description: |
+              The pod's memory usage is over 100% of the MEMORY limit
+              This can indicate that pod does not have memory limit configured.
+          expr: |
+            sum by (pod, namespace, container, cluster) (container_memory_working_set_bytes{container!="istio-proxy",container!="POD",container!=""})
+                /
+            sum by (pod, namespace, container, cluster) (kube_pod_container_resource_limits{resource="memory",container!="istio-proxy",container!="POD",container!="",unit="byte"}) * 100 > 100
+          for: 5m
+          labels:
+            severity: warning
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.KubePodFailedToPullImage | default false) }}
+        - alert: KubePodFailedToPullImage
+          annotations:
+            summary: |
+              Container {{`{{`}} $labels.container {{`}}`}} of pod {{`{{`}} $labels.pod {{`}}`}} in namespace {{`{{`}} $labels.namespace {{`}}`}}
+              has failed to pull image in the last 5 minutes.
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-kubepodfailedtopullimage"
+            {{- end }}
+          expr: sum by (pod, namespace, container, cluster, reason) (kube_pod_container_status_waiting_reason{reason=~"ErrImagePull|ImagePullBackOff"}) == 1
+          for: 5m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+{{- end }}

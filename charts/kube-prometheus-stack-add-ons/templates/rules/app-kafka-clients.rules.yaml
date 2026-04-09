@@ -1,0 +1,87 @@
+{{- $kubeTargetVersion := default .Capabilities.KubeVersion.GitVersion .Values.kubeTargetVersionOverride }}
+{{- if and (semverCompare ">=1.14.0-0" $kubeTargetVersion) (semverCompare "<9.9.9-9" $kubeTargetVersion) .Values.defaultRules.rules.appKafkaClients }}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ template "kube-prometheus-stack-add-ons.fullname" . }}-app-kafka-clients
+  namespace: {{ template "kube-prometheus-stack-add-ons.namespace" . }}
+  labels:
+{{ include "kube-prometheus-stack-add-ons.labels" . | indent 4 }}
+spec:
+  groups:
+    - name: app-kafka-clients.rules
+      rules:
+        {{- if not (.Values.defaultRules.disabled.KafkaClientHasLostConnections | default false) }}
+        - alert: KafkaClientHasLostConnections
+          annotations:
+            summary: "{{`{{`}} $labels.app {{`}}`}} kafka client in namespace {{`{{`}} $labels.namespace {{`}}`}} has been lost connections to kafka cluster for 2m."
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-kafkaclienthaslostconnections"
+            {{- end }}
+            description: |
+              This alert will be triggered when kafka client has lost connections to kafka cluster
+              Need to get log from {{`{{`}} $labels.app {{`}}`}} pod for further troubleshooting
+          expr: |
+            sum by (app,cluster,namespace,kafka_version,lxp_version) (kafka_consumer_connection_count) == 0
+          for: 5m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+            {{- with .Values.defaultRules.extraLabels.l2Support }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.KafkaClientConsumerException | default false) }}
+        - alert: KafkaClientConsumerException
+          annotations:
+            summary: |
+              {{`{{`}} $labels.app {{`}}`}} kafka client consumer of pod {{`{{`}} $labels.pod {{`}}`}} in namespace {{`{{`}} $labels.namespace {{`}}`}}
+              has been lost connections on topic {{`{{`}} $labels.topic {{`}}`}} to kafka cluster for 5m.
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-kafkaclientconsumerexception"
+            {{- end }}
+          expr: |
+            group by (app,cluster,topic,lxp_version) (
+              kafka_consumer_connection_count offset 15m
+              unless on (app,cluster,topic,lxp_version)
+              kafka_consumer_connection_count
+            ) == 1
+          for: 5m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+            {{- with .Values.defaultRules.extraLabels.l2Support }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.KafkaClientProducerException | default false) }}
+        - alert: KafkaClientProducerException
+          annotations:
+            summary: |
+              {{`{{`}} $labels.app {{`}}`}} kafka client producer of pod {{`{{`}} $labels.pod {{`}}`}} in namespace {{`{{`}} $labels.namespace {{`}}`}}
+              has been lost connections on topic {{`{{`}} $labels.topic {{`}}`}} to kafka cluster for 5m.
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-kafkaclientproducerexception"
+            {{- end }}
+          expr: |
+            group by (app,cluster,topic,lxp_version) (
+              kafka_producer_connection_count offset 15m
+              unless on (app,cluster,topic,lxp_version)
+              kafka_producer_connection_count
+            ) == 1
+          for: 5m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+            {{- with .Values.defaultRules.extraLabels.l2Support }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+{{- end }}

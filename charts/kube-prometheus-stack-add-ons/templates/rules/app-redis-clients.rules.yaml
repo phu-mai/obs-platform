@@ -1,0 +1,37 @@
+{{- $kubeTargetVersion := default .Capabilities.KubeVersion.GitVersion .Values.kubeTargetVersionOverride }}
+{{- if and (semverCompare ">=1.14.0-0" $kubeTargetVersion) (semverCompare "<9.9.9-9" $kubeTargetVersion) .Values.defaultRules.rules.appRedisClients }}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ template "kube-prometheus-stack-add-ons.fullname" . }}-app-redis-clients
+  namespace: {{ template "kube-prometheus-stack-add-ons.namespace" . }}
+  labels:
+{{ include "kube-prometheus-stack-add-ons.labels" . | indent 4 }}
+spec:
+  groups:
+    - name: app-redis-clients.rules
+      rules:
+        {{- if not (.Values.defaultRules.disabled.RedisClientHasLostConnections | default false) }}
+        - alert: RedisClientHasLostConnections
+          annotations:
+            summary: "{{`{{`}} $labels.app {{`}}`}} in namespace {{`{{`}} $labels.namespace {{`}}`}} has been lost connections to redis server for 2m."
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-redisclienthaslostconnections"
+            {{- end }}
+            description: |
+              This alert will be triggered when redis client has lost connections to redis cluster
+              Need to get log from {{`{{`}} $labels.app {{`}}`}} pod for further troubleshooting
+          expr: |
+            sum by (app,cluster,cache,lxp_version) (redis_cache_connected) == 0
+          for: 2m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+            {{- with .Values.defaultRules.extraLabels.l2Support }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+{{- end }}

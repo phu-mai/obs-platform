@@ -1,0 +1,45 @@
+{{- $kubeTargetVersion := default .Capabilities.KubeVersion.GitVersion .Values.kubeTargetVersionOverride }}
+{{- if and (semverCompare ">=1.14.0-0" $kubeTargetVersion) (semverCompare "<9.9.9-9" $kubeTargetVersion) .Values.defaultRules.rules.appErrorLogs }}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ template "kube-prometheus-stack-add-ons.fullname" . }}-app-error-logs
+  namespace: {{ template "kube-prometheus-stack-add-ons.namespace" . }}
+  labels:
+{{ include "kube-prometheus-stack-add-ons.labels" . | indent 4 }}
+spec:
+  groups:
+    - name: app-error-logs.rules
+      rules:
+        {{- if not (.Values.defaultRules.disabled.ServiceErrorLogs1000For60M | default false) }}
+        - alert: ServiceErrorLogs1000For30M
+          annotations:
+            summary: 'App {{`{{`}} $labels.app {{`}}`}} in namespace {{`{{`}} $labels.namespace {{`}}`}} has more than 1000 error logs in the last 30 minutes. Current count: {{`{{`}} $value {{`}}`}}.'
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-serviceerrorlogs"
+            {{- end }}
+          expr: sum by (app,cluster,product,version,namespace) (increase(promtail_custom_fmop_logs_by_level{level="ERROR"}[5m])) > 1000
+          for: 30m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.ServiceErrorLogs1000For60M | default false) }}
+        - alert: ServiceErrorLogs1000For60M
+          annotations:
+            summary: 'App {{`{{`}} $labels.app {{`}}`}} in namespace {{`{{`}} $labels.namespace {{`}}`}} has more than 1000 error logs in the last 60 minutes. Current count: {{`{{`}} $value {{`}}`}}.'
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-serviceerrorlogs"
+            {{- end }}
+          expr: sum by (app,cluster,product,version,namespace) (increase(promtail_custom_fmop_logs_by_level{level="ERROR"}[5m])) > 1000
+          for: 60m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+{{- end }}

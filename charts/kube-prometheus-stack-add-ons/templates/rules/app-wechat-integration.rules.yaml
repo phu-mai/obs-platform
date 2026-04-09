@@ -1,0 +1,117 @@
+{{- $kubeTargetVersion := default .Capabilities.KubeVersion.GitVersion .Values.kubeTargetVersionOverride }}
+{{- if and (semverCompare ">=1.14.0-0" $kubeTargetVersion) (semverCompare "<9.9.9-9" $kubeTargetVersion) .Values.defaultRules.rules.appWechatIntegration }}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ template "kube-prometheus-stack-add-ons.fullname" . }}-app-wechat-integration
+  namespace: {{ template "kube-prometheus-stack-add-ons.namespace" . }}
+  labels:
+{{ include "kube-prometheus-stack-add-ons.labels" . | indent 4 }}
+spec:
+  groups:
+    - name: app-wechat-integration.rules
+      rules:
+        {{- if not (.Values.defaultRules.disabled.WechatNativeEnableIntegrationFailed | default false) }}
+        - alert: WechatNativeEnableIntegrationFailed
+          annotations:
+            summary: "wechat-native-integration service detected failed enable integration request"
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-wechatnativeenableintegrationfailed"
+            {{- end }}
+            description: |
+              This alert will be triggered when the enable integration requests failed
+          expr: increase((sum by (app,cluster,lxp_version) (wechat_native_enable_integration_total{app="wechat-integration",success="false"}) OR vector(0))[5m:]) > 0
+          for: 2m
+          labels:
+            severity: warning
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.WechatNativeDisableIntegrationFailed | default false) }}
+        - alert: WechatNativeDisableIntegrationFailed
+          annotations:
+            summary: "wechat-native-integration service detected failed disable integration request"
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-wechatnativedisableintegrationfailed"
+            {{- end }}
+            description: |
+              This alert will be triggered when the disable integration requests failed
+          expr: increase((sum by (app,cluster,lxp_version) (wechat_native_disable_integration_total{app="wechat-integration",success="false"}) OR vector(0))[5m:]) > 0
+          for: 2m
+          labels:
+            severity: warning
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.WechatNativeCompleteIntegrationFailed | default false) }}
+        - alert: WechatNativeCompleteIntegrationFailed
+          annotations:
+            summary: "wechat-native-integration service detected failed complete integration request"
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-wechatnativecompleteintegrationfailed"
+            {{- end }}
+            description: |
+              This alert will be triggered when the complete integration requests failed
+          expr: increase((sum by (app,cluster,lxp_version) (wechat_native_complete_integration_total{app="wechat-integration",success="false"}) OR vector(0))[5m:]) > 0
+          for: 2m
+          labels:
+            severity: warning
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.WechatNativeOnboardingTriggerOtpFailed | default false) }}
+        - alert: WechatNativeOnboardingTriggerOtpFailed
+          annotations:
+            summary: "wechat-native-integration service detected failed disable integration request"
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-wechatnativeonboardingtriggerotpfailed"
+            {{- end }}
+            description: |
+              This alert will be triggered when the onboarding trigger OTP requests failed
+          expr: increase((sum by (app,cluster,lxp_version) (wechat_native_onboarding_trigger_otp_total{app="wechat-integration",success="false"}) OR vector(0))[5m:]) > 0
+          for: 2m
+          labels:
+            severity: warning
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.WechatNativeOnboardingVerifyOtpFailed | default false) }}
+        - alert: WechatNativeOnboardingVerifyOtpFailed
+          annotations:
+            summary: "wechat-native-integration service detected failed disable integration request"
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-wechatnativeonboardingverifyotpfailed"
+            {{- end }}
+            description: |
+              This alert will be triggered when the onboarding verify OTP requests failed
+          expr: increase((sum by (app,cluster,lxp_version) (wechat_native_onboarding_verify_otp_total{app="wechat-integration",success="false"}) OR vector(0))[5m:]) > 0
+          for: 2m
+          labels:
+            severity: warning
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.WechatNativeWechatServerApiCallFailed | default false) }}
+        - alert: WechatNativeWechatServerApiCallFailed
+          annotations:
+            summary: "wechat-native-integration service detected failed disable integration request"
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-wechatnativewechatserverapicallfailed"
+            {{- end }}
+            description: |
+              This alert will be triggered when wechat native fails to make api call to wechat server.
+          expr: increase((sum by (app,cluster,lxp_version) (wechat_native_wechat_server_api_call_total{app="wechat-integration",success="false"}) OR vector(0))[5m:]) > 0
+          for: 2m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+{{- end }}

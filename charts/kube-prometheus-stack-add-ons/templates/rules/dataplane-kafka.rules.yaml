@@ -1,0 +1,300 @@
+{{- $kubeTargetVersion := default .Capabilities.KubeVersion.GitVersion .Values.kubeTargetVersionOverride }}
+{{- if and (semverCompare ">=1.14.0-0" $kubeTargetVersion) (semverCompare "<9.9.9-9" $kubeTargetVersion) .Values.defaultRules.rules.dataplaneKafka }}
+{{- if .Values.namespaceSelector.kafka.enabled }}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ template "kube-prometheus-stack-add-ons.fullname" . }}-dataplane-kafka
+  namespace: {{ template "kube-prometheus-stack-add-ons.namespace" . }}
+  labels:
+{{ include "kube-prometheus-stack-add-ons.labels" . | indent 4 }}
+spec:
+  groups:
+    - name: kafka.rules
+      rules:
+        {{- if not (.Values.defaultRules.disabled.KafkaDown | default false) }}
+        - alert: KafkaDown
+          annotations:
+            summary: "Kafka instance {{`{{`}} $labels.pod {{`}}`}}  of cluster {{`{{`}} $labels.strimzi_io_name {{`}}`}} in namespace {{`{{`}} $labels.namespace {{`}}`}} has been down for 2m."
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-kafkadown"
+            {{- end }}
+          expr: up{container="kafka"} == 0
+          for: 2m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+            {{- with .Values.defaultRules.extraLabels.l2Support }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.KafkaUnhealthyBroker | default false) }}
+        - alert: KafkaUnhealthyBroker
+          annotations:
+            summary: "Kafka instance {{`{{`}} $labels.pod {{`}}`}}  of cluster {{`{{`}} $labels.strimzi_io_name {{`}}`}} in namespace {{`{{`}} $labels.namespace {{`}}`}} is in state {{`{{`}} $value {{`}}`}} which is not running state"
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-kafkaunhealthybroker"
+            {{- end }}
+          expr: sum by (app, cluster, pod, namespace, strimzi_io_name) (kafka_server_kafkaserver_brokerstate) != 3
+          for: 5m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+            {{- with .Values.defaultRules.extraLabels.l2Support }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.KafkaMemoryLow | default false) }}
+        - alert: KafkaMemoryLow
+          annotations:
+            summary: "Kafka instance {{`{{`}} $labels.pod {{`}}`}} of cluster {{`{{`}} $labels.strimzi_io_name {{`}}`}} in namespace {{`{{`}} $labels.namespace {{`}}`}} has low memory. Current memory percentage is {{`{{`}} $value {{`}}`}}"
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-kafkamemorylow"
+            {{- end }}
+          expr: |
+            sum by (app,cluster,container,pod) (jvm_memory_bytes_used{container="kafka", area="heap"})
+              /
+            sum by (app,cluster,container,pod) (jvm_memory_bytes_max{container="kafka", area="heap"}) *100 > 90
+          for: 10m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.KafkaOfflinePartitionCount | default false) }}
+        - alert: KafkaOfflinePartitionCount
+          annotations:
+            summary: "Kafka instance {{`{{`}} $labels.pod {{`}}`}} in namespace {{`{{`}} $labels.namespace {{`}}`}} has {{`{{`}} $value {{`}}`}} offline partition."
+            description: "Number of partitions that don’t have an active leader and are hence not writable or readable"
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-kafkaofflinepartitioncount"
+            {{- end }}
+          expr: sum by (app,cluster,namespace,pod) (kafka_controller_kafkacontroller_offlinepartitionscount) > 0
+          for: 5m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+            {{- with .Values.defaultRules.extraLabels.l2Support }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.KafkaHasNoActiveController | default false) }}
+        - alert: KafkaHasNoActiveController
+          annotations:
+            summary: "Kafka cluster {{`{{`}} $labels.strimzi_io_cluster {{`}}`}} in namespace {{`{{`}} $labels.namespace {{`}}`}} has no active controller for 2m"
+            description: "No broker in the cluster is reporting as the active controller in the last 2 minutes interval. During steady state there should be only one active controller per cluster."
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-kafkahasnoactivecontroller"
+            {{- end }}
+          expr: sum(kafka_controller_kafkacontroller_activecontrollercount) by (app,cluster,strimzi_io_cluster) != 1
+          for: 2m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+            {{- with .Values.defaultRules.extraLabels.l2Support }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.KafkaUnderReplicatedPartition | default false) }}
+        - alert: KafkaUnderReplicatedPartition
+          annotations:
+            summary: "Kafka cluster {{`{{`}} $labels.strimzi_io_cluster {{`}}`}} in namespace {{`{{`}} $labels.namespace {{`}}`}} has {{`{{`}} $value {{`}}`}} under replicated partitions for 2m"
+            description: "A healthy cluster has no under replicated partitions. This under replication will add latency as consumers don't receive their needed data until messages are replicated. If cluster many have under replicated partitions, it typically points to a problem with one or more brokers. Need to find root cause the problem immediately to avoid any data loss."
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-kafkaunderreplicatedpartition"
+            {{- end }}
+          expr: sum by (app,cluster,pod,topic) (kafka_cluster_partition_underreplicated) > 0
+          for: 5m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+            {{- with .Values.defaultRules.extraLabels.l2Support }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not .Values.defaultRules.disabled.KafkaConsumerGroupLag | default false }}
+        {{- $defaultThreshold := .Values.kafkaDefaultThreshold.threshold }}
+        {{- $defaultDuration := .Values.kafkaDefaultThreshold.duration }}
+        {{- $excludedTopics := list "cache" "__" "strimzi" "integrated-user-.*-cache-eviction" }}
+        {{- range .Values.kafkaLagThreshold }}
+          {{- range .topics }}
+              {{- $excludedTopics = append $excludedTopics . | uniq }}
+          {{- end }}
+        {{- end }}
+        - alert: KafkaConsumerGroupLagDefault{{ $defaultThreshold }}MessagesFor{{ $defaultDuration | upper }}
+          expr: |
+            ((
+              sum by(app, cluster, consumergroup, topic) (
+                kafka_consumergroup_lag_sum{app="kafka-exporter",topic!~"^({{ join "|" $excludedTopics }}).*"}
+              ) > 0
+            )
+              and
+            (
+              sum by(app, cluster, consumergroup, topic) (
+                delta(kafka_consumergroup_lag_sum{app="kafka-exporter",topic!~"^({{ join "|" $excludedTopics }}).*"}[5m])
+              ) >= 0
+            )) > {{ $defaultThreshold }}
+          for: {{ $defaultDuration }}
+          labels:
+            severity: critical
+            {{- with $.Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+            {{- with $.Values.defaultRules.extraLabels.l2Support }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          annotations:
+            summary: "The Kafka consumer group {{`{{`}} $labels.consumergroup {{`}}`}} for the {{`{{`}} $labels.topic {{`}}`}} topic has a lag of over {{ $defaultThreshold }} messages within the last {{ $defaultDuration }}.Current lag stands at {{`{{`}} $value {{`}}`}} messages."
+            description: |
+              Consumer lag indicates the lag between Kafka producers and consumers. If the rate of production of data far exceeds the rate at which it is getting consumed, consumer groups will exhibit lag.
+            {{- if $.Values.runbook.enabled }}
+            runbook_url: "{{ $.Values.runbook.runbookUrl }}alert-name-kafkaconsumergrouplag"
+            {{- end }}
+        {{- end }}
+        {{- if not .Values.defaultRules.disabled.KafkaConsumerGroupLag | default false }}
+        {{- range .Values.kafkaLagThreshold }}
+        {{- $listTopics := list }}
+        {{- $listConsumerGroups := list }}
+        {{- $duration := .duration }}
+        {{- $matchedThreshold := .matchedThreshold }}
+        {{- $excludeThreshold := .excludeThreshold }}
+        {{- range .topics }}
+        {{- $listTopics = append $listTopics . | uniq }}
+        {{- end }}
+        {{- range .consumerGroups }}
+        {{- $listConsumerGroups = append $listConsumerGroups . | uniq }}
+        {{- end }}
+        - alert: KafkaConsumerGroupLag{{ $matchedThreshold }}MessagesFor{{ $duration | upper }}
+          expr: |
+            ((
+              sum by(app, cluster, consumergroup, topic) (
+                kafka_consumergroup_lag_sum{app="kafka-exporter",topic=~"^({{ join "|" $listTopics }}).*"{{ if gt (len $listConsumerGroups) 0 }},consumer_group=~"^({{ join "|" $listConsumerGroups }}).*"{{ end }}}
+              ) > 0
+            )
+              and
+            (
+              sum by(app, cluster, consumergroup, topic) (
+                delta(kafka_consumergroup_lag_sum{app="kafka-exporter",topic=~"^({{ join "|" $listTopics }}).*"{{ if gt (len $listConsumerGroups) 0 }},consumer_group=~"^({{ join "|" $listConsumerGroups }}).*"{{ end }}}[5m])
+              ) >= 0
+            )) > {{ $matchedThreshold }}
+          for: {{ $duration }}
+          labels:
+            severity: critical
+            {{- with $.Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+            {{- with $.Values.defaultRules.extraLabels.l2Support }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          annotations:
+            summary: "The Kafka consumer group {{`{{`}} $labels.consumergroup {{`}}`}} for the {{`{{`}} $labels.topic {{`}}`}} topic has a lag of over {{ $matchedThreshold }} messages within the last {{ $duration }}.Current lag stands at {{`{{`}} $value {{`}}`}} messages."
+            description: |
+              Consumer lag indicates the lag between Kafka producers and consumers. If the rate of production of data far exceeds the rate at which it is getting consumed, consumer groups will exhibit lag.
+            {{- if $.Values.runbook.enabled }}
+            runbook_url: "{{ $.Values.runbook.runbookUrl }}alert-name-kafkaconsumergrouplag"
+            {{- end }}
+        {{- if and ($excludeThreshold) (gt (len $listConsumerGroups) 0) }}
+        - alert: KafkaConsumerGroupLag{{ $excludeThreshold }}MessagesFor{{ $duration | upper }}
+          expr: |
+            ((
+              sum by(app, cluster, consumergroup, topic) (
+                kafka_consumergroup_lag_sum{app="kafka-exporter",topic=~"^({{ join "|" $listTopics }}).*"{{ if gt (len $listConsumerGroups) 0 }},consumer_group!~"^({{ join "|" $listConsumerGroups }}).*"{{ end }}}
+              ) > 0
+            )
+              and
+            (
+              sum by(app, cluster, consumergroup, topic) (
+                delta(kafka_consumergroup_lag_sum{app="kafka-exporter",topic=~"^({{ join "|" $listTopics }}).*"{{ if gt (len $listConsumerGroups) 0 }},consumer_group!~"^({{ join "|" $listConsumerGroups }}).*"{{ end }}}[5m])
+              ) >= 0
+            )) > {{ $excludeThreshold }}
+          for: {{ $duration }}
+          labels:
+            severity: critical
+            {{- with $.Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+            {{- with $.Values.defaultRules.extraLabels.l2Support }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          annotations:
+            summary: "The Kafka consumer group {{`{{`}} $labels.consumergroup {{`}}`}} for the {{`{{`}} $labels.topic {{`}}`}} topic has a lag of over {{ $excludeThreshold }} messages within the last {{ $duration }}.Current lag stands at {{`{{`}} $value {{`}}`}} messages."
+            description: |
+              Consumer lag indicates the lag between Kafka producers and consumers. If the rate of production of data far exceeds the rate at which it is getting consumed, consumer groups will exhibit lag.
+            {{- if $.Values.runbook.enabled }}
+            runbook_url: "{{ $.Values.runbook.runbookUrl }}alert-name-kafkaconsumergrouplag"
+            {{- end }}
+        {{- end }}
+        {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.StrimziFoundNoKafkaResources | default false) }}
+        - alert: StrimziFoundNoKafkaResources
+          annotations:
+            summary: "Strimzi cluster operator has not found any Kafka CRD resources in namespace {{`{{`}} $labels.namespace {{`}}`}} for 5m."
+            description: "Strimzi cluster operator cannot find any Kafka CRD resources in cluster"
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-strimzifoundnokafkaresources"
+            {{- end }}
+          expr: sum by (app,cluster,namespace) (strimzi_resources{kind=~"Kafka"}) == 0
+          for: 5m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+            {{- with .Values.defaultRules.extraLabels.l2Support }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.StrimziKafkaResourceNotReady | default false) }}
+        - alert: StrimziKafkaResourceNotReady
+          annotations:
+            summary: "Strimzi cluster operator has shown Kafka resource state in namespace {{`{{`}} $labels.namespace {{`}}`}} not ready for 5m."
+            description: "Strimzi cluster operator shows Kafka resource state not ready"
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-strimzikafkaresourcenotready"
+            {{- end }}
+          expr: sum by (app,cluster,namespace) (strimzi_resource_state{kind=~"Kafka"}) == 0
+          for: 5m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+            {{- with .Values.defaultRules.extraLabels.l2Support }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.KafkaStatefulsetUnscheduable | default false) }}
+        - alert: KafkaStatefulsetUnscheduable
+          annotations:
+            summary: Kafka instance {{`{{`}} $labels.pod {{`}}`}} in namespace {{`{{`}} $labels.namespace {{`}}`}} is unschedulable for 2m
+            {{- if .Values.runbook.enabled }}
+            runbook_url: {{ .Values.runbook.runbookUrl }}alert-name-kafkastatefulsetunscheduable
+            {{- end }}
+          expr: |
+            sum by (app,cluster,namespace,pod) (
+              label_replace(
+                kube_pod_status_scheduled{condition="true", pod=~".*kafka-[0-9]"},"app","zookeeper","app",""
+              )
+            ) == 0
+          for: 2m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+{{- end }}
+{{- end }}

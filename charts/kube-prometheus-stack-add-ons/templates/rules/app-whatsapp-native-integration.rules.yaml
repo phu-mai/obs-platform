@@ -1,0 +1,85 @@
+{{- $kubeTargetVersion := default .Capabilities.KubeVersion.GitVersion .Values.kubeTargetVersionOverride }}
+{{- if and (semverCompare ">=1.14.0-0" $kubeTargetVersion) (semverCompare "<9.9.9-9" $kubeTargetVersion) .Values.defaultRules.rules.appWhatsappNativeIntegration }}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ template "kube-prometheus-stack-add-ons.fullname" . }}-app-whatsapp-native-integration
+  namespace: {{ template "kube-prometheus-stack-add-ons.namespace" . }}
+  labels:
+{{ include "kube-prometheus-stack-add-ons.labels" . | indent 4 }}
+spec:
+  groups:
+    - name: app-whatsapp-native-integration.rules
+      rules:
+        {{- if not (.Values.defaultRules.disabled.WhatsappNativeSendMediaTemplateFailed | default false) }}
+        - alert: WhatsappNativeSendMediaTemplateFailed
+          annotations:
+            summary: whatsapp-native-integration service detected failed media template request"
+            description: |
+              This alert will be triggered when whatsapp-native-integration has failed to send media template to whatsapp
+              more than 2 times in the last 1d.
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-whatsappnativesendmediatemplatefailed"
+            {{- end }}
+          expr: |
+            sum by (app,cluster,triggered_room_type,lxp_version) (
+              delta(whatsappnative_media_template_triggers_total{app="whatsapp-native-integration",success="false"}[1d])
+            ) > 2
+          for: 0m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.WhatsappNativeSendCloudMessageError | default false) }}
+        - alert: WhatsappNativeSendCloudMessageError
+          annotations:
+            summary: "There are errors when whatsapp-native-integration service sends message using Whatsapp Cloud API from number {{`{{`}} $labels.from {{`}}`}} to number {{`{{`}} $labels.to {{`}}`}}. Error code: {{`{{`}} $labels.status {{`}}`}}"
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-whatsappnativesendcloudmessageerror"
+            {{- end }}
+            description: |
+              This alert will be triggered when Whatsapp Cloud API returns errors
+          expr: |
+            (
+              increase((sum by (app,cluster,lxp_version,from,to,status,status_name) (whatsappnative_send_cloud_msg_error_total{app="whatsapp-native-integration", success="false"}))[5m:]) > 0
+            )
+              or
+            (
+              whatsappnative_send_cloud_msg_error_total{app="whatsapp-native-integration", success="false"}
+                unless
+              whatsappnative_send_cloud_msg_error_total{app="whatsapp-native-integration", success="false"} offset 5m
+            )
+          for: 0m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.WhatsappNativeSendCloudMessage2xxError | default false) }}
+        - alert: WhatsappNativeSendCloudMessage2xxError
+          annotations:
+            summary: "There are errors when whatsapp-native-integration service sends message using Whatsapp Cloud API from number {{`{{`}} $labels.from {{`}}`}} to number {{`{{`}} $labels.to {{`}}`}}. Error code: {{`{{`}} $labels.status {{`}}`}}"
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-whatsappnativesendcloudmessage2xxerror"
+            {{- end }}
+            description: |
+              This alert will be triggered when Whatsapp Cloud API returns API Permission errors
+          expr: |
+            (increase((sum by (app,cluster,lxp_version,from,to,status) (whatsappnative_send_cloud_msg_error_total{app="whatsapp-native-integration", status=~"2[0-9][0-9]", success="false"}))[5m:]) > 0)
+            or
+            (whatsappnative_send_cloud_msg_error_total{app="whatsapp-native-integration", status=~"2[0-9][0-9]", success="false"} unless whatsappnative_send_cloud_msg_error_total{app="whatsapp-native-integration", status=~"2[0-9][0-9]", success="false"} offset 5m)
+          for: 0m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+            {{- with .Values.defaultRules.extraLabels.l2Support }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+{{- end }}

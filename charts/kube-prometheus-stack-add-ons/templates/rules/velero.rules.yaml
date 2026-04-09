@@ -1,0 +1,57 @@
+{{- $kubeTargetVersion := default .Capabilities.KubeVersion.GitVersion .Values.kubeTargetVersionOverride }}
+{{- if and (semverCompare ">=1.14.0-0" $kubeTargetVersion) (semverCompare "<9.9.9-9" $kubeTargetVersion) .Values.defaultRules.rules.velero }}
+{{- if .Values.namespaceSelector.velero.enabled }}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ template "kube-prometheus-stack-add-ons.fullname" . }}-velero
+  namespace: {{ template "kube-prometheus-stack-add-ons.namespace" . }}
+  labels:
+{{ include "kube-prometheus-stack-add-ons.labels" . | indent 4 }}
+spec:
+  groups:
+    - name: velero.rules
+      rules:
+        {{- if not (.Values.defaultRules.disabled.VeleroBackupPartialFailures | default false) }}
+        - alert: VeleroBackupPartialFailures
+          annotations:
+            summary: "Velero backup has {{`{{`}} $value {{`}}`}}% partially failed backups."
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-velerobackuppartialfailures"
+            {{- end }}
+          expr: |
+            sum by (app,cluster,namespace,schedule) (label_replace(velero_backup_partial_failure_total{schedule!=""},"app","$1","container","(.+)"))
+            /
+            sum by (app,cluster,namespace,schedule) (label_replace(velero_backup_attempt_total{schedule!=""},"app","$1","container","(.+)")) * 100 > 25
+          for: 15m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.VeleroBackupFailed | default false) }}
+        - alert: VeleroBackupFailed
+          annotations:
+            summary: "Failed to run scheduled backup for 15m"
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-velerobackupfailed"
+            {{- end }}
+            description: |
+              Velero failed to perform a backup job or scheduled backup job.
+              Please verify the reason of the failure as it could indicate the inability to backup and restore the data stores.
+          expr: |
+            sum by (app,cluster,schedule) (
+                label_replace(
+                    increase(velero_backup_partial_failure_total{schedule!=""}[2m]),"app","$1","container","(.+)")
+            ) > 0
+          for: 0m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+{{- end }}
+{{- end }}

@@ -1,0 +1,37 @@
+{{- $kubeTargetVersion := default .Capabilities.KubeVersion.GitVersion .Values.kubeTargetVersionOverride }}
+{{- if and (semverCompare ">=1.14.0-0" $kubeTargetVersion) (semverCompare "<9.9.9-9" $kubeTargetVersion) .Values.defaultRules.rules.appMongodbClients }}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ template "kube-prometheus-stack-add-ons.fullname" . }}-app-mongodb-clients
+  namespace: {{ template "kube-prometheus-stack-add-ons.namespace" . }}
+  labels:
+{{ include "kube-prometheus-stack-add-ons.labels" . | indent 4 }}
+spec:
+  groups:
+    - name: app-mongodb-clients.rules
+      rules:
+        {{- if not (.Values.defaultRules.disabled.MongodbClientHasLostConnections | default false) }}
+        - alert: MongodbClientHasLostConnections
+          annotations:
+            summary: "{{`{{`}} $labels.app {{`}}`}} in namespace {{`{{`}} $labels.namespace {{`}}`}} has been lost connections to mongodb server for 2m."
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-mongodbclienthaslostconnections"
+            {{- end }}
+            description: |
+              This alert will be triggered when mongodb client has lost connections to mongodb cluster
+              Need to get log from {{`{{`}} $labels.app {{`}}`}} pod for further troubleshooting
+          expr: |
+            sum by (app,cluster,lxp_version,server_address) (mongodb_driver_pool_size{app!~"search"}) == 0
+          for: 2m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+            {{- with .Values.defaultRules.extraLabels.l2Support }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+{{- end }}

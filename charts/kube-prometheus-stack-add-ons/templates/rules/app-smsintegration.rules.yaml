@@ -1,0 +1,112 @@
+{{- $kubeTargetVersion := default .Capabilities.KubeVersion.GitVersion .Values.kubeTargetVersionOverride }}
+{{- if and (semverCompare ">=1.14.0-0" $kubeTargetVersion) (semverCompare "<9.9.9-9" $kubeTargetVersion) .Values.defaultRules.rules.appSmsIntegration }}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ template "kube-prometheus-stack-add-ons.fullname" . }}-app-smsintegration
+  namespace: {{ template "kube-prometheus-stack-add-ons.namespace" . }}
+  labels:
+{{ include "kube-prometheus-stack-add-ons.labels" . | indent 4 }}
+spec:
+  groups:
+    - name: app-smsintegration.rules
+      rules:
+        {{- if not (.Values.defaultRules.disabled.SMSRegisterAccountFailed | default false) }}
+        - alert: SMSRegisterAccountFailed
+          annotations:
+            summary: "smsintegration service failed to register account"
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-smsregisteraccountfailed"
+            {{- end }}
+            description: |
+              This alert will be triggered when smsintegration service failed to register account.
+          expr: |
+            sum by (app,cluster,channel,provider,errorCode,lxp_version) (rate(sms_account_counter_total{app="smsintegration",action="register",status="failed"}[5m]))
+              /
+            sum by (app,cluster,channel,provider,errorCode,lxp_version) (rate(sms_account_counter_total{app="smsintegration",action="register"}[5m])) > 0.005
+          for: 2m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.SMSUnregisterAccountFailed | default false) }}
+        - alert: SMSUnregisterAccountFailed
+          annotations:
+            summary: "smsintegration service failed to unregister account"
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-smsunregisteraccountfailed"
+            {{- end }}
+            description: |
+              This alert will be triggered when smsintegration service failed to unregister account.
+          expr: |
+            sum by (app,cluster,channel,provider,errorCode,lxp_version) (rate(sms_account_counter_total{app="smsintegration",action="unregister",status="failed"}[5m]))
+              /
+            sum by (app,cluster,channel,provider,errorCode,lxp_version) (rate(sms_account_counter_total{app="smsintegration",action="unregister"}[5m])) > 0.005
+          for: 2m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.SMSSendMessageFailed | default false) }}
+        - alert: SMSSendMessageFailed
+          annotations:
+            summary: "smsintegration service failed to send message"
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-smssendmessagefailed"
+            {{- end }}
+            description: |
+              This alert will be triggered when smsintegration service failed to send message.
+          expr: |
+            sum by (app,cluster,channel,provider,errorCode,lxp_version) (rate(sms_message_counter_total{app="smsintegration",action="send",status="failed"}[5m]))
+              /
+            sum by (app,cluster,channel,provider,errorCode,lxp_version) (rate(sms_message_counter_total{app="smsintegration",action="send"}[5m])) > 0.005
+          for: 2m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.SMSReceiveMessageFailed | default false) }}
+        - alert: SMSReceiveMessageFailed
+          annotations:
+            summary: "smsintegration service failed to receive message"
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-smsreceivemessagefailed"
+            {{- end }}
+            description: |
+              This alert will be triggered when smsintegration service failed to receive message.
+          expr: |
+            sum by (app,cluster,channel,provider,errorCode,lxp_version) (rate(sms_message_counter_total{app="smsintegration",action="receive",status="failed"}[5m]))
+              /
+            sum by (app,cluster,channel,provider,errorCode,lxp_version) (rate(sms_message_counter_total{app="smsintegration",action="receive"}[5m])) > 0.005
+          for: 2m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.SMSSendMessageLatency | default false) }}
+        - alert: SMSSendMessageLatency
+          annotations:
+            summary: "smsintegration service experienced 95th percentile message sending latency"
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-smssendmessagelatency"
+            {{- end }}
+            description: |
+              This alert will be triggered when smsintegration service is experiencing {{`{{`}} $value {{`|`}} printf "%.2f" {{`}}`}}s 95th percentile message sending latency.
+          expr: sum by (app,cluster,action,channel,errorCode,provider,lxp_version) (sms_send_message_method_execution_duration_seconds{app="smsintegration",quantile="0.95"}) > 20
+          for: 2m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+{{- end }}

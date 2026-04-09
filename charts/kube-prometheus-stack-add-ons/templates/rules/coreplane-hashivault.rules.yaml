@@ -1,0 +1,59 @@
+{{- $kubeTargetVersion := default .Capabilities.KubeVersion.GitVersion .Values.kubeTargetVersionOverride }}
+{{- if and (semverCompare ">=1.14.0-0" $kubeTargetVersion) (semverCompare "<9.9.9-9" $kubeTargetVersion) .Values.defaultRules.rules.coreplaneHashivault }}
+{{- if .Values.namespaceSelector.vault.enabled }}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ template "kube-prometheus-stack-add-ons.fullname" . }}-coreplane-hashivault
+  namespace: {{ template "kube-prometheus-stack-add-ons.namespace" . }}
+  labels:
+{{ include "kube-prometheus-stack-add-ons.labels" . | indent 4 }}
+spec:
+  groups:
+    - name: vault.rules
+      rules:
+        {{- if not (.Values.defaultRules.disabled.VaultNotFullyUnsealed | default false) }}
+        - alert: VaultPodIsSealed
+          annotations:
+            summary: "Vault pod {{`{{`}} $labels.pod {{`}}`}} in namespace {{`{{`}} $labels.namespace {{`}}`}} has sealed for 2m."
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-vaultnotfullyunsealed"
+            {{- end }}
+          expr: |
+            sum by (app,cluster,namespace,pod) (vault_core_unsealed) == 0
+              or
+            sum by (app,cluster,namespace,pod) (vault_core_unsealed_lxp_vault_cluster) == 0
+          for: 5m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+            {{- with .Values.defaultRules.extraLabels.l2Support }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.VaultHasNoActiveNode | default false) }}
+        - alert: VaultHasNoActiveNode
+          annotations:
+            summary: "Vault active node has not been discovered for 2m"
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-vaulthasnoactivenode"
+            {{- end }}
+          expr: |
+            sum by (app,cluster,namespace) (vault_core_active) == 0
+              or
+            sum by (app,cluster,namespace) (vault_core_active_lxp_vault_cluster) == 0
+          for: 5m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+            {{- with .Values.defaultRules.extraLabels.l2Support }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+{{- end }}
+{{- end }}

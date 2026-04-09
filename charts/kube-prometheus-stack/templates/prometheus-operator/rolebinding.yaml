@@ -1,0 +1,20 @@
+{{- if .Values.global.customRbac.create }}
+{{- range .Values.global.customRbac.namespaces }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ template "kube-prometheus-stack.operator.fullname" $ }}
+  namespace: {{ . }}
+  labels:
+    {{- include "kube-prometheus-stack.prometheus-operator.labels" $ | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ template "kube-prometheus-stack.fullname" $ }}-operator
+subjects:
+- kind: ServiceAccount
+  name: {{ template "kube-prometheus-stack.operator.serviceAccountName" $ }}
+  namespace: {{ template "kube-prometheus-stack.namespace" $ }}
+{{- end }}
+{{- end }}

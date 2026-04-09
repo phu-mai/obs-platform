@@ -1,0 +1,671 @@
+{{- $kubeTargetVersion := default .Capabilities.KubeVersion.GitVersion .Values.kubeTargetVersionOverride }}
+{{- if and (semverCompare ">=1.14.0-0" $kubeTargetVersion) (semverCompare "<9.9.9-9" $kubeTargetVersion) .Values.defaultRules.rules.cloudAzureMetrics }}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ template "kube-prometheus-stack-add-ons.fullname" . }}-azure-metrics
+  namespace: {{ template "kube-prometheus-stack-add-ons.namespace" . }}
+  labels:
+{{ include "kube-prometheus-stack-add-ons.labels" . | indent 4 }}
+spec:
+  groups:
+    - name: azure-database-postgres-flexible.rules
+      rules:
+        {{- if not (.Values.defaultRules.disabled.AzureDatabasePostgresFlexibleStorageUsage | default false) }}
+        - alert: AzureDatabasePostgresFlexibleStorageUsage
+          annotations:
+            summary: "Resource {{`{{`}} $labels.resourceName {{`}}`}} with metrics interval {{`{{`}} $labels.interval {{`}}`}} has storage usage reached to 80%."
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-azuredatabasepostgresflexiblestorageusage"
+            {{- end }}
+          expr: sum by (app,cluster,resourceName,interval) (azure_metrics_database_postgresql_flexible_average_storage_percent_percent) > 80
+          for: 10m
+          labels:
+            severity: warning
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.AzureDatabasePostgresFlexibleStorageUsage | default false) }}
+        - alert: AzureDatabasePostgresFlexibleStorageUsage
+          annotations:
+            summary: "Resource {{`{{`}} $labels.resourceName {{`}}`}} with metrics interval {{`{{`}} $labels.interval {{`}}`}} has storage usage reached to 90%."
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-azuredatabasepostgresflexiblestorageusage"
+            {{- end }}
+          expr: sum by (app,cluster,resourceName,interval) (azure_metrics_database_postgresql_flexible_average_storage_percent_percent) > 90
+          for: 10m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.AzureDatabasePostgresFlexibleCpuUsage | default false) }}
+        - alert: AzureDatabasePostgresFlexibleCpuUsage
+          annotations:
+            summary: "Resource {{`{{`}} $labels.resourceName {{`}}`}} with metrics interval {{`{{`}} $labels.interval {{`}}`}} has cpu usage reached to 80%."
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-azuredatabasepostgresflexiblecpuusage"
+            {{- end }}
+          expr: sum by (app,cluster,resourceName,interval) (azure_metrics_database_postgresql_flexible_average_cpu_percent_percent) > 80
+          for: 10m
+          labels:
+            severity: warning
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.AzureDatabasePostgresFlexibleCpuUsage | default false) }}
+        - alert: AzureDatabasePostgresFlexibleCpuUsage
+          annotations:
+            summary: "Resource {{`{{`}} $labels.resourceName {{`}}`}} with metrics interval {{`{{`}} $labels.interval {{`}}`}} has cpu usage reached to 90%."
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-azuredatabasepostgresflexiblecpuusage"
+            {{- end }}
+          expr: sum by (app,cluster,resourceName,interval) (azure_metrics_database_postgresql_flexible_average_cpu_percent_percent) > 90
+          for: 10m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.AzureDatabasePostgresFlexibleMemoryUsage | default false) }}
+        - alert: AzureDatabasePostgresFlexibleMemoryUsage
+          annotations:
+            summary: "Resource {{`{{`}} $labels.resourceName {{`}}`}} with metrics interval {{`{{`}} $labels.interval {{`}}`}} has memory usage reached to 80%."
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-azuredatabasepostgresflexiblememoryusage"
+            {{- end }}
+          expr: sum by (app,cluster,resourceName,interval) (azure_metrics_database_postgresql_flexible_average_memory_percent_percent) > 80
+          for: 10m
+          labels:
+            severity: warning
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.AzureDatabasePostgresFlexibleMemoryUsage | default false) }}
+        - alert: AzureDatabasePostgresFlexibleMemoryUsage
+          annotations:
+            summary: "Resource {{`{{`}} $labels.resourceName {{`}}`}} with metrics interval {{`{{`}} $labels.interval {{`}}`}} has memory usage reached to 90%."
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-azuredatabasepostgresflexiblememoryusage"
+            {{- end }}
+          expr: sum by (app,cluster,resourceName,interval) (azure_metrics_database_postgresql_flexible_average_memory_percent_percent) > 90
+          for: 10m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.AzureDatabasePostgresFlexibleLongestQuery | default false) }}
+        - alert: AzureDatabasePostgresFlexibleLongestQuery
+          annotations:
+            summary: "Resource {{`{{`}} $labels.resourceName {{`}}`}} with metrics interval {{`{{`}} $labels.interval {{`}}`}} has memory usage reached to 90%."
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-azuredatabasepostgresflexiblememoryusage"
+            {{- end }}
+          expr: sum by (app,cluster,resourceName,interval) (azure_metrics_database_postgresql_flexible_average_maximum_longest_query_time_sec_seconds) > 10
+          for: 10m
+          labels:
+            severity: warning
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.AzureDatabasePostgresFlexibleLongestQuery | default false) }}
+        - alert: AzureDatabasePostgresFlexibleLongestQuery
+          annotations:
+            summary: "Resource {{`{{`}} $labels.resourceName {{`}}`}} with metrics interval {{`{{`}} $labels.interval {{`}}`}} has queries longer than 30 seconds."
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-azuredatabasepostgresflexiblememoryusage"
+            {{- end }}
+          expr: sum by (app,cluster,resourceName,interval) (azure_metrics_database_postgresql_flexible_average_maximum_longest_query_time_sec_seconds) > 30
+          for: 10m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.AzureDatabasePostgresFlexibleMaxConnections | default false) }}
+        - alert: AzureDatabasePostgresFlexibleMaxConnections
+          annotations:
+            summary: "Resource {{`{{`}} $labels.resourceName {{`}}`}} has active connections more than 80% of max connection. Current is {{`{{`}} $value {{`}}`}}"
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-azuredatabasepostgresflexiblemaxconnections"
+            {{- end }}
+          expr: |
+            sum by (app,cluster,resourceName) (azure_metrics_database_postgresql_flexible_average_active_connections_count)
+              /
+            sum by (app,cluster,resourceName) (azure_metrics_database_postgresql_flexible_maximum_max_connections_count) * 100 > 80
+          for: 10m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.AzureDatabasePostgresFlexibleNoConnections | default false) }}
+        - alert: AzureDatabasePostgresFlexibleNoConnections
+          annotations:
+            summary: "Resource {{`{{`}} $labels.resourceName {{`}}`}} has no active connections for the last 10 minutes."
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-azuredatabasepostgresflexiblenoconnections"
+            {{- end }}
+          expr: |
+            sum by (app,cluster,resourceName) (azure_metrics_database_postgresql_flexible_average_active_connections_count) == 0
+          for: 10m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+            {{- with .Values.defaultRules.extraLabels.l2Support }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.AzureDatabasePostgresFlexibleDeadlocks | default false) }}
+        - alert: AzureDatabasePostgresFlexibleDeadlocks
+          annotations:
+            summary: "Resource {{`{{`}} $labels.resourceName {{`}}`}}, database {{`{{`}} $labels.dimension {{`}}`}} has {{`{{`}} $value {{`}}`}} deadlocks for the last 10m."
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-azuredatabasepostgresflexibledeadlocks"
+            {{- end }}
+          expr: |
+            sum by(app,cluster,resourceName,dimension)(azure_metrics_database_postgresql_flexible_total_db_deadlocks_count) > 10
+          for: 10m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.AzureDatabasePostgresFlexibleDbNotAlive | default false) }}
+        - alert: AzureDatabasePostgresFlexibleDbNotAlive
+          annotations:
+            summary: "Resource {{`{{`}} $labels.resourceName {{`}}`}} is not alive for the last 10m."
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-azuredatabasepostgresflexibledbnotalive "
+            {{- end }}
+          expr: |
+            sum by(app,cluster,resourceName)(azure_metrics_database_postgresql_flexible_maximum_is_db_alive_count) == 0
+          for: 10m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.AzureDatabasePostgresFlexibleFailedConnections | default false) }}
+        - alert: AzureDatabasePostgresFlexibleFailedConnections
+          annotations:
+            summary: "Resource {{`{{`}} $labels.resourceName {{`}}`}} has {{`{{`}} $value {{`}}`}} failed connections for the last 10m."
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-azuredatabasepostgresflexiblefailedconnections"
+            {{- end }}
+          expr: |
+            sum by(app,cluster,resourceName)(azure_metrics_database_postgresql_flexible_total_connections_failed_count) > 0
+          for: 30m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+            {{- with .Values.defaultRules.extraLabels.l2Support }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+    - name: azure-event-hub.rules
+      rules:
+        {{- if not (.Values.defaultRules.disabled.AzureEventhubNamespaceCpuUsage | default false) }}
+        - alert: AzureEventhubNamespaceCpuUsage
+          annotations:
+            summary: "Resource {{`{{`}} $labels.resourceName {{`}}`}} with metrics interval {{`{{`}} $labels.interval {{`}}`}} has cpu usage reached to 80%."
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-azureeventhubcpuusage"
+            {{- end }}
+          expr: sum by (app,cluster,resourceName,interval) (azure_metrics_eventhub_maximum_namespacecpuusage_percent) > 80
+          for: 10m
+          labels:
+            severity: warning
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        - alert: AzureEventhubNamespaceCpuUsage
+          annotations:
+            summary: "Resource {{`{{`}} $labels.resourceName {{`}}`}} with metrics interval {{`{{`}} $labels.interval {{`}}`}} has cpu usage reached to 90%."
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-azuredatabasepostgrescpuusage"
+            {{- end }}
+          expr: sum by (app,cluster,resourceName,interval) (azure_metrics_eventhub_maximum_namespacecpuusage_percent) > 90
+          for: 10m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.AzureEventhubNamespaceMemoryUsage | default false) }}
+        - alert: AzureEventhubNamespaceMemoryUsage
+          annotations:
+            summary: "Resource {{`{{`}} $labels.resourceName {{`}}`}} with metrics interval {{`{{`}} $labels.interval {{`}}`}} has memory usage reached to 80%."
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-azureeventhubmemoryusage"
+            {{- end }}
+          expr: sum by (app,cluster,resourceName,interval) (azure_metrics_eventhub_maximum_namespacememoryusage_percent) > 80
+          for: 10m
+          labels:
+            severity: warning
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        - alert: AzureEventhubNamespaceMemoryUsage
+          annotations:
+            summary: "Resource {{`{{`}} $labels.resourceName {{`}}`}} with metrics interval {{`{{`}} $labels.interval {{`}}`}} has memory usage reached to 90%."
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-azureeventhubmemoryusage"
+            {{- end }}
+          expr: sum by (app,cluster,resourceName,interval) (azure_metrics_eventhub_maximum_namespacememoryusage_percent) > 90
+          for: 10m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.AzureEventhubServerErrors | default false) }}
+        - alert: AzureEventhubServerErrors
+          annotations:
+            summary: "Resource {{`{{`}} $labels.resourceName {{`}}`}} with metrics interval {{`{{`}} $labels.interval {{`}}`}} has server errors for 10m."
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-azureeventhubservererrors"
+            {{- end }}
+          expr: sum by (app,cluster,resourceName,interval) (azure_metrics_eventhub_total_by_entityname_servererrors_count) > 0
+          for: 10m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+            {{- with .Values.defaultRules.extraLabels.l2Support }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.AzureEventhubThrottledRequests | default false) }}
+        - alert: AzureEventhubThrottledRequests
+          annotations:
+            summary: "Resource {{`{{`}} $labels.resourceName {{`}}`}} with metrics interval {{`{{`}} $labels.interval {{`}}`}} has server errors for 10m."
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-azureeventhubthrottledrequests"
+            {{- end }}
+          expr: sum by (app,cluster,resourceName,interval) (azure_metrics_eventhub_total_throttledrequests_count) > 0
+          for: 10m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.AzureEventhubQuotaExceededErrors | default false) }}
+        - alert: AzureEventhubQuotaExceededErrors
+          annotations:
+            summary: "Resource {{`{{`}} $labels.resourceName {{`}}`}} with metrics interval {{`{{`}} $labels.interval {{`}}`}} has quota exceeded errors for 10m."
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-azureeventhubquotaexceedederrors"
+            {{- end }}
+          expr: sum by (app,cluster,resourceName,interval) (azure_metrics_eventhub_total_quotaexceedederrors_count) > 0
+          for: 10m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+    - name: azure-cache-redis.rules
+      rules:
+        {{- if not (.Values.defaultRules.disabled.AzureCacheRedisCpuUsage | default false) }}
+        - alert: AzureCacheRedisCpuUsage
+          annotations:
+            summary: "Resource {{`{{`}} $labels.resourceName {{`}}`}} with metrics interval {{`{{`}} $labels.interval {{`}}`}} has cpu usage reached to 80% for 10m."
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-azurecacherediscpuusage"
+            {{- end }}
+          expr: sum by (app,cluster,resourceName,interval) (azure_metrics_cache_redis_maximum_percentprocessortime_percent) > 80
+          for: 10m
+          labels:
+            severity: warning
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        - alert: AzureCacheRedisCpuUsage
+          annotations:
+            summary: "Resource {{`{{`}} $labels.resourceName {{`}}`}} with metrics interval {{`{{`}} $labels.interval {{`}}`}} has cpu usage reached to 90% for 10m."
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-azurecacherediscpuusage"
+            {{- end }}
+          expr: sum by (app,cluster,resourceName,interval) (azure_metrics_cache_redis_maximum_percentprocessortime_percent) > 90
+          for: 10m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.AzureCacheRedisMemoryUsage | default false) }}
+        - alert: AzureCacheRedisMemoryUsage
+          annotations:
+            summary: "Resource {{`{{`}} $labels.resourceName {{`}}`}} with metrics interval {{`{{`}} $labels.interval {{`}}`}} has memory usage reached to 80% for 10m."
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-azurecacheredismemoryusage"
+            {{- end }}
+          expr: sum by (app,cluster,resourceName,interval) (azure_metrics_cache_redis_maximum_usedmemorypercentage_percent) > 80
+          for: 10m
+          labels:
+            severity: warning
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        - alert: AzureCacheRedisMemoryUsage
+          annotations:
+            summary: "Resource {{`{{`}} $labels.resourceName {{`}}`}} with metrics interval {{`{{`}} $labels.interval {{`}}`}} has memory usage reached to 90% for 10m."
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-azurecacheredismemoryusage"
+            {{- end }}
+          expr: sum by (app,cluster,resourceName,interval) (azure_metrics_cache_redis_maximum_usedmemorypercentage_percent) > 90
+          for: 10m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.AzureCacheRedisServerLoadUsage | default false) }}
+        - alert: AzureCacheRedisServerLoadUsage
+          annotations:
+            summary: "Resource {{`{{`}} $labels.resourceName {{`}}`}} with metrics interval {{`{{`}} $labels.interval {{`}}`}} has server load usage reached to 80% for 10m."
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-azurecacheredisserverloadusage"
+            {{- end }}
+          expr: sum by (app,cluster,resourceName,interval) (azure_metrics_cache_redis_maximum_serverload_percent) > 80
+          for: 10m
+          labels:
+            severity: warning
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        - alert: AzureCacheRedisServerLoadUsage
+          annotations:
+            summary: "Resource {{`{{`}} $labels.resourceName {{`}}`}} with metrics interval {{`{{`}} $labels.interval {{`}}`}} has server load usage reached to 90% for 10m."
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-azurecacheredisserverloadusage"
+            {{- end }}
+          expr: sum by (app,cluster,resourceName,interval) (azure_metrics_cache_redis_maximum_serverload_percent) > 90
+          for: 10m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.AzureCacheRedisErrorOperations | default false) }}
+        - alert: AzureCacheRedisErrorOperations
+          annotations:
+            summary: "Resource {{`{{`}} $labels.resourceName {{`}}`}} with metrics interval {{`{{`}} $labels.interval {{`}}`}} has more than 10 error operations for 10m."
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-azurecacherediserroroperations"
+            {{- end }}
+          expr: sum by (app,cluster,resourceName,interval) (azure_metrics_cache_redis_maximum_errors_count) > 10
+          for: 10m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+            {{- with .Values.defaultRules.extraLabels.l2Support }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.AzureCacheRedisHighConnectedClients | default false) }}
+        - alert: AzureCacheRedisHighConnectedClients
+          annotations:
+            summary: |
+              Resource {{`{{`}} $labels.resourceName {{`}}`}} with metrics interval {{`{{`}} $labels.interval {{`}}`}}
+              with shard ID {{`{{`}} $labels.dimension {{`}}`}} has more than 30000 connected clients for 10m.
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-azurecacheredishighconnectedclients"
+            {{- end }}
+          expr: sum by (resourceName, interval, dimension) (azure_metrics_cache_redis_maximum_connectedclients_count) > 30000
+          for: 10m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+    - name: azure-cosmo-mongodb.rules
+      rules:
+        {{- if not (.Values.defaultRules.disabled.AzureCosmoMongodbCountLatency | default false) }}
+        - alert: AzureCosmoMongodbOperationLatency
+          annotations:
+            summary: "Resource {{`{{`}} $labels.resourceName {{`}}`}} with metrics interval {{`{{`}} $labels.interval {{`}}`}} has count query more than 30s for 5m."
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-azurecosmomongodbcountlatency"
+            {{- end }}
+          expr: sum by (app,cluster,resourceName,interval,dimensionCollectionname,dimensionOperationtype) (azure_metrics_cosmo_mongodb_average_server_side_latency_serversidelatency_milliseconds{dimensionCollectionname!~"<empty>|<Empty>"}) > 30000
+          for: 5m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.AzureCosmoMongodbPhysicalPartitionSize16GB | default false) }}
+        - alert: AzureCosmoMongodbPhysicalPartitionSize16GB
+          annotations:
+            summary: |
+              Resource {{`{{`}} $labels.resourceName {{`}}`}} with metrics interval {{`{{`}} $labels.interval {{`}}`}}
+              has physical partition size higher than 16GB for 10m. Current value: {{`{{`}} $value | humanize1024 {{`}}`}}
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-azurecosmomongodbphysicalpartitionsize16gb"
+            {{- end }}
+          expr: |
+            sum by (app,cluster,resourceName,interval) (
+              azure_metrics_cosmo_physical_partition_size_info_physicalpartitionsizeinfo_bytes
+            ) / 1024 / 1024 / 1024 > 16
+          for: 10m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.AzureCosmoMongodbPhysicalPartitionSize18GB | default false) }}
+        - alert: AzureCosmoMongodbPhysicalPartitionSize18GB
+          annotations:
+            summary: |
+              Resource {{`{{`}} $labels.resourceName {{`}}`}} with metrics interval {{`{{`}} $labels.interval {{`}}`}}
+              has physical partition size higher than 18GB for 10m. Current value: {{`{{`}} $value | humanize1024 {{`}}`}}
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-azurecosmomongodbphysicalpartitionsize18gb"
+            {{- end }}
+          expr: |
+            sum by (app,cluster,resourceName,interval) (
+              azure_metrics_cosmo_physical_partition_size_info_physicalpartitionsizeinfo_bytes
+            ) / 1024 / 1024 / 1024 > 18
+          for: 10m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.AzureCosmoMongodbPhysicalPartitionSize26GB | default false) }}
+        - alert: AzureCosmoMongodbPhysicalPartitionSize26GB
+          annotations:
+            summary: |
+              Resource {{`{{`}} $labels.resourceName {{`}}`}} with metrics interval {{`{{`}} $labels.interval {{`}}`}}
+              has physical partition size higher than 26GB for 10m. Current value: {{`{{`}} $value | humanize1024 {{`}}`}}
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-azurecosmomongodbphysicalpartitionsize26gb"
+            {{- end }}
+          expr: |
+            sum by (app,cluster,resourceName,interval) (
+              azure_metrics_cosmo_physical_partition_size_info_physicalpartitionsizeinfo_bytes
+            ) / 1024 / 1024 / 1024 > 26
+          for: 10m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.AzureCosmoMongodbPhysicalPartitionSize28GB | default false) }}
+        - alert: AzureCosmoMongodbPhysicalPartitionSize28GB
+          annotations:
+            summary: |
+              Resource {{`{{`}} $labels.resourceName {{`}}`}} with metrics interval {{`{{`}} $labels.interval {{`}}`}}
+              has physical partition size higher than 28GB for 10m. Current value: {{`{{`}} $value | humanize1024 {{`}}`}}
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-azurecosmomongodbphysicalpartitionsize28gb"
+            {{- end }}
+          expr: |
+            sum by (app,cluster,resourceName,interval) (
+              azure_metrics_cosmo_physical_partition_size_info_physicalpartitionsizeinfo_bytes
+            ) / 1024 / 1024 / 1024 > 28
+          for: 10m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.AzureCosmoMongodbCollectionUnhealthy | default false) }}
+        - alert: AzureCosmoMongodbCollectionUnhealthy
+          annotations:
+            summary: |
+              CosmosDB instance {{`{{`}} $labels.resourceName {{`}}`}} has collection {{`{{`}} $labels.dimension {{`}}`}} disappeared from Prometheus for 2 hours.
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-azurecosmomongodbcollectionunhealthy"
+            {{- end }}
+          expr: |
+            sum by (app,cluster,resourceName,dimension)
+            (count(azure_metrics_cosmo_document_count_total_by_collection_documentcount_count offset 1h) by (dimension) unless count(azure_metrics_cosmo_document_count_total_by_collection_documentcount_count) by (dimension)) > 0
+          for: 90m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+            {{- with .Values.defaultRules.extraLabels.l2Support }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.AzureCosmoMongodbErrorRequests | default false) }}
+        - alert: AzureCosmoMongodbErrorRequests
+          annotations:
+            summary: |
+              CosmosDB instance {{`{{`}} $labels.resourceName {{`}}`}} has {{`{{`}} $value {{`}}`}} error requests code {{`{{`}} $labels.dimension {{`}}`}} for the last 10 mins.
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-azurecosmomongodberrorrequests"
+            {{- end }}
+          expr: |
+            sum by (app,cluster,resourceName,dimensionErrorcode,dimensionCollectionname,dimensionCommandname) (
+              azure_metrics_cosmo_mongodb_failed_request_mongorequests_count{dimensionErrorcode!~"0|2|11000|115"}
+            ) > 0
+          for: 10m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+            {{- with .Values.defaultRules.extraLabels.l2Support }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.AzureCosmoMongodbServiceAvailability | default false) }}
+        - alert: AzureCosmoMongodbServiceAvailability
+          annotations:
+            summary: |
+              CosmosDB instance {{`{{`}} $labels.resourceName {{`}}`}} has service availability less than {{`{{`}} $value {{`}}`}}% for the last 10 mins.
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-azurecosmomongodbserviceavailability"
+            {{- end }}
+          expr: |
+            sum by (app,cluster,resourceName,dimension) (
+              azure_metrics_cosmo_mongodb_average_serviceavailability_percent
+            ) < 90
+          for: 10m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+    - name: azure-frontdoor-cdn.rules
+      rules:
+        {{- if not (.Values.defaultRules.disabled.AzureFrontdoorBackendLatency | default false) }}
+        - alert: AzureFrontdoorBackendLatency
+          annotations:
+            summary: |
+              Resource {{`{{`}} $labels.resourceName {{`}}`}} with metrics interval {{`{{`}} $labels.interval {{`}}`}} has
+              backend {{`{{`}} $labels.dimension {{`}}`}} latency more than 30s for 10m.
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-azurefrontdoorbackendlatency"
+            {{- end }}
+          expr: |
+            sum by (app,cluster,resourceName,dimension) (
+              azure_metrics_fd_backend_request_latency_backendrequestlatency_milliseconds
+            ) > 30000
+          for: 10m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.AzureFrontdoorBackendRequestFailed | default false) }}
+        - alert: AzureFrontdoorBackendRequestFailed
+          annotations:
+            summary: |
+              Resource {{`{{`}} $labels.resourceName {{`}}`}} with metrics interval {{`{{`}} $labels.interval {{`}}`}} has
+              many backend failed requests with status code {{`{{`}} $labels.dimensionHttpStatus {{`}}`}} to backend {{`{{`}} $labels.dimensionBackend {{`}}`}} for 10m.
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-azurefrontdoorbackendrequestfailed"
+            {{- end }}
+          expr: |
+            sum by (app,cluster,resourceName,dimensionBackend,dimensionHttpStatus) (
+                azure_metrics_fd_backend_request_count_backendrequestcount_count{dimensionHttpStatus=~"5[0-9][0-9]"}
+            ) > 0
+          for: 10m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.AzureFrontdoorClientRequestFailed | default false) }}
+        - alert: AzureFrontdoorClientRequestFailed
+          annotations:
+            summary: |
+              Resource {{`{{`}} $labels.resourceName {{`}}`}} with metrics interval {{`{{`}} $labels.interval {{`}}`}} has
+              many client failed requests with status code {{`{{`}} $labels.dimensionHttpStatus {{`}}`}} from country {{`{{`}} $labels.dimensionClientCountry {{`}}`}} for 10m.
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-azurefrontdoorclientrequestfailed"
+            {{- end }}
+          expr: |
+            sum by (app,cluster,resourceName,dimensionClientCountry,dimensionHttpStatus) (
+                azure_metrics_fd_request_count_requestcount_count{dimensionHttpStatus=~"5[0-9][0-9]"}
+            ) > 0
+          for: 10m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+{{- end }}

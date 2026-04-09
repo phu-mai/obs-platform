@@ -1,0 +1,158 @@
+{{- $kubeTargetVersion := default .Capabilities.KubeVersion.GitVersion .Values.kubeTargetVersionOverride }}
+{{- if and (semverCompare ">=1.14.0-0" $kubeTargetVersion) (semverCompare "<9.9.9-9" $kubeTargetVersion) .Values.defaultRules.rules.blackboxExporter }}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ template "kube-prometheus-stack-add-ons.fullname" . }}-blackbox-exporter
+  namespace: {{ template "kube-prometheus-stack-add-ons.namespace" . }}
+  labels:
+{{ include "kube-prometheus-stack-add-ons.labels" . | indent 4 }}
+spec:
+  groups:
+    - name: blackbox-exporter-recording.rules
+      rules:
+        - record: slo:probe_success:sum_avg_over_time:1h
+          expr: |-
+            sum without (instance) (
+              sum_over_time(probe_success[1h:])
+                /
+              count_over_time(probe_success[1h:])
+            ) * 100
+        - record: slo:probe_success:sum_avg_over_time:1d
+          expr: |-
+            sum without (instance) (
+              sum_over_time(probe_success[1d:])
+                /
+              count_over_time(probe_success[1d:])
+            ) * 100
+        - record: slo:probe_success:sum_avg_over_time:7d
+          expr: |-
+            sum without (instance) (
+              sum_over_time(probe_success[7d:])
+                /
+              count_over_time(probe_success[7d:])
+            ) * 100
+        - record: slo:probe_success:sum_avg_over_time:14d
+          expr: |-
+            sum without (instance) (
+              sum_over_time(probe_success[14d:])
+                /
+              count_over_time(probe_success[14d:])
+            ) * 100
+        - record: slo:probe_success:sum_avg_over_time:30d
+          expr: |-
+            sum without (instance) (
+              sum_over_time(probe_success[30d:])
+                /
+              count_over_time(probe_success[30d:])
+            ) * 100
+    - name: blackbox-exporter.rules
+      rules:
+        {{- if not (.Values.defaultRules.disabled.BlackboxExporterHTTPEndpointDown | default false) }}
+        - alert: BlackboxExporterHTTPEndpointDown
+          annotations:
+            summary: 'HTTP target "{{`{{`}} $labels.target {{`}}`}}" has been down for 5m'
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-blackboxexporterendpointdown"
+            {{- end }}
+          expr: |-
+            sum by (app,cluster,target) (
+                probe_success{module="http_2xx_3xx_4xx",job="monitoring/blackbox-exporter/http",target!~".*minio.*"}
+            ) == 0
+          for: 5m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+            {{- with .Values.defaultRules.extraLabels.l2Support }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.BlackboxExporterFmopAppUrlEndpointDown | default false) }}
+        - alert: BlackboxExporterFmopBeUrlEndpointDown
+          annotations:
+            summary: 'The readiness URL "{{`{{`}} $labels.target {{`}}`}}" for FMOP Backend app  has been down for 2m'
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-blackboxexporterfmopappurlendpointdown"
+            {{- end }}
+          expr: |-
+            sum by (app,cluster,target) (
+                probe_success{module="http_2xx_3xx_4xx",job="fmop-be-readiness-check",target!~"reconciliation-service.*"}
+            ) == 0
+          for: 5m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.BlackboxExporteriMessageHTTPEndpointDown | default false) }}
+        - alert: BlackboxExporteriMessageHTTPEndpointDown
+          annotations:
+            summary: 'The iGateway URL "{{`{{`}} $labels.target {{`}}`}}" has been down for 15m'
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-blackboxexporterimessagehttpendpointdown"
+            {{- end }}
+          expr: |-
+            (
+              sum by (app,cluster,target,domain) (probe_success{module="http_2xx_3xx_4xx",target=~".*/imessage/v1/secure-ping",job=~"igateway-probe.*"})
+                  * on (domain) group_left()
+              (up{job="node-exporter",sysname="Darwin"} == 1)
+            ) == 0
+          for: 15m
+          labels:
+            severity: warning
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+            {{- with .Values.defaultRules.extraLabels.l1Support }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.BlackboxExporterWhatsappEndpointDown | default false) }}
+        - alert: BlackboxExporterWhatsappEndpointDown
+          annotations:
+            summary: 'Whatsapp number "{{`{{`}} $labels.number {{`}}`}}" has been down for 2m'
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-blackboxexporterendpointdown"
+            {{- end }}
+          expr: |-
+            sum by (app,cluster,target,number) (
+                probe_success{module="http_whatsapp_2xx",job="whatsapp-health"}
+            ) == 0
+          for: 10m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.BlackboxExporterEndpointCertificateExpiry | default false) }}
+        - alert: BlackboxExporterEndpointCertificateExpiry
+          annotations:
+            summary: 'The target certificate "{{`{{`}} $labels.target {{`}}`}}" scraped by module "{{`{{`}} $labels.module {{`}}`}}" will be expired in 30 days'
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-blackboxexporterendpointcertificateexpiry"
+            {{- end }}
+          expr: probe_ssl_earliest_cert_expiry - time() < 86400 * 15
+          labels:
+            severity: warning
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        - alert: BlackboxExporterEndpointCertificateExpiry
+          annotations:
+            summary: 'The target certificate "{{`{{`}} $labels.target {{`}}`}}" scraped by module "{{`{{`}} $labels.module {{`}}`}}" will be expired in 7 days'
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-blackboxexporterendpointcertificateexpiry"
+            {{- end }}
+          expr: probe_ssl_earliest_cert_expiry - time() < 86400 * 7
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+{{- end }}

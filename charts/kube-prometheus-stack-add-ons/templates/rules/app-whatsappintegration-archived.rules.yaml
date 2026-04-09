@@ -1,0 +1,62 @@
+{{- $kubeTargetVersion := default .Capabilities.KubeVersion.GitVersion .Values.kubeTargetVersionOverride }}
+{{- if and (semverCompare ">=1.14.0-0" $kubeTargetVersion) (semverCompare "<9.9.9-9" $kubeTargetVersion) .Values.defaultRules.rules.appWhatsappintegrationArchived }}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ template "kube-prometheus-stack-add-ons.fullname" . }}-app-whatsappintegration-archived
+  namespace: {{ template "kube-prometheus-stack-add-ons.namespace" . }}
+  labels:
+{{ include "kube-prometheus-stack-add-ons.labels" . | indent 4 }}
+spec:
+  groups:
+    - name: app-whatsappintegration-archived.rules
+      rules:
+        {{- if not (.Values.defaultRules.disabled.WAAEmailRegistrationInstructionFailed | default false) }}
+        - alert: WAAEmailRegistrationInstructionFailed
+          annotations:
+            summary: "whatsappintegration-archived service detected AM failed to follow email instruction"
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-waaemailregistrationinstructionfailed"
+            {{- end }}
+            description: |
+              This alert will be triggered when whatsappintegration-archived detected AM to follow email instruction.
+              e.g scan QR code on instruction email
+          expr: increase((sum by (app,cluster,lxp_version) (waa_registration_by_instruction_link_total{app="whatsappintegration-archived",status="failed",success="false"}) OR vector(0))[5m:]) > 0
+          for: 2m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.WAAImportMessageMaxRetryExceeded | default false) }}
+        - alert: WAAImportMessageMaxRetryExceeded
+          annotations:
+            summary: "whatsappintegration-archived failed to import message after max retry"
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-waaimportmessagemaxretryexceeded"
+            {{- end }}
+            description: |
+              This alert will be triggered when whatsapp archiving failed imported message after max retry metric.
+              Try this Loki query for further troubleshooting
+                - {app="whatsappintegration-archived"}
+          expr: |
+            (
+              sum by (app,cluster,lxp_version,integration_channel,company) (waa_failed_imported_message_after_max_retry_total{app="whatsappintegration-archived"})
+                unless
+              sum by (app,cluster,lxp_version,integration_channel,company) (waa_failed_imported_message_after_max_retry_total{app="whatsappintegration-archived"} offset 5m)
+            )
+            or
+            (
+            increase(
+              (sum by (app,cluster,lxp_version,integration_channel,company) (waa_failed_imported_message_after_max_retry_total{app="whatsappintegration-archived"}))[5m:])
+            ) > 100
+          for: 0m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+{{- end }}

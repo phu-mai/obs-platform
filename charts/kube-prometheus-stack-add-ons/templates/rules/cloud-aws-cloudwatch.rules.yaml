@@ -1,0 +1,1013 @@
+{{- $kubeTargetVersion := default .Capabilities.KubeVersion.GitVersion .Values.kubeTargetVersionOverride }}
+{{- if and (semverCompare ">=1.14.0-0" $kubeTargetVersion) (semverCompare "<9.9.9-9" $kubeTargetVersion) .Values.defaultRules.rules.cloudAwsCloudwatch }}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ template "kube-prometheus-stack-add-ons.fullname" . }}-cloudwatch
+  namespace: {{ template "kube-prometheus-stack-add-ons.namespace" . }}
+  labels:
+{{ include "kube-prometheus-stack-add-ons.labels" . | indent 4 }}
+spec:
+  groups:
+    - name: docdb.rules
+      interval: 6m
+      rules:
+        {{- if not (.Values.defaultRules.disabled.DocumentDBCPUUtilization | default false) }}
+        - alert: DocumentDBCPUUtilization
+          annotations:
+            summary: |
+              DocumentDB instance {{`{{`}} $labels.dbinstance_indentifier {{`}}`}} in region {{`{{`}} $labels.region {{`}}`}}
+              has cpu utilization reached more than 90% in last 15m.
+              Current is {{`{{`}} $value {{`}}`}}.
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-documentdbcpuutilization"
+            {{- end }}
+          expr: aws_docdb_cpuutilization_average offset 5m > 90
+          for: 15m
+          labels:
+            severity: warning
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        - alert: DocumentDBCPUUtilization
+          annotations:
+            summary: |
+              DocumentDB instance {{`{{`}} $labels.dbinstance_indentifier {{`}}`}} in region {{`{{`}} $labels.region {{`}}`}}
+              has cpu utilization reached more than 90% in last 30m.
+              Current is {{`{{`}} $value {{`}}`}}.
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-documentdbcpuutilization"
+            {{- end }}
+          expr: aws_docdb_cpuutilization_average offset 5m > 90
+          for: 30m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.DocumentDBLowMemNumOperationsThrottled | default false) }}
+        - alert: DocumentDBLowMemNumOperationsThrottled
+          annotations:
+            summary: |
+              DocumentDB instance {{`{{`}} $labels.dbinstance_indentifier {{`}}`}} in region {{`{{`}} $labels.region {{`}}`}}
+              has the number of requests that are throttled due to low available memory in a one-minute period higher than 10 in last 5m.
+              Current is {{`{{`}} $value {{`}}`}}.
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-documentdblowmemnumoperationsthrottled"
+            {{- end }}
+          expr: aws_docdb_low_mem_num_operations_throttled_average offset 5m > 10
+          for: 5m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.DocumentDBLowMemThrottleQueueDepth | default false) }}
+        - alert: DocumentDBLowMemThrottleQueueDepth
+          annotations:
+            summary: |
+              DocumentDB instance {{`{{`}} $labels.dbinstance_indentifier {{`}}`}} in region {{`{{`}} $labels.region {{`}}`}}
+              has the queue depth for requests that are throttled due to low available memory taken at a one-minute frequency higher than 10 in last 5m.
+              Current is {{`{{`}} $value {{`}}`}}.
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-documentdblowmemthrottlequeuedepth"
+            {{- end }}
+          expr: aws_docdb_low_mem_throttle_queue_depth_average offset 5m > 10
+          for: 5m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.DocumentDBLowMemThrottleMaxQueueDepth | default false) }}
+        - alert: DocumentDBLowMemThrottleMaxQueueDepth
+          annotations:
+            summary: |
+              DocumentDB instance {{`{{`}} $labels.dbinstance_indentifier {{`}}`}} in region {{`{{`}} $labels.region {{`}}`}}
+              has the maximum queue depth for requests that are throttled due to low available memory in a one-minute period higher than 10 in last 5m.
+              Current is {{`{{`}} $value {{`}}`}}.
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-DocumentDBLowMemThrottleMaxQueueDepth"
+            {{- end }}
+          expr: aws_docdb_low_mem_throttle_max_queue_depth_average offset 5m > 10
+          for: 5m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.DocumentDBDatabaseConnections | default false) }}
+        - alert: DocumentDBDatabaseConnections
+          annotations:
+            summary: |
+              DocumentDB instance {{`{{`}} $labels.dbinstance_indentifier {{`}}`}} in region {{`{{`}} $labels.region {{`}}`}}
+              has more than 1000 connections in last 5m.
+              Current is {{`{{`}} $value {{`}}`}}.
+              Ref. https://docs.aws.amazon.com/documentdb/latest/developerguide/limits.html#limits-suported_instance_types
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-documentdbdatabaseconnections"
+            {{- end }}
+          expr: aws_docdb_database_connections_average offset 5m > 1000
+          for: 10m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.DocumentDBBufferCacheHitRatio | default false) }}
+        - alert: DocumentDBBufferCacheHitRatio
+          annotations:
+            summary: |
+              DocumentDB instance {{`{{`}} $labels.dbinstance_indentifier {{`}}`}} in region {{`{{`}} $labels.region {{`}}`}}
+              has cache hit rate less than 95% in last 5m. Current is {{`{{`}} $value {{`}}`}}.
+              A high BCHR means that the buffer cache is efficiently caching the data pages in memory.
+              This results in a relatively low number of reads from disk and prevents a memory bottleneck from forming.
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-documentdbbuffercachehitratio"
+            {{- end }}
+          expr: aws_docdb_buffer_cache_hit_ratio_average offset 5m < 95
+          for: 15m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.DocumentDBIndexBufferCacheHitRatio | default false) }}
+        - alert: DocumentDBIndexBufferCacheHitRatio
+          annotations:
+            summary: |
+              DocumentDB instance {{`{{`}} $labels.dbinstance_indentifier {{`}}`}} in region {{`{{`}} $labels.region {{`}}`}}
+              has index cache hit rate less than 95% in last 5m. Current is {{`{{`}} $value {{`}}`}}.
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-documentdbindexbuffercachehitratio"
+            {{- end }}
+          expr: aws_docdb_index_buffer_cache_hit_ratio_average offset 5m < 95
+          for: 15m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.DocumentDBDatabaseCursors | default false) }}
+        - alert: DocumentDBDatabaseCursors
+          annotations:
+            summary: |
+              DocumentDB instance {{`{{`}} $labels.dbinstance_indentifier {{`}}`}} in region {{`{{`}} $labels.region {{`}}`}}
+              is more than 300 open cursors in last 15m. Current is {{`{{`}} $value {{`}}`}}.
+              Ref. https://docs.aws.amazon.com/documentdb/latest/developerguide/limits.html#limits-suported_instance_types
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-DocumentDBDatabaseCursors"
+            {{- end }}
+          expr: aws_docdb_database_cursors_max_maximum offset 5m > 300
+          for: 15m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.DocumentDBDBClusterReplicaLagMaximum | default false) }}
+        - alert: DocumentDBDBClusterReplicaLagMaximum
+          annotations:
+            summary: |
+              DocumentDB cluster {{`{{`}} $labels.dbcluster_indentifier {{`}}`}} in region {{`{{`}} $labels.region {{`}}`}}
+              experiences lagging over 5 minutes. Current is {{`{{`}} $value {{`}}`}}.
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-documentdbdbclusterreplicalagmaximum"
+            {{- end }}
+          expr: aws_docdb_dbcluster_replica_lag_maximum_maximum offset 5m > 300000
+          for: 5m
+          labels:
+            severity: warning
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        - alert: DocumentDBDBClusterReplicaLagMaximum
+          annotations:
+            summary: |
+              DocumentDB cluster {{`{{`}} $labels.dbcluster_indentifier {{`}}`}} in region {{`{{`}} $labels.region {{`}}`}}
+              experiences lagging over 10 minutes. Current is {{`{{`}} $value {{`}}`}}.
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-documentdbdbclusterreplicalagmaximum"
+            {{- end }}
+          expr: aws_docdb_dbcluster_replica_lag_maximum_maximum offset 5m > 600000
+          for: 5m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+    - name: elasticache.rules
+      interval: 6m
+      rules:
+        {{- if not (.Values.defaultRules.disabled.ElasticacheEngineCPUUtilization | default false) }}
+        - alert: ElasticacheEngineCPUUtilization
+          annotations:
+            summary: |
+              Elasticache cluster {{`{{`}} $labels.cluster {{`}}`}} in region {{`{{`}} $labels.region {{`}}`}}
+              has cpu utilization reached more than 90% in last 5m.
+              Current is {{`{{`}} $value {{`}}`}}.
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-elasticacheenginecpuutilization"
+            {{- end }}
+          expr: aws_elasticache_engine_cpuutilization_average offset 5m > 80
+          for: 15m
+          labels:
+            severity: warning
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        - alert: ElasticacheEngineCPUUtilization
+          annotations:
+            summary: |
+              Elasticache cluster {{`{{`}} $labels.cluster {{`}}`}} in region {{`{{`}} $labels.region {{`}}`}}
+              has cpu utilization reached more than 90% in last 5m.
+              Current is {{`{{`}} $value {{`}}`}}.
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-elasticacheenginecpuutilization"
+            {{- end }}
+          expr: aws_elasticache_engine_cpuutilization_average offset 5m > 90
+          for: 15m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.ElasticacheCurrConnections | default false) }}
+        - alert: ElasticacheCurrConnections
+          annotations:
+            summary: |
+              Elasticache cluster {{`{{`}} $labels.cluster {{`}}`}} in region {{`{{`}} $labels.region {{`}}`}}
+              has high number of concurrent and active connections registered by the Redis engine more than 80% of 65000.
+              Current is {{`{{`}} $value {{`}}`}}.
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-elasticachecurrconnections"
+            {{- end }}
+          expr: aws_elasticache_curr_connections_average offset 5m > 80*65000/100
+          for: 15m
+          labels:
+            severity: warning
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        - alert: ElasticacheCurrConnections
+          annotations:
+            summary: |
+              Elasticache cluster {{`{{`}} $labels.cluster {{`}}`}} in region {{`{{`}} $labels.region {{`}}`}}
+              has high number of concurrent and active connections registered by the Redis engine more than 90% of 65000.
+              Current is {{`{{`}} $value {{`}}`}}.
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-elasticachecurrconnections"
+            {{- end }}
+          expr: aws_elasticache_curr_connections_average offset 5m > 90*65000/100
+          for: 15m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.ElasticacheMemoryUsagePercentage | default false) }}
+        - alert: ElasticacheMemoryUsagePercentage
+          annotations:
+            summary: |
+              Elasticache cluster {{`{{`}} $labels.cluster {{`}}`}} in region {{`{{`}} $labels.region {{`}}`}}
+              has high memory usage more than 80% for 15m.
+              Current is {{`{{`}} $value {{`}}`}}.
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-elasticachememoryusagepercentage"
+            {{- end }}
+          expr: aws_elasticache_database_memory_usage_percentage_average offset 5m > 80
+          for: 15m
+          labels:
+            severity: warning
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        - alert: ElasticacheMemoryUsagePercentage
+          annotations:
+            summary: |
+              Elasticache cluster {{`{{`}} $labels.cluster {{`}}`}} in region {{`{{`}} $labels.region {{`}}`}}
+              has high memory usage more than 90% for 15m.
+              Current is {{`{{`}} $value {{`}}`}}.
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-elasticachememoryusagepercentage"
+            {{- end }}
+          expr: aws_elasticache_database_memory_usage_percentage_average offset 5m > 90
+          for: 15m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.ElasticacheAuthenticationFailures | default false) }}
+        - alert: ElasticacheAuthenticationFailures
+          annotations:
+            summary: |
+              Elasticache cluster {{`{{`}} $labels.cluster {{`}}`}} in region {{`{{`}} $labels.region {{`}}`}}
+              has failed authentication for 5m.
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-elasticacheauthenticationfailures"
+            {{- end }}
+          expr: aws_elasticache_authentication_failures_average offset 5m > 1
+          for: 5m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.ElasticacheReplicationLag | default false) }}
+        - alert: ElasticacheReplicationLag
+          annotations:
+            summary: |
+              Elasticache cluster {{`{{`}} $labels.cluster {{`}}`}} in region {{`{{`}} $labels.region {{`}}`}}
+              has replication lag more than 30 seconds for the last 15m.
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-elasticachereplicationlag"
+            {{- end }}
+          expr: aws_elasticache_replication_lag_average offset 5m > 30000
+          for: 15m
+          labels:
+            severity: warning
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        - alert: ElasticacheReplicationLag
+          annotations:
+            summary: |
+              Elasticache cluster {{`{{`}} $labels.cluster {{`}}`}} in region {{`{{`}} $labels.region {{`}}`}}
+              has replication lag more than 60 seconds for the last 15m.
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-elasticachereplicationlag"
+            {{- end }}
+          expr: aws_elasticache_replication_lag_average offset 5m > 60000
+          for: 15m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+    - name: opensearch.rules
+      interval: 6m
+      rules:
+        {{- if not (.Values.defaultRules.disabled.OpenSearchClusterStatusRed | default false) }}
+        - alert: OpenSearchClusterStatusRed
+          annotations:
+            summary: |
+              OpenSearch service domain {{`{{`}} $labels.domain_name {{`}}`}} in region {{`{{`}} $labels.region {{`}}`}}
+              has cluster status red for 10m."
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-opensearchclusterstatusred"
+            {{- end }}
+          expr: aws_es_cluster_status_red_maximum offset 5m > 1
+          for: 10m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.OpenSearchClusterStatusYellow | default false) }}
+        - alert: OpenSearchClusterStatusYellow
+          annotations:
+            summary: |
+              OpenSearch service domain {{`{{`}} $labels.domain_name {{`}}`}} in region {{`{{`}} $labels.region {{`}}`}}
+              has cluster status yellow for 10m."
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-opensearchclusterstatusyellow"
+            {{- end }}
+          expr: aws_es_cluster_status_yellow_maximum offset 5m > 1
+          for: 10m
+          labels:
+            severity: warning
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.OpenSearchFreeStorageSpace | default false) }}
+        - alert: OpenSearchFreeStorageSpace
+          annotations:
+            summary: |
+              OpenSearch service domain {{`{{`}} $labels.domain_name {{`}}`}} in region {{`{{`}} $labels.region {{`}}`}}
+              has free storage less than 15GB.
+              Current is {{`{{`}} $value {{`}}`}}.
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-opensearchfreestoragespace"
+            {{- end }}
+          expr: aws_es_free_storage_space_average offset 5m < 15360
+          for: 15m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        - alert: OpenSearchFreeStorageSpace
+          annotations:
+            summary: |
+              OpenSearch service domain {{`{{`}} $labels.domain_name {{`}}`}} in region {{`{{`}} $labels.region {{`}}`}}
+              has free storage less than 5GB.
+              Current is {{`{{`}} $value {{`}}`}}.
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-opensearchfreestoragespace"
+            {{- end }}
+          expr: aws_es_free_storage_space_average offset 5m < 5120
+          for: 15m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        - alert: OpenSearchFreeStorageSpace
+          annotations:
+            summary: |
+              OpenSearch service domain {{`{{`}} $labels.domain_name {{`}}`}} in region {{`{{`}} $labels.region {{`}}`}}
+              has free storage less than 5GB.
+              Current is {{`{{`}} $value {{`}}`}}.
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-opensearchfreestoragespace"
+            {{- end }}
+          expr: aws_es_free_storage_space_average offset 5m < 3072
+          for: 15m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        - alert: OpenSearchFreeStorageSpace
+          annotations:
+            summary: |
+              OpenSearch service domain {{`{{`}} $labels.domain_name {{`}}`}} in region {{`{{`}} $labels.region {{`}}`}}
+              has free storage less than 1GB.
+              Current is {{`{{`}} $value {{`}}`}}.
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-opensearchfreestoragespace"
+            {{- end }}
+          expr: aws_es_free_storage_space_average offset 5m < 1024
+          for: 15m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.OpenSearchClusterIndexWritesBlocked | default false) }}
+        - alert: OpenSearchClusterIndexWritesBlocked
+          annotations:
+            summary: |
+              OpenSearch service domain {{`{{`}} $labels.domain_name {{`}}`}} in region {{`{{`}} $labels.region {{`}}`}}
+              is blocking write requests.
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-opensearchclusterindexwritesblocked"
+            {{- end }}
+          expr: aws_es_cluster_index_writes_blocked_average offset 5m >= 1
+          for: 5m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.OpenSearchCPUUtilization | default false) }}
+        - alert: OpenSearchCPUUtilization
+          annotations:
+            summary: |
+              OpenSearch service domain {{`{{`}} $labels.domain_name {{`}}`}} in region {{`{{`}} $labels.region {{`}}`}}
+              has CPU Utilization more than 90% for the 15m.
+              Current is {{`{{`}} $value {{`}}`}}.
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-opensearchcpuutilization"
+            {{- end }}
+          expr: aws_es_cpuutilization_average offset 5m > 90
+          for: 15m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.OpenSearchShardsActive | default false) }}
+        - alert: OpenSearchShardsActive
+          annotations:
+            summary: |
+              OpenSearch service domain {{`{{`}} $labels.domain_name {{`}}`}} in region {{`{{`}} $labels.region {{`}}`}}
+              has more than 1000 shards for the last 15m.
+              Current is {{`{{`}} $value {{`}}`}}.
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-opensearchshardsactive"
+            {{- end }}
+          expr: aws_es_shards_active_average offset 5m >= 1000
+          for: 15m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.OpenSearchMasterReachableFromNode | default false) }}
+        - alert: OpenSearchMasterReachableFromNode
+          annotations:
+            summary: |
+              OpenSearch service domain {{`{{`}} $labels.domain_name {{`}}`}} in region {{`{{`}} $labels.region {{`}}`}}
+              is stopped or unreachable for 15m.
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-opensearchmasterreachablefromnode"
+            {{- end }}
+          expr: aws_es_master_reachable_from_node_average offset 5m != 1
+          for: 15m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.OpenSearchThreadpoolWriteQueue | default false) }}
+        - alert: OpenSearchThreadpoolWriteQueue
+          annotations:
+            summary: |
+              OpenSearch service domain {{`{{`}} $labels.domain_name {{`}}`}} in region {{`{{`}} $labels.region {{`}}`}}
+              has high number of queued tasks in the write thread pool. Current is {{`{{`}} $value {{`}}`}}.
+              This alert tells you whether a request is being rejected because of high CPU usage or high indexing concurrency.
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-opensearchthreadpoolwritequeue"
+            {{- end }}
+          expr: aws_es_threadpool_write_queue_average offset 5m >= 200
+          for: 15m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.OpenSearchThreadpoolWriteRejected | default false) }}
+        - alert: OpenSearchThreadpoolWriteRejected
+          annotations:
+            summary: |
+              OpenSearch service domain {{`{{`}} $labels.domain_name {{`}}`}} in region {{`{{`}} $labels.region {{`}}`}}
+              has high number of rejected tasks in the write thread pool. Current is {{`{{`}} $value {{`}}`}}.
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-opensearchthreadpoolwriterejected"
+            {{- end }}
+          expr: aws_es_threadpool_write_rejected_average offset 5m > 0
+          for: 15m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.OpenSearchDiskQueueDepth | default false) }}
+        - alert: OpenSearchDiskQueueDepth
+          annotations:
+            summary: |
+              OpenSearch service domain {{`{{`}} $labels.domain_name {{`}}`}} in region {{`{{`}} $labels.region {{`}}`}}
+              has the number of I/O requests higher than 100. that are queued at a time against the storage. Current is {{`{{`}} $value {{`}}`}}.
+              This could indicate a surge in requests or Amazon EBS throttling, resulting in increased latency.
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-opensearchdiskqueuedepth"
+            {{- end }}
+          expr: aws_es_disk_queue_depth_average offset 5m > 100
+          for: 15m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+    - name: rds.rules
+      interval: 6m
+      rules:
+        {{- if not (.Values.defaultRules.disabled.RDSDatabaseConnections | default false) }}
+        - alert: RDSDatabaseConnections
+          annotations:
+            summary: |
+              RDS DB Indentifier in {{`{{`}} $labels.dbinstance_identifier {{`}}`}} in region {{`{{`}} $labels.region {{`}}`}}
+              connections are more than 1000 connections in last 15m. Current is {{`{{`}} $value {{`}}`}}.
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-rdsdatabaseconnections"
+            {{- end }}
+          expr: aws_rds_database_connections_average offset 5m > 1000
+          for: 15m
+          labels:
+            severity: warning
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        - alert: RDSDatabaseConnections
+          annotations:
+            summary: |
+              RDS DB Indentifier in {{`{{`}} $labels.dbinstance_identifier {{`}}`}} in region {{`{{`}} $labels.region {{`}}`}}
+              connections are more than 2000 connections in last 15m. Current is {{`{{`}} $value {{`}}`}}.
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-rdsdatabaseconnections"
+            {{- end }}
+          expr: aws_rds_database_connections_average offset 5m > 2000
+          for: 15m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.RDSFreeableMemory | default false) }}
+        - alert: RDSFreeableMemory
+          annotations:
+            summary: |
+              RDS DB Indentifier in {{`{{`}} $labels.dbinstance_identifier {{`}}`}} in region {{`{{`}} $labels.region {{`}}`}}
+              memory is 1GB. Current is {{`{{`}} $value {{`}}`}}.
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-rdsfreeablememory"
+            {{- end }}
+          expr: aws_rds_freeable_memory_average offset 5m < (1024 * 1024 * 1024)
+          for: 5m
+          labels:
+            severity: warning
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        - alert: RDSFreeableMemory
+          annotations:
+            summary: |
+              RDS DB Indentifier in {{`{{`}} $labels.dbinstance_identifier {{`}}`}} in region {{`{{`}} $labels.region {{`}}`}}
+              memory is 512MB. Current is {{`{{`}} $value {{`}}`}}.
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-rdsfreeablememory"
+            {{- end }}
+          expr: aws_rds_freeable_memory_average offset 5m < (512 * 1024 * 1024)
+          for: 5m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.RDSFreeStorageSpace | default false) }}
+        - alert: RDSFreeStorageSpace
+          annotations:
+            summary: |
+              RDS DB Indentifier in {{`{{`}} $labels.dbinstance_identifier {{`}}`}} in region {{`{{`}} $labels.region {{`}}`}}
+              free storage is less than 1GB. Current is {{`{{`}} $value {{`}}`}}.
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-rdsfreestoragespace"
+            {{- end }}
+          expr: aws_rds_free_storage_space_average offset 5m < (1 * 1024 * 1024 * 1024)
+          for: 5m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        - alert: RDSFreeStorageSpace
+          annotations:
+            summary: |
+              RDS DB Indentifier in {{`{{`}} $labels.dbinstance_identifier {{`}}`}} in region {{`{{`}} $labels.region {{`}}`}}
+              free storage is less than 3GB. Current is {{`{{`}} $value {{`}}`}}.
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-rdsfreestoragespace"
+            {{- end }}
+          expr: aws_rds_free_storage_space_average offset 5m < (3 * 1024 * 1024 * 1024)
+          for: 5m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        - alert: RDSFreeStorageSpace
+          annotations:
+            summary: |
+              RDS DB Indentifier in {{`{{`}} $labels.dbinstance_identifier {{`}}`}} in region {{`{{`}} $labels.region {{`}}`}}
+              free storage is less than 5GB. Current is {{`{{`}} $value {{`}}`}}.
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-rdsfreestoragespace"
+            {{- end }}
+          expr: aws_rds_free_storage_space_average offset 5m < (5 * 1024 * 1024 * 1024)
+          for: 5m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        - alert: RDSFreeStorageSpace
+          annotations:
+            summary: |
+              RDS DB Indentifier in {{`{{`}} $labels.dbinstance_identifier {{`}}`}} in region {{`{{`}} $labels.region {{`}}`}}
+              free storage is less than 15GB. Current is {{`{{`}} $value {{`}}`}}.
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-rdsfreestoragespace"
+            {{- end }}
+          expr: aws_rds_free_storage_space_average offset 5m < (15 * 1024 * 1024 * 1024)
+          for: 5m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.RDSCPUUtilization | default false) }}
+        - alert: RDSCPUUtilization
+          annotations:
+            summary: |
+              RDS DB Indentifier in {{`{{`}} $labels.dbinstance_identifier {{`}}`}} region {{`{{`}} $labels.region {{`}}`}}
+              has cpu utilization reached more than 90% in last 5m.
+              Current is {{`{{`}} $value {{`}}`}}.
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-rdscpuutilization"
+            {{- end }}
+          expr: aws_rds_cpuutilization_average offset 5m > 90
+          for: 15m
+          labels:
+            severity: warning
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        - alert: RDSCPUUtilization
+          annotations:
+            summary: |
+              RDS DB Indentifier in {{`{{`}} $labels.dbinstance_identifier {{`}}`}} region {{`{{`}} $labels.region {{`}}`}}
+              has cpu utilization reached more than 95% in last 5m.
+              Current is {{`{{`}} $value {{`}}`}}.
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-rdscpuutilization"
+            {{- end }}
+          expr: aws_rds_cpuutilization_average offset 5m > 95
+          for: 15m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.RDSDiskLatency | default false) }}
+        - alert: RDSDiskLatency
+          annotations:
+            summary: |
+              RDS DB Indentifier in {{`{{`}} $labels.dbinstance_identifier {{`}}`}} in region {{`{{`}} $labels.region {{`}}`}}
+              disk latency is less than 250ms. Current is {{`{{`}} $value {{`}}`}}.
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-rdsdisklatency"
+            {{- end }}
+          expr: |
+            aws_rds_read_latency_average offset 5m > 0.25
+              OR
+            aws_rds_write_latency_average offset 5m > 0.25
+          for: 15m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        - alert: RDSDiskLatency
+          annotations:
+            summary: |
+              RDS DB Indentifier in {{`{{`}} $labels.dbinstance_identifier {{`}}`}} in region {{`{{`}} $labels.region {{`}}`}}
+              disk latency is less than 500ms. Current is {{`{{`}} $value {{`}}`}}.
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-rdsdisklatency"
+            {{- end }}
+          expr: |
+            aws_rds_read_latency_average offset 5m > 0.5
+              OR
+            aws_rds_write_latency_average offset 5m > 0.5
+          for: 15m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+    - name: msk.rules
+      interval: 6m
+      rules:
+        {{- if not (.Values.defaultRules.disabled.MSKHasNoActiveController | default false) }}
+        - alert: MSKHasNoActiveController
+          annotations:
+            summary: |
+              Kafka cluster {{`{{`}} $labels.cluster_name {{`}}`}} in region {{`{{`}} $labels.region {{`}}`}}
+              has no active controller for the last 15.
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-mskhasnoactivecontroller"
+            {{- end }}
+          expr: aws_kafka_active_controller_count_maximum offset 5m != 1
+          for: 15m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.mskofflinepartitioncount | default false) }}
+        - alert: MSKOfflinePartitionCount
+          annotations:
+            summary: |
+              Kafka cluster {{`{{`}} $labels.cluster_name {{`}}`}} in region {{`{{`}} $labels.region {{`}}`}}
+              has offline partitions. Number of offline partitions that don’t have an active leader and aren't writable or readable.
+              Current offline partitions are {{`{{`}} $value {{`}}`}}.
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-mskofflinepartitioncount"
+            {{- end }}
+          expr: aws_kafka_offline_partitions_count_maximum offset 5m > 0
+          for: 10m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.MSKZooKeeperSessionState | default false) }}
+        - alert: MSKZooKeeperSessionState
+          annotations:
+            summary: |
+              Kafka cluster {{`{{`}} $labels.cluster_name {{`}}`}} in region {{`{{`}} $labels.region {{`}}`}}
+              has connection status to ZooKeeper with state other than CONNECTED.
+              - NOT_CONNECTED: '0.0'
+              - ASSOCIATING: '0.1'
+              - CONNECTING: '0.5'
+              - CONNECTEDREADONLY: '0.8'
+              - CONNECTED: '1.0'
+              - CLOSED: '5.0'
+              - AUTH_FAILED: '10.0'
+              Current state is {{`{{`}} $value {{`}}`}}.
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-mskzookeepersessionstate"
+            {{- end }}
+          expr: aws_kafka_zoo_keeper_session_state_maximum offset 5m != 1
+          for: 10m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.MSKCPUUtilization | default false) }}
+        - alert: MSKCPUUtilization
+          annotations:
+            summary: |
+              Kafka cluster {{`{{`}} $labels.cluster_name {{`}}`}} with broker {{`{{`}} $labels.broker_id {{`}}`}} in region {{`{{`}} $labels.region {{`}}`}}
+              has CPU Utilization higher than 90% for 15m.
+              Current is {{`{{`}} $value {{`}}`}}.
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-MSKCPUUtilization"
+            {{- end }}
+          expr: |
+            100 - sum by (app,cluster,broker_id,cluster_name,region) (
+              aws_kafka_cpu_idle_maximum offset 5m
+            ) > 90
+          for: 15m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.MSKMemoryUtilization | default false) }}
+        - alert: MSKMemoryUtilization
+          annotations:
+            summary: |
+              Kafka cluster {{`{{`}} $labels.cluster_name {{`}}`}} with broker {{`{{`}} $labels.broker_id {{`}}`}} in region {{`{{`}} $labels.region {{`}}`}}
+              has Memory Utilization higher than 90% for 15m.
+              Current is {{`{{`}} $value {{`}}`}}.
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-mskmemoryutilization"
+            {{- end }}
+          expr: |
+            sum by (cluster,cluster_name,broker_id,region) (aws_kafka_memory_used_average offset 5m)
+            /
+            sum by (cluster,cluster_name,broker_id,region) (
+                aws_kafka_memory_used_average offset 5m
+                +
+                aws_kafka_memory_cached_average offset 5m
+                + aws_kafka_memory_buffered_average offset 5m
+                + aws_kafka_memory_free_average offset 5m
+            ) * 100 > 90
+          for: 15m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.MSKUnderReplicatedPartition | default false) }}
+        - alert: MSKUnderReplicatedPartition
+          annotations:
+            summary: |
+              Kafka cluster {{`{{`}} $labels.cluster_name {{`}}`}} with broker {{`{{`}} $labels.broker_id {{`}}`}} in region {{`{{`}} $labels.region {{`}}`}}
+              has {{`{{`}} $value {{`}}`}} under replicated partitions for 10m.
+              A healthy cluster has no under replicated partitions.
+              This under replication will add latency as consumers don't receive their needed data until messages are replicated.
+              If cluster many have under replicated partitions, it typically points to a problem with one or more brokers.
+              Need to find root cause the problem immediately to avoid any data loss.
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-mskunderreplicatedpartition"
+            {{- end }}
+          expr: sum(aws_kafka_under_replicated_partitions_maximum offset 5m) by (broker_id, cluster_name, cluster) > 0
+          for: 10m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not .Values.defaultRules.disabled.MSKConsumerGroupLag | default false }}
+        {{- $defaultThreshold := .Values.kafkaDefaultThreshold.threshold }}
+        {{- $defaultDuration := .Values.kafkaDefaultThreshold.duration }}
+        {{- $excludedTopics := list "cache" "__" "strimzi" "integrated-user-.*-cache-eviction" "__amazon_msk_canary" }}
+        {{- range .Values.kafkaLagThreshold }}
+          {{- range .topics }}
+              {{- $excludedTopics = append $excludedTopics . | uniq }}
+          {{- end }}
+        {{- end }}
+        - alert: MSKConsumerGroupLagDefault{{ $defaultThreshold }}MessagesFor{{ $defaultDuration | upper }}
+          annotations:
+            summary: |
+              Kafka consumergroup {{`{{`}} $labels.consumer_group {{`}}`}} at topic {{`{{`}} $labels.topic {{`}}`}} in region {{`{{`}} $labels.region {{`}}`}}
+              has {{`{{`}} $value {{`}}`}} messages laggged for {{ $defaultDuration }}. Current is {{`{{`}} $value {{`}}`}}.
+            {{- if $.Values.runbook.enabled }}
+            runbook_url: "{{ $.Values.runbook.runbookUrl }}alert-name-mskconsumergrouplag"
+            {{- end }}
+          expr: |
+            sum by (app, cluster, consumer_group, topic) (
+              aws_kafka_max_offset_lag_average{topic!~"^({{ join "|" $excludedTopics }}).*"} offset 5m
+            ) > {{ $defaultThreshold }}
+          for: {{ $defaultDuration }}
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+            {{- with $.Values.defaultRules.extraLabels.l2Support }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+
+        {{- if not .Values.defaultRules.disabled.MSKConsumerGroupLag | default false }}
+        {{- range .Values.kafkaLagThreshold }}
+        {{- $listTopics := list }}
+        {{- $listConsumerGroups := list }}
+        {{- $duration := .duration }}
+        {{- $matchedThreshold := .matchedThreshold }}
+        {{- $excludeThreshold := .excludeThreshold }}
+        {{- range .topics }}
+        {{- $listTopics = append $listTopics . | uniq }}
+        {{- end }}
+        {{- range .consumerGroups }}
+        {{- $listConsumerGroups = append $listConsumerGroups . | uniq }}
+        {{- end }}
+        - alert: MSKConsumerGroupLag{{ $matchedThreshold }}MessagesFor{{ $duration | upper }}
+          annotations:
+            summary: |
+              Kafka consumergroup {{`{{`}} $labels.consumer_group {{`}}`}} at topic {{`{{`}} $labels.topic {{`}}`}} in region {{`{{`}} $labels.region {{`}}`}}
+              has {{`{{`}} $value {{`}}`}} messages laggged for {{ $duration }}. Current is {{`{{`}} $value {{`}}`}}.
+            {{- if $.Values.runbook.enabled }}
+            runbook_url: "{{ $.Values.runbook.runbookUrl }}alert-name-mskconsumergrouplag"
+            {{- end }}
+          expr: |
+            sum by (app, cluster, consumer_group, topic) (
+              aws_kafka_max_offset_lag_average{topic=~"^({{ join "|" $listTopics }}).*"{{ if gt (len $listConsumerGroups) 0 }},consumer_group=~"^({{ join "|" $listConsumerGroups }}).*"{{ end }}} offset 5m
+            ) > {{ $matchedThreshold }}
+          for: {{ $duration }}
+          labels:
+            severity: critical
+            {{- with $.Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+            {{- with $.Values.defaultRules.extraLabels.l2Support }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- if and ($excludeThreshold) (gt (len $listConsumerGroups) 0) }}
+        - alert: MSKConsumerGroupLag{{ $excludeThreshold }}MessagesFor{{ $duration | upper }}
+          annotations:
+            summary: |
+              Kafka consumergroup {{`{{`}} $labels.consumer_group {{`}}`}} at topic {{`{{`}} $labels.topic {{`}}`}} in region {{`{{`}} $labels.region {{`}}`}}
+              has {{`{{`}} $value {{`}}`}} messages laggged for {{ $duration }}. Current is {{`{{`}} $value {{`}}`}}.
+            {{- if $.Values.runbook.enabled }}
+            runbook_url: "{{ $.Values.runbook.runbookUrl }}alert-name-mskconsumergrouplag"
+            {{- end }}
+          expr: |
+            sum by (app, cluster, consumer_group, topic) (
+              aws_kafka_max_offset_lag_average{topic=~"^({{ join "|" $listTopics }}).*"{{ if gt (len $listConsumerGroups) 0 }},consumer_group!~"^({{ join "|" $listConsumerGroups }}).*"{{ end }}} offset 5m
+            ) > {{ $excludeThreshold }}
+          for: {{ $duration }}
+          labels:
+            severity: critical
+            {{- with $.Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+            {{- with $.Values.defaultRules.extraLabels.l2Support }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- end }}
+        {{- end }}
+{{- end }}

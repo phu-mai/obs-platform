@@ -1,0 +1,16 @@
+{{- if .Values.agent.static.deployment.configMap.create }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "grafana-agent.fullname" . }}-static-deployment
+  labels:
+    {{- include "grafana-agent.labels" . | nindent 4 }}
+    agent-type: deployment
+    mode: static
+data:
+  {{- if .Values.agent.static.deployment.configMap.content }}
+  config.yaml: |- {{- (tpl .Values.agent.static.deployment.configMap.content .) | nindent 4 }}
+  {{- else }}
+  config.yaml: |- {{- .Files.Get "config/config.yaml" | trim | nindent 4 }}
+  {{- end }}
+{{- end }}

@@ -1,0 +1,253 @@
+# ---------------------------------------------
+kubePrometheusStack:
+  enabled: true
+# ---------------------------------------------
+kube-prometheus-stack:
+  fullnameOverride: kube-prometheus-stack
+
+  whatsappMonitor:
+    enabled: true
+    staticTargets:
+    - whatsapp-core-wa-18456528412.whatsapp:2080
+    - whatsapp-core-wa-18456528414:2080
+
+  kubeControllerManager:
+    enabled: false
+  kubeEtcd:
+    enabled: false
+  kubeScheduler:
+    enabled: false
+  kubeProxy:
+    enabled: false
+  coreDns:
+    enabled: false
+  kubeDns:
+    enabled: false
+  kubelet:
+    enabled: false
+  nodeExporter:
+    enabled: false
+
+  global:
+    rbac:
+      pspEnabled: false
+    customRbac:
+      create: true
+      namespaces:
+        - monitoring
+        - lxp-data
+        - lxp-core
+        - lxp-frontend
+        - lxp-integration
+
+  alertmanager:
+    enabled: true
+    ingress:
+      enabled: false
+    alertmanagerSpec:
+      storage:
+        volumeClaimTemplate:
+          spec:
+            storageClassName: standard
+            accessModes:
+              - ReadWriteOnce
+            resources:
+              requests:
+                storage: 1Gi
+
+  prometheus:
+    enabled: true
+    ingress:
+      enabled: false
+    prometheusSpec:
+      retention: 7d
+      paused: false
+      shards: 1
+      replicas: 1
+      remoteWrite: []
+      storageSpec:
+        volumeClaimTemplate:
+          spec:
+            accessModes:
+              - ReadWriteOnce
+            storageClassName: standard
+            resources:
+              requests:
+                storage: 30Gi
+      resources:
+        limits:
+          cpu: 1
+          memory: 2.5Gi
+        requests:
+          cpu: 100m
+          memory: 100Mi
+      additionalScrapeConfigAppendix: |
+        - job_name: 'imessage-agent-stats'
+          scheme: https
+          http_sd_configs:
+          - url: https://domain.test/metrics/list
+            tls_config:
+              insecure_skip_verify: true
+          tls_config:
+            insecure_skip_verify: true
+          relabel_configs:
+            - source_labels: [__address__]
+              target_label: agent
+            - source_labels: [agent]
+              target_label: __metrics_path__
+              regex: (.+)
+              replacement: /metrics/$1
+            - source_labels: [host]
+              target_label: __address__
+            - regex: ^host$
+              action: labeldrop
+      externalLabels:
+        cluster: test-namespace-scope
+
+  grafana:
+    enabled: true
+    defaultDashboardsEnabled: true
+    adminPassword: GswEJFeYw3m3UwzizaYwZ5WcNpmDAJdx
+    rbac:
+      pspEnabled: false
+      namespaced: true
+    testFramework:
+      enabled: false
+    plugins:
+      - novatec-sdg-panel
+      - grafana-piechart-panel
+    grafana.ini:
+      dashboards:
+        default_home_dashboard_path: /tmp/dashboards/k8s-resources-cluster.json
+      server:
+        root_url: https://ops.chaos.leapxpert.dev/grafana
+        domain: ops.chaos.leapxpert.dev
+        serve_from_sub_path: true
+      users:
+        viewers_can_edit: true
+      auth.basic:
+        enabled: true
+    sidecar:
+      dashboards:
+        enabled: true
+        label: grafana_dashboard
+    persistence:
+      enabled: true
+      type: statefulset
+      storageClassName: standard
+    imageRenderer:
+      enabled: true
+
+  kube-state-metrics:
+    podSecurityPolicy:
+      enabled: false
+    prometheus:
+      monitor:
+        enabled: true
+        additionalLabels:
+          observability: prometheus-operator
+        relabelings:
+          - sourceLabels:
+              - __meta_kubernetes_pod_node_name
+            separator: ;
+            regex: (.*)
+            targetLabel: node
+            replacement: $1
+            action: replace
+    rbac:
+      useClusterRole: false
+    namespaces: monitoring,lxp-data,lxp-core,lxp-frontend,lxp-integration
+
+  prometheus-node-exporter:
+    prometheus:
+      monitor:
+        enabled: true
+
+  prometheusOperator:
+    kubeletService:
+      enabled: false
+    namespaces:
+      additional:
+        - monitoring
+        - lxp-data
+        - lxp-core
+        - lxp-frontend
+        - lxp-integration
+# ---------------------------------------------
+kubePrometheusStackAddOns:
+  enabled: true
+kube-prometheus-stack-add-ons:
+  fullnameOverride: kube-prometheus-stack-add-ons
+  runbook:
+    enabled: true
+  namespaceSelector:
+    istiod:
+      enabled: true
+      namespace: istio-system
+    kafka:
+      enabled: true
+      namespace: lxp-data
+    synapse:
+      enabled: true
+      namespace: lxp-core
+    vault:
+      enabled: true
+      namespace: lxp-core
+    velero:
+      enabled: true
+      namespace: velero
+# ---------------------------------------------
+prometheusMongodbExporter:
+  enabled: false
+# ---------------------------------------------
+prometheusElasticsearchExporter:
+  enabled: false
+# ---------------------------------------------
+prometheusAzureMetricsExporter:
+  enabled: false
+# ---------------------------------------------
+prometheusBlackboxExporter:
+  enabled: false
+# ---------------------------------------------
+prometheusCloudwatchExporter:
+  enabled: false
+# ---------------------------------------------
+loki:
+  enabled: false
+# ---------------------------------------------
+promtail:
+  enabled: true
+  rbac:
+    namespaceScope:
+      enabled: true
+      namespaces:
+        - istio-operator
+        - istio-system
+        - kiali-operator
+        - logging
+        - loki
+        - lxp-core
+        - lxp-data
+        - lxp-frontend
+        - lxp-integration
+        - monitoring
+        - opswat
+        - tracing
+        - whatsapp
+# ---------------------------------------------
+grafana-agent:
+  rbac:
+    namespaceScope:
+      enabled: true
+      namespaces:
+        - monitoring
+        - lxp-data
+        - lxp-core
+        - lxp-frontend
+        - lxp-integration
+# ---------------------------------------------
+tempo:
+  enabled: false
+# ---------------------------------------------
+opentelemetryCollector:
+  enabled: false

@@ -1,0 +1,12 @@
+.git
+.github
+.circleci
+ci
+*.tgz
+test/
+.env
+.envrc
+GITHUB-TOKEN.md
+NAMESPACE-SCOPE.md
+README.md
+lxp-mixin

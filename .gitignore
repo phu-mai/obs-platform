@@ -1,0 +1,9 @@
+.DS_Store
+test/
+releases/
+*.tgz
+.env
+.envrc
+**/.venv
+**/__pycache__
+lxp-mixin/*.json

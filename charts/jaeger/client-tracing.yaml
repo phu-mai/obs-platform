@@ -1,0 +1,25 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: client-tracing
+  labels:
+    app: client-tracing
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: client-tracing
+  template:
+    metadata:
+      labels:
+        app: client-tracing
+    spec:
+      containers:
+        - name: client-tracing
+          image: jaegertracing/example-hotrod:latest
+          ports:
+            - containerPort: 8080
+          env:
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: http://jaeger:4318

@@ -1,0 +1,945 @@
+{{- if not .Values.dashboardsSelector.isCentralDashboard }}
+{{- if .Values.dashboardsSelector.lxpMacInstances.enabled }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-lxp-mac-instances
+  namespace: {{ template "kube-prometheus-stack-add-ons.namespace" . }}
+  annotations:
+  labels:
+    grafana_dashboard: "1"
+{{ include "kube-prometheus-stack-add-ons.labels" . | indent 4 }}
+data:
+  lxp-mac-instances.json: |-
+    {
+      "annotations": {
+        "list": [
+          {
+            "builtIn": 1,
+            "datasource": {
+              "type": "grafana",
+              "uid": "-- Grafana --"
+            },
+            "enable": true,
+            "hide": true,
+            "iconColor": "rgba(0, 211, 255, 1)",
+            "name": "Annotations & Alerts",
+            "target": {
+              "limit": 100,
+              "matchAny": false,
+              "tags": [],
+              "type": "dashboard"
+            },
+            "type": "dashboard"
+          }
+        ]
+      },
+      "editable": true,
+      "fiscalYearStartMonth": 0,
+      "graphTooltip": 2,
+      "id": 19181,
+      "links": [
+        {
+          "asDropdown": true,
+          "icon": "external link",
+          "includeVars": false,
+          "keepTime": true,
+          "tags": [
+            "leapxpert"
+          ],
+          "targetBlank": true,
+          "title": "LXP Dashboards",
+          "tooltip": "",
+          "type": "dashboards",
+          "url": ""
+        }
+      ],
+      "liveNow": false,
+      "panels": [
+        {
+          "collapsed": false,
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 0
+          },
+          "id": 217,
+          "panels": [],
+          "title": "Introduction",
+          "type": "row"
+        },
+        {
+          "datasource": {
+            "type": "datasource",
+            "uid": "grafana"
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 24,
+            "x": 0,
+            "y": 1
+          },
+          "id": 218,
+          "options": {
+            "code": {
+              "language": "plaintext",
+              "showLineNumbers": false,
+              "showMiniMap": false
+            },
+            "content": "### Dashboard Naming\nLeapXpert dashboards will be created with prefix `lxp-`.\n\n`lxp-mac-instances` is used to display Mac instances and iGateway healthcheck endpoint state.\n\nNote: Select `Domain` to see state of particular iGateway server.",
+            "mode": "markdown"
+          },
+          "pluginVersion": "10.3.1",
+          "type": "text"
+        },
+        {
+          "collapsed": false,
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 5
+          },
+          "id": 219,
+          "panels": [],
+          "title": "iGateway Instance and Health Endpoint State",
+          "type": "row"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "description": "Mac Instance State in AWS",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "custom": {
+                "align": "center",
+                "cellOptions": {
+                  "type": "auto"
+                },
+                "filterable": true,
+                "inspect": false
+              },
+              "links": [],
+              "mappings": [],
+              "noValue": "Mac Instance State in AWS",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "semi-dark-green",
+                    "value": null
+                  }
+                ]
+              },
+              "unit": "none",
+              "unitScale": true
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Status"
+                },
+                "properties": [
+                  {
+                    "id": "mappings",
+                    "value": [
+                      {
+                        "options": {
+                          "0": {
+                            "color": "dark-red",
+                            "index": 0,
+                            "text": "Down"
+                          },
+                          "1": {
+                            "color": "semi-dark-green",
+                            "index": 1,
+                            "text": "Up"
+                          }
+                        },
+                        "type": "value"
+                      }
+                    ]
+                  },
+                  {
+                    "id": "custom.cellOptions",
+                    "value": {
+                      "mode": "basic",
+                      "type": "color-background"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Instance ID"
+                },
+                "properties": [
+                  {
+                    "id": "links",
+                    "value": [
+                      {
+                        "targetBlank": true,
+                        "title": "Drill down to Mac instance ${__value.raw}",
+                        "url": "/d/node-exporter-macos/node-exporter-macos?var-datasource=$datasource&var-instance=${__value.raw}&${__url_time_range}&to=${__url_time_range}"
+                      }
+                    ]
+                  },
+                  {
+                    "id": "custom.filterable",
+                    "value": true
+                  },
+                  {
+                    "id": "custom.width",
+                    "value": 182
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "AWS Account ID"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 141
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Region"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 114
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Domain"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 423
+                  }
+                ]
+              }
+            ]
+          },
+          "gridPos": {
+            "h": 13,
+            "w": 12,
+            "x": 0,
+            "y": 6
+          },
+          "id": 214,
+          "options": {
+            "cellHeight": "sm",
+            "footer": {
+              "countRows": false,
+              "enablePagination": true,
+              "fields": "",
+              "reducer": [
+                "sum"
+              ],
+              "show": false
+            },
+            "showHeader": true,
+            "sortBy": []
+          },
+          "pluginVersion": "10.3.1",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "exemplar": false,
+              "expr": "sum by (aws_account_id,region,instance,domain) (\n  up{\n    job=\"node-exporter\",\n    sysname=\"Darwin\", \n    aws_account_id=~\"$aws_account_id\", \n    region=~\"$aws_region\", \n    instance=~\"$aws_instance_id\", \n    tenant=\"\",\n    domain=~\"$domain\"\n    }\n)",
+              "format": "table",
+              "instant": true,
+              "interval": "1m",
+              "legendFormat": "__auto",
+              "range": false,
+              "refId": "A"
+            }
+          ],
+          "title": "AWS Current Instance State",
+          "transformations": [
+            {
+              "id": "organize",
+              "options": {
+                "excludeByName": {
+                  "Time": true,
+                  "__name__": true,
+                  "cluster": true,
+                  "domainname": true,
+                  "exported_sysname": true,
+                  "job": true,
+                  "machine": true,
+                  "nodename": true,
+                  "prometheus": true,
+                  "prometheus_replica": true,
+                  "release": true,
+                  "sysname": true,
+                  "version": true
+                },
+                "indexByName": {
+                  "Time": 0,
+                  "Value": 12,
+                  "__name__": 1,
+                  "aws_account_id": 2,
+                  "cluster": 4,
+                  "domain": 10,
+                  "instance": 5,
+                  "job": 6,
+                  "prometheus": 7,
+                  "prometheus_replica": 8,
+                  "public_ip": 9,
+                  "region": 3,
+                  "sysname": 11
+                },
+                "renameByName": {
+                  "Value": "Status",
+                  "aws_account_id": "AWS Account ID",
+                  "domain": "Domain",
+                  "instance": "Instance ID",
+                  "public_ip": "Public IP",
+                  "region": "Region"
+                }
+              }
+            }
+          ],
+          "type": "table"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "description": "Mac Instance State in Data Center",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "custom": {
+                "align": "center",
+                "cellOptions": {
+                  "type": "auto"
+                },
+                "filterable": true,
+                "inspect": false
+              },
+              "links": [],
+              "mappings": [],
+              "noValue": "Mac Instance State in Data Center",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "unit": "none",
+              "unitScale": true
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Status"
+                },
+                "properties": [
+                  {
+                    "id": "mappings",
+                    "value": [
+                      {
+                        "options": {
+                          "0": {
+                            "color": "dark-red",
+                            "index": 0,
+                            "text": "Down"
+                          },
+                          "1": {
+                            "color": "semi-dark-green",
+                            "index": 1,
+                            "text": "Up"
+                          }
+                        },
+                        "type": "value"
+                      }
+                    ]
+                  },
+                  {
+                    "id": "custom.cellOptions",
+                    "value": {
+                      "mode": "basic",
+                      "type": "color-background"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Instance ID"
+                },
+                "properties": [
+                  {
+                    "id": "links",
+                    "value": [
+                      {
+                        "targetBlank": true,
+                        "title": "Drill down to Mac instance ${__value.raw}",
+                        "url": "/d/node-exporter-macos/node-exporter-macos?var-datasource=$datasource&var-instance=${__value.raw}&${__url_time_range}&to=${__url_time_range}"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          "gridPos": {
+            "h": 13,
+            "w": 12,
+            "x": 12,
+            "y": 6
+          },
+          "id": 215,
+          "options": {
+            "cellHeight": "sm",
+            "footer": {
+              "countRows": false,
+              "enablePagination": true,
+              "fields": "",
+              "reducer": [
+                "sum"
+              ],
+              "show": false
+            },
+            "showHeader": true,
+            "sortBy": [
+              {
+                "desc": false,
+                "displayName": "Instance ID"
+              }
+            ]
+          },
+          "pluginVersion": "10.3.1",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "exemplar": false,
+              "expr": "sum by (instance,tenant,domain) (up{job=\"node-exporter\", sysname=\"Darwin\", tenant!=\"\", domain=~\"$domain\"})",
+              "format": "table",
+              "instant": true,
+              "interval": "1m",
+              "legendFormat": "__auto",
+              "range": false,
+              "refId": "A"
+            }
+          ],
+          "title": "DC Current Instance State",
+          "transformations": [
+            {
+              "id": "organize",
+              "options": {
+                "excludeByName": {
+                  "Time": true,
+                  "__name__": true,
+                  "cluster": true,
+                  "domainname": true,
+                  "exported_sysname": true,
+                  "job": true,
+                  "machine": true,
+                  "nodename": true,
+                  "prometheus": true,
+                  "prometheus_replica": true,
+                  "release": true,
+                  "sysname": true,
+                  "version": true
+                },
+                "indexByName": {
+                  "Time": 0,
+                  "Value": 4,
+                  "domain": 3,
+                  "instance": 2,
+                  "tenant": 1
+                },
+                "renameByName": {
+                  "Value": "Status",
+                  "aws_account_id": "AWS Account ID",
+                  "domain": "Domain",
+                  "instance": "Instance ID",
+                  "public_ip": "Public IP",
+                  "region": "Region",
+                  "tenant": "Tenant"
+                }
+              }
+            }
+          ],
+          "type": "table"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "fixedColor": "semi-dark-green",
+                "mode": "fixed"
+              },
+              "custom": {
+                "fillOpacity": 80,
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineWidth": 0,
+                "spanNulls": false
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green"
+                  }
+                ]
+              },
+              "unitScale": true
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 50,
+            "w": 24,
+            "x": 0,
+            "y": 19
+          },
+          "id": 220,
+          "options": {
+            "alignValue": "center",
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": false
+            },
+            "mergeValues": true,
+            "rowHeight": 0.83,
+            "showValue": "auto",
+            "tooltip": {
+              "mode": "single",
+              "sort": "none"
+            }
+          },
+          "pluginVersion": "9.2.4",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "exemplar": false,
+              "expr": "igateway_managed_agents{domain=~\"$domain\"}",
+              "hide": false,
+              "instant": false,
+              "interval": "1m",
+              "legendFormat": "Domain {{`{{domain}}`}}",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Manage Agents",
+          "transformations": [],
+          "type": "state-timeline"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "fixedColor": "transparent",
+                "mode": "fixed"
+              },
+              "custom": {
+                "fillOpacity": 80,
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineWidth": 0,
+                "spanNulls": false
+              },
+              "mappings": [
+                {
+                  "options": {
+                    "0": {
+                      "color": "dark-red",
+                      "index": 1,
+                      "text": "Down"
+                    },
+                    "1": {
+                      "color": "semi-dark-green",
+                      "index": 0,
+                      "text": "Up"
+                    }
+                  },
+                  "type": "value"
+                }
+              ],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "unitScale": true
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 50,
+            "w": 24,
+            "x": 0,
+            "y": 69
+          },
+          "id": 221,
+          "options": {
+            "alignValue": "center",
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "mergeValues": true,
+            "rowHeight": 0.83,
+            "showValue": "auto",
+            "tooltip": {
+              "mode": "single",
+              "sort": "none"
+            }
+          },
+          "pluginVersion": "9.2.4",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "exemplar": false,
+              "expr": "up{job=\"node-exporter\", sysname=\"Darwin\", aws_account_id=~\"$aws_account_id\", region=~\"$aws_region\", instance=~\"$aws_instance_id\",domain=~\"$domain\"}",
+              "hide": false,
+              "instant": false,
+              "interval": "1m",
+              "legendFormat": "Domain {{`{{domain}}`}}",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Mac Instance State by Duration",
+          "transformations": [],
+          "type": "state-timeline"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "fixedColor": "transparent",
+                "mode": "fixed"
+              },
+              "custom": {
+                "fillOpacity": 80,
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineWidth": 0,
+                "spanNulls": false
+              },
+              "mappings": [
+                {
+                  "options": {
+                    "0": {
+                      "color": "dark-red",
+                      "index": 1,
+                      "text": "Down"
+                    },
+                    "1": {
+                      "color": "semi-dark-green",
+                      "index": 0,
+                      "text": "Up"
+                    }
+                  },
+                  "type": "value"
+                }
+              ],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "unitScale": true
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 50,
+            "w": 24,
+            "x": 0,
+            "y": 119
+          },
+          "id": 216,
+          "options": {
+            "alignValue": "center",
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "mergeValues": true,
+            "rowHeight": 0.83,
+            "showValue": "auto",
+            "tooltip": {
+              "mode": "single",
+              "sort": "none"
+            }
+          },
+          "pluginVersion": "9.2.4",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "exemplar": false,
+              "expr": "sum by (cluster,target) (probe_success{target=~\"https://$domain/imessage/v1/secure-ping\"})",
+              "hide": false,
+              "instant": false,
+              "interval": "1m",
+              "legendFormat": "{{`{{target}}`}}",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "iGateway URL State by Duration",
+          "transformations": [],
+          "type": "state-timeline"
+        }
+      ],
+      "refresh": "1m",
+      "revision": 1,
+      "schemaVersion": 39,
+      "tags": [],
+      "templating": {
+        "list": [
+          {
+            "current": {
+              "selected": false,
+              "text": "Prometheus",
+              "value": "prometheus"
+            },
+            "hide": 0,
+            "includeAll": false,
+            "label": "Datasource",
+            "multi": false,
+            "name": "datasource",
+            "options": [],
+            "query": "prometheus",
+            "queryValue": "",
+            "refresh": 1,
+            "regex": "",
+            "skipUrlSync": false,
+            "type": "datasource"
+          },
+          {
+            "allValue": ".*",
+            "current": {
+              "selected": true,
+              "text": [
+                "All"
+              ],
+              "value": [
+                "$__all"
+              ]
+            },
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${datasource}"
+            },
+            "definition": "label_values(up{job=\"node-exporter\",sysname=\"Darwin\"},domain)",
+            "hide": 0,
+            "includeAll": true,
+            "label": "Domain",
+            "multi": true,
+            "name": "domain",
+            "options": [],
+            "query": {
+              "query": "label_values(up{job=\"node-exporter\",sysname=\"Darwin\"},domain)",
+              "refId": "PrometheusVariableQueryEditor-VariableQuery"
+            },
+            "refresh": 1,
+            "regex": "",
+            "skipUrlSync": false,
+            "sort": 0,
+            "type": "query"
+          },
+          {
+            "allValue": ".*",
+            "current": {
+              "selected": true,
+              "text": [
+                "All"
+              ],
+              "value": [
+                "$__all"
+              ]
+            },
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${datasource}"
+            },
+            "definition": "label_values(node_uname_info{job=\"node-exporter\", sysname=\"Darwin\",domain=~\"$domain\",domain=~\"$domain\"},aws_account_id)",
+            "hide": 0,
+            "includeAll": true,
+            "label": "AWS Account ID",
+            "multi": true,
+            "name": "aws_account_id",
+            "options": [],
+            "query": {
+              "query": "label_values(node_uname_info{job=\"node-exporter\", sysname=\"Darwin\",domain=~\"$domain\",domain=~\"$domain\"},aws_account_id)",
+              "refId": "PrometheusVariableQueryEditor-VariableQuery"
+            },
+            "refresh": 2,
+            "regex": "",
+            "skipUrlSync": false,
+            "sort": 0,
+            "type": "query"
+          },
+          {
+            "allValue": ".*",
+            "current": {
+              "selected": true,
+              "text": [
+                "All"
+              ],
+              "value": [
+                "$__all"
+              ]
+            },
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${datasource}"
+            },
+            "definition": "label_values(node_uname_info{job=\"node-exporter\", sysname=\"Darwin\", aws_account_id=~\"$aws_account_id\",domain=~\"$domain\"},region)",
+            "hide": 0,
+            "includeAll": true,
+            "label": "AWS Region",
+            "multi": true,
+            "name": "aws_region",
+            "options": [],
+            "query": {
+              "query": "label_values(node_uname_info{job=\"node-exporter\", sysname=\"Darwin\", aws_account_id=~\"$aws_account_id\",domain=~\"$domain\"},region)",
+              "refId": "PrometheusVariableQueryEditor-VariableQuery"
+            },
+            "refresh": 2,
+            "regex": "",
+            "skipUrlSync": false,
+            "sort": 0,
+            "type": "query"
+          },
+          {
+            "allValue": ".*",
+            "current": {
+              "selected": true,
+              "text": [
+                "All"
+              ],
+              "value": [
+                "$__all"
+              ]
+            },
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${datasource}"
+            },
+            "definition": "label_values(node_uname_info{job=\"node-exporter\", sysname=\"Darwin\", aws_account_id=~\"$aws_account_id\"}, instance)",
+            "hide": 0,
+            "includeAll": true,
+            "label": "AWS Instance ID",
+            "multi": true,
+            "name": "aws_instance_id",
+            "options": [],
+            "query": {
+              "query": "label_values(node_uname_info{job=\"node-exporter\", sysname=\"Darwin\", aws_account_id=~\"$aws_account_id\"}, instance)",
+              "refId": "StandardVariableQuery"
+            },
+            "refresh": 2,
+            "regex": "",
+            "skipUrlSync": false,
+            "sort": 0,
+            "type": "query"
+          }
+        ]
+      },
+      "time": {
+        "from": "now-1h",
+        "to": "now"
+      },
+      "timepicker": {},
+      "timezone": "browser",
+      "title": "LXP / Mac Instances",
+      "uid": "lxp-mac-instances",
+      "version": 7,
+      "weekStart": ""
+    }
+{{- end }}
+{{- end }}

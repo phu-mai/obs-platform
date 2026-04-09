@@ -1,0 +1,109 @@
+{{- $kubeTargetVersion := default .Capabilities.KubeVersion.GitVersion .Values.kubeTargetVersionOverride }}
+{{- if and (semverCompare ">=1.14.0-0" $kubeTargetVersion) (semverCompare "<9.9.9-9" $kubeTargetVersion) .Values.defaultRules.rules.grafanaAgentTracing }}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ template "kube-prometheus-stack-add-ons.fullname" . }}-grafana-agent-tracing
+  namespace: {{ template "kube-prometheus-stack-add-ons.namespace" . }}
+  labels:
+{{ include "kube-prometheus-stack-add-ons.labels" . | indent 4 }}
+spec:
+  groups:
+    - name: grafana-agent-tracing.rules
+      rules:
+        {{- if not (.Values.defaultRules.disabled.AgentTracingReceiverErrors | default false) }}
+        - alert: AgentTracingReceiverErrors
+          annotations:
+            summary: |-
+              Grafana Agent trace receiver {{`{{`}} $labels.receiver {{`}}`}} is experiencing {{`{{`}} printf "%.2f" $value {{`}}`}}% errors.
+              This indicates that agent itself refuses spans due to many reasons (e.g Kubernetes worker node down, CNI down, etc)
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-agenttracingreceivererrors"
+            {{- end }}
+          expr: |-
+            100 * sum(rate(traces_receiver_refused_spans{receiver!="otlp/lb"}[1m])) by (app,cluster,receiver,transport)
+              /
+            (
+              sum(rate(traces_receiver_refused_spans{receiver!="otlp/lb"}[1m])) by (app,cluster,receiver,transport)
+                +
+              sum(rate(traces_receiver_accepted_spans{receiver!="otlp/lb"}[1m])) by (app,cluster,receiver,transport)
+            ) > 5
+          for: 15m
+          labels:
+            severity: warning
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        - alert: AgentTracingReceiverErrors
+          annotations:
+            summary: |-
+              Grafana Agent trace receiver {{`{{`}} $labels.receiver {{`}}`}} is experiencing {{`{{`}} printf "%.2f" $value {{`}}`}}% errors.
+              This indicates that agent itself refuses spans due to many reasons (e.g Kubernetes worker node down, CNI down, etc)
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-agenttracingreceivererrors"
+            {{- end }}
+          expr: |-
+            100 * sum(rate(traces_receiver_refused_spans{receiver!="otlp/lb"}[1m])) by (app,cluster,receiver,transport)
+              /
+            (
+              sum(rate(traces_receiver_refused_spans{receiver!="otlp/lb"}[1m])) by (app,cluster,receiver,transport)
+                +
+              sum(rate(traces_receiver_accepted_spans{receiver!="otlp/lb"}[1m])) by (app,cluster,receiver,transport)
+            ) > 10
+          for: 15m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.AgentTracingExporterErrors | default false) }}
+        - alert: AgentTracingExporterErrors
+          annotations:
+            summary: |-
+              Grafana Agent trace exporter {{`{{`}} $labels.exporter {{`}}`}} is experiencing {{`{{`}} printf "%.2f" $value {{`}}`}}% errors.
+              This indicates that agent has failed to send trace to tracing system and requires operator to check tracing system.
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-agenttracingexportererrors"
+            {{- end }}
+          expr: |-
+            100 * sum(rate(traces_exporter_send_failed_spans{exporter!="otlp"}[1m])) by (app,cluster,exporter)
+              /
+            (
+              sum(rate(traces_exporter_send_failed_spans{exporter!="otlp"}[1m])) by (app,cluster,exporter)
+                +
+              sum(rate(traces_exporter_sent_spans{exporter!="otlp"}[1m])) by (app,cluster,exporter)
+            )
+            > 5
+          for: 15m
+          labels:
+            severity: warning
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        - alert: AgentTracingExporterErrors
+          annotations:
+            summary: |-
+              Grafana Agent trace exporter {{`{{`}} $labels.exporter {{`}}`}} is experiencing {{`{{`}} printf "%.2f" $value {{`}}`}}% errors.
+              This indicates that agent has failed to send trace to tracing system and requires operator to check tracing system.
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-agenttracingexportererrors"
+            {{- end }}
+          expr: |-
+            100 * sum(rate(traces_exporter_send_failed_spans{exporter!="otlp"}[1m])) by (app,cluster,exporter)
+              /
+            (
+              sum(rate(traces_exporter_send_failed_spans{exporter!="otlp"}[1m])) by (app,cluster,exporter)
+                +
+              sum(rate(traces_exporter_sent_spans{exporter!="otlp"}[1m])) by (app,cluster,exporter)
+            )
+            > 10
+          for: 15m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+{{- end }}

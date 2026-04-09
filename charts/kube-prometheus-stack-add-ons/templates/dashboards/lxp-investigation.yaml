@@ -1,0 +1,3474 @@
+{{- if not .Values.dashboardsSelector.isCentralDashboard }}
+{{- if .Values.dashboardsSelector.lxpInvestigation.enabled }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-lxp-investigation-dashboard
+  namespace: {{ template "kube-prometheus-stack-add-ons.namespace" . }}
+  annotations:
+  labels:
+    grafana_dashboard: "1"
+{{ include "kube-prometheus-stack-add-ons.labels" . | indent 4 }}
+data:
+  lxp-investigation-dashboard.json: |-
+    {
+      "annotations": {
+        "list": [
+          {
+            "builtIn": 1,
+            "datasource": {
+              "type": "grafana",
+              "uid": "-- Grafana --"
+            },
+            "enable": true,
+            "hide": true,
+            "iconColor": "rgba(0, 211, 255, 1)",
+            "name": "Annotations & Alerts",
+            "target": {
+              "limit": 100,
+              "matchAny": false,
+              "tags": [],
+              "type": "dashboard"
+            },
+            "type": "dashboard"
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${metrics_datasource}"
+            },
+            "enable": true,
+            "expr": "(kube_pod_container_status_restarts_total - kube_pod_container_status_restarts_total offset 5m >= 1) \n    and ignoring (reason)\nmin_over_time(kube_pod_container_status_last_terminated_reason{reason=\"OOMKilled\"}[5m]) == 1",
+            "filter": {
+              "exclude": true,
+              "ids": [27, 25, 24, 26, 35]
+            },
+            "hide": false,
+            "iconColor": "red",
+            "name": "OOMKilled",
+            "target": {
+              "limit": 100,
+              "matchAny": false,
+              "tags": [],
+              "type": "dashboard"
+            },
+            "textFormat": "",
+            "titleFormat": "OOMKilled | Namespace {{`{{namespace}}`}} | Container {{`{{container}}`}} | Pod {{`{{pod}}`}}"
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${metrics_datasource}"
+            },
+            "enable": true,
+            "expr": "(kube_pod_container_status_restarts_total - kube_pod_container_status_restarts_total offset 5m >= 1) \n    and ignoring (reason)\nmin_over_time(kube_pod_container_status_last_terminated_reason{reason=\"Error\"}[5m]) == 1",
+            "filter": {
+              "exclude": true,
+              "ids": [28, 27, 25, 24, 26]
+            },
+            "hide": false,
+            "iconColor": "red",
+            "name": "Crashloopbackoff",
+            "target": {
+              "limit": 100,
+              "matchAny": false,
+              "tags": [],
+              "type": "dashboard"
+            },
+            "titleFormat": "Crashloopbackoff | Namespace {{`{{namespace}}`}} | Container {{`{{container}}`}} | Pod {{`{{pod}}`}}"
+          }
+        ]
+      },
+      "editable": true,
+      "fiscalYearStartMonth": 0,
+      "graphTooltip": 1,
+      "id": 23013,
+      "links": [
+        {
+          "asDropdown": true,
+          "icon": "external link",
+          "includeVars": false,
+          "keepTime": true,
+          "tags": ["leapxpert"],
+          "targetBlank": true,
+          "title": "LXP Dashboards",
+          "tooltip": "",
+          "type": "dashboards",
+          "url": ""
+        }
+      ],
+      "liveNow": false,
+      "panels": [
+        {
+          "collapsed": false,
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 0
+          },
+          "id": 21,
+          "panels": [],
+          "title": "FMOP App Usage & Events",
+          "type": "row"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${metrics_datasource}"
+          },
+          "description": "",
+          "gridPos": {
+            "h": 2,
+            "w": 24,
+            "x": 0,
+            "y": 1
+          },
+          "id": 27,
+          "options": {
+            "code": {
+              "language": "plaintext",
+              "showLineNumbers": false,
+              "showMiniMap": false
+            },
+            "content": "Detects recent container crashes by analyzing Kubernetes metrics and provides information on the cause of the crash (e.g., Error, OOMKill, etc.).",
+            "mode": "markdown"
+          },
+          "pluginVersion": "10.3.1",
+          "title": "Kube Crashes",
+          "type": "text"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${metrics_datasource}"
+          },
+          "description": "Pod Life Cycle https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#pod-phase",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 10,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 3,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "auto",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "links": [
+                {
+                  "targetBlank": true,
+                  "title": "Drill down to app ${__field.labels.pod} in namespace ${__field.labels.namespace}",
+                  "url": "/d/6581e46e4e5c7ba40a07646395ef7b23/k8s-resources-pod?var-datasource=$metrics_datasource&var-namespace=${__field.labels.namespace}&var-pod=${__field.labels.pod}&${__url_time_range}&to=${__url_time_range}"
+                }
+              ],
+              "mappings": [],
+              "noValue": "No Kubernetes Events (OOMKiled, Crashloopbackoff, Failed, Pending, Unknown)",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              },
+              "unit": "short",
+              "unitScale": true
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 9,
+            "w": 24,
+            "x": 0,
+            "y": 3
+          },
+          "id": 34,
+          "options": {
+            "legend": {
+              "calcs": ["min", "max", "lastNotNull"],
+              "displayMode": "table",
+              "placement": "bottom",
+              "showLegend": true,
+              "sortBy": "Name",
+              "sortDesc": false
+            },
+            "tooltip": {
+              "mode": "single",
+              "sort": "asc"
+            }
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${metrics_datasource}"
+              },
+              "editorMode": "code",
+              "expr": "(\n    delta(kube_pod_container_status_restarts_total[15m:]) \n        and ignoring (reason)\n    min_over_time(kube_pod_container_status_last_terminated_reason{reason=\"OOMKilled\",namespace=~\"$fmop_namespace\"}[10m:]) == 1\n) >= 1",
+              "interval": "1m",
+              "legendFormat": "Namespace {{`{{namespace}}`}}  | Container {{`{{container}}`}} | Pod {{`{{pod}}`}} | OOMKilled",
+              "range": true,
+              "refId": "A"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${metrics_datasource}"
+              },
+              "editorMode": "code",
+              "expr": "(\n    delta(kube_pod_container_status_restarts_total[15m:]) \n        and ignoring (reason)\n    min_over_time(kube_pod_container_status_last_terminated_reason{reason=\"Error\",namespace=~\"$fmop_namespace\"}[15m:]) == 1\n) >= 1",
+              "hide": false,
+              "interval": "1m",
+              "legendFormat": "Namespace {{`{{namespace}}`}}  | Container {{`{{container}}`}} | Pod {{`{{pod}}`}} | CrashLoopBackOff",
+              "range": true,
+              "refId": "B"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${metrics_datasource}"
+              },
+              "editorMode": "code",
+              "expr": "sum by (namespace, pod, phase) (min_over_time(kube_pod_status_phase{phase=~\"Pending|Unknown|Failed\",namespace=~\"$fmop_namespace\"}[10m])) > 0",
+              "hide": false,
+              "legendFormat": "Namespace {{`{{namespace}}`}}  | Container {{`{{container}}`}} | Pod {{`{{pod}}`}} | Pod Phase {{`{{phase}}`}}",
+              "range": true,
+              "refId": "C"
+            }
+          ],
+          "title": "Kubernetes events",
+          "transformations": [],
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${metrics_datasource}"
+          },
+          "description": "",
+          "gridPos": {
+            "h": 2,
+            "w": 24,
+            "x": 0,
+            "y": 12
+          },
+          "id": 35,
+          "options": {
+            "code": {
+              "language": "plaintext",
+              "showLineNumbers": false,
+              "showMiniMap": false
+            },
+            "content": "Focuses on containers with significant CPU throttling due to reaching CPU limits, or significant memory usage due to high load duration.",
+            "mode": "markdown"
+          },
+          "pluginVersion": "10.3.1",
+          "title": "Resource Contention",
+          "type": "text"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${metrics_datasource}"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": -1,
+                "drawStyle": "line",
+                "fillOpacity": 10,
+                "gradientMode": "opacity",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "smooth",
+                "lineStyle": {
+                  "fill": "solid"
+                },
+                "lineWidth": 1,
+                "pointSize": 3,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "auto",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "line+area"
+                }
+              },
+              "links": [],
+              "mappings": [],
+              "min": 0,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "#EAB839",
+                    "value": 80
+                  },
+                  {
+                    "color": "red",
+                    "value": 100
+                  }
+                ]
+              },
+              "unit": "percent",
+              "unitScale": true
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 10,
+            "w": 12,
+            "x": 0,
+            "y": 14
+          },
+          "id": 22,
+          "options": {
+            "legend": {
+              "calcs": ["min", "max", "lastNotNull"],
+              "displayMode": "table",
+              "placement": "bottom",
+              "showLegend": true,
+              "sortBy": "Name",
+              "sortDesc": false
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "none"
+            }
+          },
+          "pluginVersion": "8.2.3",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${metrics_datasource}"
+              },
+              "editorMode": "code",
+              "expr": "(sum by (container, namespace, lxp_version) (\n  container_memory_working_set_bytes{container=~\"$fmop_app_container\",namespace=~\"$fmop_namespace\"} \n  * on(container, namespace, pod) \n    group_left (lxp_version) \n  istio_agent_go_info{container=~\"$fmop_app_container\",namespace=~\"$fmop_namespace\",lxp_version=~\"$fmop_release_version\"}\n))\n/\n(max by (container, namespace, lxp_version) (\n  kube_pod_container_resource_limits{container=~\"$fmop_app_container\",resource=\"memory\",unit=\"byte\"}\n  * on(container, namespace, pod) \n    group_left (lxp_version) \n  istio_agent_go_info{container=~\"$fmop_app_container\",namespace=~\"$fmop_namespace\",lxp_version=~\"$fmop_release_version\"}\n)) * 100",
+              "instant": false,
+              "legendFormat": "Namespace {{`{{namespace}}`}} | App {{`{{container}}`}} | Version {{`{{lxp_version}}`}} | Usage",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "App Memory Usage",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${metrics_datasource}"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": -1,
+                "drawStyle": "line",
+                "fillOpacity": 10,
+                "gradientMode": "opacity",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "smooth",
+                "lineWidth": 1,
+                "pointSize": 3,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "auto",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "line+area"
+                }
+              },
+              "links": [],
+              "mappings": [],
+              "min": 0,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "#EAB839",
+                    "value": 80
+                  },
+                  {
+                    "color": "red",
+                    "value": 100
+                  }
+                ]
+              },
+              "unit": "percent",
+              "unitScale": true
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 10,
+            "w": 12,
+            "x": 12,
+            "y": 14
+          },
+          "id": 23,
+          "options": {
+            "legend": {
+              "calcs": ["min", "max", "lastNotNull"],
+              "displayMode": "table",
+              "placement": "bottom",
+              "showLegend": true,
+              "sortBy": "Max",
+              "sortDesc": true
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "none"
+            }
+          },
+          "pluginVersion": "8.2.3",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${metrics_datasource}"
+              },
+              "editorMode": "code",
+              "expr": "(sum by (container, namespace, lxp_version) (\n  irate(container_cpu_usage_seconds_total{namespace=~\"$fmop_namespace\",container=~\"$fmop_app_container\"}[$__rate_interval])\n    * on(container, namespace, pod) \n      group_left (lxp_version)\n  istio_agent_go_info{namespace=~\"$fmop_namespace\",container=~\"$fmop_app_container\",lxp_version=~\"$fmop_release_version\"}\n))\n/\n(max by (container, namespace, lxp_version) (\n  kube_pod_container_resource_limits{container=~\"$fmop_app_container\",resource=\"cpu\",unit=\"core\"}\n  * on(container, namespace, pod) \n    group_left (lxp_version) \n  istio_agent_go_info{container=~\"$fmop_app_container\",namespace=~\"$fmop_namespace\",lxp_version=~\"$fmop_release_version\"}\n)) * 100",
+              "instant": false,
+              "legendFormat": "Namespace {{`{{namespace}}`}} | App {{`{{container}}`}} | Version {{`{{lxp_version}}`}} | Usage",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "App CPU Usage",
+          "type": "timeseries"
+        },
+        {
+          "collapsed": true,
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 24
+          },
+          "id": 53,
+          "panels": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${metrics_datasource}"
+              },
+              "fieldConfig": {
+                "defaults": {
+                  "color": {
+                    "mode": "palette-classic"
+                  },
+                  "custom": {
+                    "axisBorderShow": false,
+                    "axisCenteredZero": false,
+                    "axisColorMode": "text",
+                    "axisLabel": "",
+                    "axisPlacement": "auto",
+                    "barAlignment": -1,
+                    "drawStyle": "line",
+                    "fillOpacity": 10,
+                    "gradientMode": "opacity",
+                    "hideFrom": {
+                      "legend": false,
+                      "tooltip": false,
+                      "viz": false
+                    },
+                    "insertNulls": false,
+                    "lineInterpolation": "smooth",
+                    "lineStyle": {
+                      "fill": "solid"
+                    },
+                    "lineWidth": 1,
+                    "pointSize": 3,
+                    "scaleDistribution": {
+                      "type": "linear"
+                    },
+                    "showPoints": "auto",
+                    "spanNulls": false,
+                    "stacking": {
+                      "group": "A",
+                      "mode": "none"
+                    },
+                    "thresholdsStyle": {
+                      "mode": "off"
+                    }
+                  },
+                  "links": [],
+                  "mappings": [],
+                  "min": 0,
+                  "thresholds": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "color": "green",
+                        "value": null
+                      }
+                    ]
+                  },
+                  "unit": "percent",
+                  "unitScale": true
+                },
+                "overrides": []
+              },
+              "gridPos": {
+                "h": 10,
+                "w": 12,
+                "x": 0,
+                "y": 27
+              },
+              "id": 48,
+              "options": {
+                "legend": {
+                  "calcs": ["min", "max", "lastNotNull"],
+                  "displayMode": "table",
+                  "placement": "bottom",
+                  "showLegend": true,
+                  "sortBy": "Name",
+                  "sortDesc": false
+                },
+                "tooltip": {
+                  "mode": "multi",
+                  "sort": "none"
+                }
+              },
+              "pluginVersion": "8.2.3",
+              "targets": [
+                {
+                  "datasource": {
+                    "type": "prometheus",
+                    "uid": "${metrics_datasource}"
+                  },
+                  "editorMode": "code",
+                  "expr": "sum by (container, namespace, lxp_version)(jvm_memory_used_bytes{container=~\"$fmop_app_container\",area=\"heap\"}) / sum by (container, namespace, lxp_version)(jvm_memory_max_bytes{container=~\"$fmop_app_container\",area=\"heap\"}) * 100",
+                  "instant": false,
+                  "legendFormat": "Namespace {{`{{namespace}}`}} | App {{`{{container}}`}} | Version {{`{{lxp_version}}`}} | Heap",
+                  "range": true,
+                  "refId": "A"
+                },
+                {
+                  "datasource": {
+                    "type": "prometheus",
+                    "uid": "${metrics_datasource}"
+                  },
+                  "editorMode": "code",
+                  "expr": "sum by (container, namespace, lxp_version)(jvm_memory_used_bytes{container=~\"$fmop_app_container\",area=\"nonheap\"}) / sum by (container, namespace, lxp_version)(jvm_memory_max_bytes{container=~\"$fmop_app_container\",area=\"nonheap\"}) * 100",
+                  "hide": false,
+                  "instant": false,
+                  "legendFormat": "Namespace {{`{{namespace}}`}} | App {{`{{container}}`}} | Version {{`{{lxp_version}}`}} | Non Heap",
+                  "range": true,
+                  "refId": "B"
+                },
+                {
+                  "datasource": {
+                    "type": "prometheus",
+                    "uid": "${metrics_datasource}"
+                  },
+                  "editorMode": "code",
+                  "expr": "",
+                  "hide": false,
+                  "instant": false,
+                  "legendFormat": "__auto",
+                  "range": true,
+                  "refId": "C"
+                }
+              ],
+              "title": "App JVM Memory Usage",
+              "type": "timeseries"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${metrics_datasource}"
+              },
+              "fieldConfig": {
+                "defaults": {
+                  "color": {
+                    "mode": "palette-classic"
+                  },
+                  "custom": {
+                    "axisBorderShow": false,
+                    "axisCenteredZero": false,
+                    "axisColorMode": "text",
+                    "axisLabel": "",
+                    "axisPlacement": "auto",
+                    "barAlignment": -1,
+                    "drawStyle": "line",
+                    "fillOpacity": 10,
+                    "gradientMode": "opacity",
+                    "hideFrom": {
+                      "legend": false,
+                      "tooltip": false,
+                      "viz": false
+                    },
+                    "insertNulls": false,
+                    "lineInterpolation": "smooth",
+                    "lineStyle": {
+                      "fill": "solid"
+                    },
+                    "lineWidth": 1,
+                    "pointSize": 3,
+                    "scaleDistribution": {
+                      "type": "linear"
+                    },
+                    "showPoints": "auto",
+                    "spanNulls": false,
+                    "stacking": {
+                      "group": "A",
+                      "mode": "none"
+                    },
+                    "thresholdsStyle": {
+                      "mode": "off"
+                    }
+                  },
+                  "links": [],
+                  "mappings": [],
+                  "min": 0,
+                  "thresholds": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "color": "green",
+                        "value": null
+                      }
+                    ]
+                  },
+                  "unit": "percent",
+                  "unitScale": true
+                },
+                "overrides": []
+              },
+              "gridPos": {
+                "h": 10,
+                "w": 12,
+                "x": 12,
+                "y": 27
+              },
+              "id": 50,
+              "options": {
+                "legend": {
+                  "calcs": ["min", "max", "lastNotNull"],
+                  "displayMode": "table",
+                  "placement": "bottom",
+                  "showLegend": true,
+                  "sortBy": "Name",
+                  "sortDesc": false
+                },
+                "tooltip": {
+                  "mode": "multi",
+                  "sort": "none"
+                }
+              },
+              "pluginVersion": "8.2.3",
+              "targets": [
+                {
+                  "datasource": {
+                    "type": "prometheus",
+                    "uid": "${metrics_datasource}"
+                  },
+                  "editorMode": "code",
+                  "expr": "(sum by (container, namespace, lxp_version)(jvm_gc_live_data_size_bytes{container=~\"$fmop_app_container\"}))\n/\n(sum by (container, namespace, lxp_version)(jvm_gc_max_data_size_bytes{container=~\"$fmop_app_container\"})) * 100",
+                  "instant": false,
+                  "legendFormat": "Namespace {{`{{namespace}}`}} | App {{`{{container}}`}} | Version {{`{{lxp_version}}`}} | Usage",
+                  "range": true,
+                  "refId": "A"
+                }
+              ],
+              "title": "App GC Usage",
+              "type": "timeseries"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${metrics_datasource}"
+              },
+              "fieldConfig": {
+                "defaults": {
+                  "color": {
+                    "mode": "palette-classic"
+                  },
+                  "custom": {
+                    "axisBorderShow": false,
+                    "axisCenteredZero": false,
+                    "axisColorMode": "text",
+                    "axisLabel": "",
+                    "axisPlacement": "auto",
+                    "barAlignment": -1,
+                    "drawStyle": "line",
+                    "fillOpacity": 10,
+                    "gradientMode": "opacity",
+                    "hideFrom": {
+                      "legend": false,
+                      "tooltip": false,
+                      "viz": false
+                    },
+                    "insertNulls": false,
+                    "lineInterpolation": "smooth",
+                    "lineStyle": {
+                      "fill": "solid"
+                    },
+                    "lineWidth": 1,
+                    "pointSize": 3,
+                    "scaleDistribution": {
+                      "type": "linear"
+                    },
+                    "showPoints": "auto",
+                    "spanNulls": false,
+                    "stacking": {
+                      "group": "A",
+                      "mode": "none"
+                    },
+                    "thresholdsStyle": {
+                      "mode": "off"
+                    }
+                  },
+                  "links": [],
+                  "mappings": [],
+                  "min": 0,
+                  "thresholds": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "color": "green",
+                        "value": null
+                      }
+                    ]
+                  },
+                  "unit": "none",
+                  "unitScale": true
+                },
+                "overrides": []
+              },
+              "gridPos": {
+                "h": 10,
+                "w": 12,
+                "x": 0,
+                "y": 37
+              },
+              "id": 49,
+              "options": {
+                "legend": {
+                  "calcs": ["min", "max", "lastNotNull"],
+                  "displayMode": "table",
+                  "placement": "bottom",
+                  "showLegend": true,
+                  "sortBy": "Name",
+                  "sortDesc": false
+                },
+                "tooltip": {
+                  "mode": "multi",
+                  "sort": "none"
+                }
+              },
+              "pluginVersion": "8.2.3",
+              "targets": [
+                {
+                  "datasource": {
+                    "type": "prometheus",
+                    "uid": "${metrics_datasource}"
+                  },
+                  "editorMode": "code",
+                  "expr": "sum by (container, namespace, lxp_version)(jvm_threads_live_threads{container=~\"$fmop_app_container\"}) / sum by (container, namespace, lxp_version)(jvm_threads_peak_threads{container=~\"$fmop_app_container\"}) * 100",
+                  "hide": true,
+                  "instant": false,
+                  "legendFormat": "Namespace {{`{{namespace}}`}} | App {{`{{container}}`}} | Version {{`{{lxp_version}}`}} | Usage",
+                  "range": true,
+                  "refId": "A"
+                },
+                {
+                  "datasource": {
+                    "type": "prometheus",
+                    "uid": "${metrics_datasource}"
+                  },
+                  "editorMode": "code",
+                  "expr": "sum by (container, namespace, lxp_version)(jvm_threads_live_threads{container=~\"$fmop_app_container\"})",
+                  "hide": false,
+                  "instant": false,
+                  "legendFormat": "Namespace {{`{{namespace}}`}} | App {{`{{container}}`}} | Version {{`{{lxp_version}}`}} | Live Thread",
+                  "range": true,
+                  "refId": "C"
+                }
+              ],
+              "title": "App JVM Thread Count",
+              "type": "timeseries"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${metrics_datasource}"
+              },
+              "description": "- NEW: A thread that has not yet started is in this state. \n- RUNNABLE: A thread executing in the Java virtual machine is in this state. \n- BLOCKED: A thread that is blocked waiting for a monitor lock is in this state. \n- WAITING: A thread that is waiting indefinitely for another thread to perform a particular action is in this state. \n- TIMED_WAITING: A thread that is waiting for another thread to perform an action for up to a specified waiting time is in this state. \n- TERMINATED: A thread that has exited is in this state.",
+              "fieldConfig": {
+                "defaults": {
+                  "color": {
+                    "mode": "palette-classic"
+                  },
+                  "custom": {
+                    "axisBorderShow": false,
+                    "axisCenteredZero": false,
+                    "axisColorMode": "text",
+                    "axisLabel": "",
+                    "axisPlacement": "auto",
+                    "barAlignment": -1,
+                    "drawStyle": "line",
+                    "fillOpacity": 10,
+                    "gradientMode": "opacity",
+                    "hideFrom": {
+                      "legend": false,
+                      "tooltip": false,
+                      "viz": false
+                    },
+                    "insertNulls": false,
+                    "lineInterpolation": "smooth",
+                    "lineStyle": {
+                      "fill": "solid"
+                    },
+                    "lineWidth": 1,
+                    "pointSize": 3,
+                    "scaleDistribution": {
+                      "type": "linear"
+                    },
+                    "showPoints": "auto",
+                    "spanNulls": false,
+                    "stacking": {
+                      "group": "A",
+                      "mode": "none"
+                    },
+                    "thresholdsStyle": {
+                      "mode": "off"
+                    }
+                  },
+                  "links": [],
+                  "mappings": [],
+                  "min": 0,
+                  "thresholds": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "color": "green",
+                        "value": null
+                      }
+                    ]
+                  },
+                  "unit": "none",
+                  "unitScale": true
+                },
+                "overrides": []
+              },
+              "gridPos": {
+                "h": 10,
+                "w": 12,
+                "x": 12,
+                "y": 37
+              },
+              "id": 52,
+              "options": {
+                "legend": {
+                  "calcs": ["min", "max", "lastNotNull"],
+                  "displayMode": "table",
+                  "placement": "bottom",
+                  "showLegend": true,
+                  "sortBy": "Name",
+                  "sortDesc": false
+                },
+                "tooltip": {
+                  "mode": "multi",
+                  "sort": "none"
+                }
+              },
+              "pluginVersion": "8.2.3",
+              "targets": [
+                {
+                  "datasource": {
+                    "type": "prometheus",
+                    "uid": "${metrics_datasource}"
+                  },
+                  "editorMode": "code",
+                  "expr": "sum by (app, namespace, lxp_version, state)(jvm_threads_states_threads{app=~\"$fmop_app_container\"}) ",
+                  "instant": false,
+                  "legendFormat": "Namespace {{`{{namespace}}`}} | App {{`{{app}}`}} | Version {{`{{lxp_version}}`}} | State {{`{{state}}`}}",
+                  "range": true,
+                  "refId": "A"
+                }
+              ],
+              "title": "App JVM Thread State",
+              "type": "timeseries"
+            }
+          ],
+          "title": "FMOP App JVM",
+          "type": "row"
+        },
+        {
+          "collapsed": false,
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 25
+          },
+          "id": 18,
+          "panels": [],
+          "title": "FMOP App Logs",
+          "type": "row"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${metrics_datasource}"
+          },
+          "description": "",
+          "gridPos": {
+            "h": 2,
+            "w": 24,
+            "x": 0,
+            "y": 26
+          },
+          "id": 28,
+          "options": {
+            "code": {
+              "language": "plaintext",
+              "showLineNumbers": false,
+              "showMiniMap": false
+            },
+            "content": "Analyzes error logs and identifies groups of similar log lines, highlighting groups with significantly increased log rates based on shared patterns.",
+            "mode": "markdown"
+          },
+          "pluginVersion": "10.3.1",
+          "title": "Error Pattern Logs",
+          "type": "text"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${metrics_datasource}"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 0,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "auto",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "line+area"
+                }
+              },
+              "links": [
+                {
+                  "targetBlank": true,
+                  "title": "Drill down all exceptions",
+                  "url": "/explore?schemaVersion=1&panes={\"3xa\":{\"datasource\":\"${log_datasource}\",\"queries\":[{\"refId\":\"A\",\"expr\":\"sum by (app,cluster,exception) (\\n    count_over_time({app=~\\\".%2B\\\",level=~\\\"(?i)ERROR\\\"} |~ \\\"(?i)exception\\\" | regexp \\\"(?P<exception>\\\\\\\\w%2B[a-zA-Z$0-9]Exception)\\\"[5m])\\n)\",\"queryType\":\"range\",\"datasource\":{\"type\":\"loki\",\"uid\":\"${log_datasource}\"},\"editorMode\":\"code\"}],\"range\":{\"from\":\"${__from}\",\"to\":\"${__to}\"}}}&orgId=${__org}"
+                },
+                {
+                  "targetBlank": true,
+                  "title": "Drill down app ${__field.labels.app} with exception ${__field.labels.exception_name}",
+                  "url": "/explore?schemaVersion=1&panes={\"3xa\":{\"datasource\":\"${log_datasource}\",\"queries\":[{\"refId\":\"A\",\"expr\":\"sum by (app,exception,namespace)(\\n    count_over_time(\\n        {app=~\\\"${__field.labels.app}\\\",level=~\\\"(?i)ERROR\\\"} |~ \\\"${__field.labels.exception_name}\\\"[2m])\\n) \",\"queryType\":\"range\",\"datasource\":{\"type\":\"loki\",\"uid\":\"${log_datasource}\"},\"editorMode\":\"code\"}],\"range\":{\"from\":\"${__from}\",\"to\":\"${__to}\"}}}&orgId=${__org}"
+                }
+              ],
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "red",
+                    "value": null
+                  },
+                  {
+                    "color": "dark-red",
+                    "value": 50
+                  }
+                ]
+              },
+              "unitScale": true
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 10,
+            "w": 12,
+            "x": 0,
+            "y": 28
+          },
+          "id": 20,
+          "options": {
+            "legend": {
+              "calcs": ["min", "max", "lastNotNull"],
+              "displayMode": "table",
+              "placement": "bottom",
+              "showLegend": true,
+              "sortBy": "Max",
+              "sortDesc": true
+            },
+            "tooltip": {
+              "mode": "single",
+              "sort": "none"
+            }
+          },
+          "repeatDirection": "v",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${metrics_datasource}"
+              },
+              "editorMode": "code",
+              "expr": "sum by(exception_name,namespace,app,version) (\n  increase(\n    promtail_custom_fmop_logs_by_exception_java{exception_name!=\"\",namespace=~\"$fmop_namespace\",app=~\"$fmop_app_container\",version=~\"$fmop_release_version\"}[$__rate_interval]\n  )\n)",
+              "instant": false,
+              "legendFormat": "Namespace {{`{{namespace}}`}} | App {{`{{app}}`}} | Exception {{`{{exception_name}}`}} | Version {{`{{version}}`}}",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "App Error Logs by Exception",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${metrics_datasource}"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 0,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "auto",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "line+area"
+                }
+              },
+              "links": [
+                {
+                  "targetBlank": true,
+                  "title": "Drill down to all app error logs",
+                  "url": "/explore?schemaVersion=1&panes={\"3xa\":{\"datasource\":\"${log_datasource}\",\"queries\":[{\"refId\":\"A\",\"expr\":\"{app=~\\\".%2B\\\",level=\\\"ERROR\\\"}\",\"queryType\":\"range\",\"datasource\":{\"type\":\"loki\",\"uid\":\"${log_datasource}\"},\"editorMode\":\"code\"}],\"range\":{\"from\":\"${__from}\",\"to\":\"${__to}\"}}}&orgId=${__org}"
+                },
+                {
+                  "targetBlank": true,
+                  "title": "Drill down to ${__field.labels.app}'s error logs",
+                  "url": "/explore?schemaVersion=1&panes={\"3xa\":{\"datasource\":\"${log_datasource}\",\"queries\":[{\"refId\":\"A\",\"expr\":\"{app=~\\\"${__field.labels.app}\\\",level=\\\"ERROR\\\"}\",\"queryType\":\"range\",\"datasource\":{\"type\":\"loki\",\"uid\":\"${log_datasource}\"},\"editorMode\":\"code\"}],\"range\":{\"from\":\"${__from}\",\"to\":\"${__to}\"}}}&orgId=${__org}"
+                }
+              ],
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "red",
+                    "value": null
+                  },
+                  {
+                    "color": "dark-red",
+                    "value": 50
+                  }
+                ]
+              },
+              "unitScale": true
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 10,
+            "w": 12,
+            "x": 12,
+            "y": 28
+          },
+          "id": 19,
+          "options": {
+            "legend": {
+              "calcs": ["min", "max", "lastNotNull"],
+              "displayMode": "table",
+              "placement": "bottom",
+              "showLegend": true,
+              "sortBy": "Max",
+              "sortDesc": true
+            },
+            "tooltip": {
+              "mode": "single",
+              "sort": "none"
+            }
+          },
+          "repeatDirection": "v",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${metrics_datasource}"
+              },
+              "editorMode": "code",
+              "expr": "sum by(app,namespace,version) (increase(promtail_custom_fmop_logs_by_level{level=\"ERROR\",namespace=~\"$fmop_namespace\",app=~\"$fmop_app_container\",version=~\"$fmop_release_version\"}[$__rate_interval]))",
+              "instant": false,
+              "legendFormat": "Namespace {{`{{namespace}}`}} | App {{`{{app}}`}} | Version {{`{{version}}`}}",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "App Error Logs",
+          "transformations": [],
+          "type": "timeseries"
+        },
+        {
+          "collapsed": true,
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 38
+          },
+          "id": 29,
+          "panels": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${metrics_datasource}"
+              },
+              "description": "",
+              "gridPos": {
+                "h": 1,
+                "w": 24,
+                "x": 0,
+                "y": 39
+              },
+              "id": 58,
+              "options": {
+                "code": {
+                  "language": "plaintext",
+                  "showLineNumbers": false,
+                  "showMiniMap": false
+                },
+                "content": "\n",
+                "mode": "markdown"
+              },
+              "pluginVersion": "10.3.1",
+              "title": "HTTP & gRPC",
+              "type": "text"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${metrics_datasource}"
+              },
+              "description": "**Response Flags**\n\n`DC` - Downstream connection termination.\n\n`UC` - Upstream connection termination.\n\n`UF` - Upstream connection failure.\n\n`UH` - No healthy upstream hosts.\n\n`UR` - Upstream remote reset.\n\n`URX` - The request was rejected because the upstream retry limit (HTTP) or maximum connect attempts (TCP) was reached.\n\n`UT` - Upstream request timeout.",
+              "fieldConfig": {
+                "defaults": {
+                  "color": {
+                    "mode": "palette-classic"
+                  },
+                  "custom": {
+                    "axisBorderShow": false,
+                    "axisCenteredZero": false,
+                    "axisColorMode": "text",
+                    "axisLabel": "",
+                    "axisPlacement": "auto",
+                    "barAlignment": 0,
+                    "drawStyle": "line",
+                    "fillOpacity": 0,
+                    "gradientMode": "none",
+                    "hideFrom": {
+                      "legend": false,
+                      "tooltip": false,
+                      "viz": false
+                    },
+                    "insertNulls": false,
+                    "lineInterpolation": "linear",
+                    "lineWidth": 1,
+                    "pointSize": 5,
+                    "scaleDistribution": {
+                      "type": "linear"
+                    },
+                    "showPoints": "never",
+                    "spanNulls": false,
+                    "stacking": {
+                      "group": "A",
+                      "mode": "none"
+                    },
+                    "thresholdsStyle": {
+                      "mode": "off"
+                    }
+                  },
+                  "mappings": [],
+                  "min": 0,
+                  "thresholds": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "color": "green",
+                        "value": null
+                      },
+                      {
+                        "color": "red",
+                        "value": 80
+                      }
+                    ]
+                  },
+                  "unit": "reqps",
+                  "unitScale": true
+                },
+                "overrides": []
+              },
+              "gridPos": {
+                "h": 10,
+                "w": 12,
+                "x": 0,
+                "y": 40
+              },
+              "id": 36,
+              "links": [],
+              "options": {
+                "legend": {
+                  "calcs": ["min", "max", "lastNotNull"],
+                  "displayMode": "table",
+                  "placement": "bottom",
+                  "showLegend": true,
+                  "sortBy": "Max",
+                  "sortDesc": true
+                },
+                "tooltip": {
+                  "mode": "single",
+                  "sort": "none"
+                }
+              },
+              "pluginVersion": "8.2.3",
+              "targets": [
+                {
+                  "datasource": {
+                    "type": "prometheus",
+                    "uid": "${metrics_datasource}"
+                  },
+                  "editorMode": "code",
+                  "expr": "sum by (source_workload, destination_workload, request_protocol, response_flags, response_code) (\n  rate(istio_requests_total{app=~\"$fmop_app_container\", reporter=\"destination\", request_protocol=\"http\"}[$__rate_interval])\n)",
+                  "instant": false,
+                  "legendFormat": "Protocol {{`{{request_protocol}}`}} | Status Code {{`{{response_code}}`}} | Flag {{`{{response_flags}}`}} | {{`{{source_workload}}`}} -> {{`{{destination_workload}}`}}",
+                  "range": true,
+                  "refId": "A"
+                },
+                {
+                  "datasource": {
+                    "type": "prometheus",
+                    "uid": "${metrics_datasource}"
+                  },
+                  "editorMode": "code",
+                  "expr": "sum by (destination_workload, request_protocol) (\n  rate(istio_requests_total{app=~\"$fmop_app_container\", reporter=\"destination\", request_protocol=\"http\"}[$__rate_interval])\n)",
+                  "hide": false,
+                  "instant": false,
+                  "legendFormat": "Protocol {{`{{request_protocol}}`}} | Total > {{`{{destination_workload}}`}}",
+                  "range": true,
+                  "refId": "B"
+                }
+              ],
+              "title": "HTTP Request Rate",
+              "type": "timeseries"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${metrics_datasource}"
+              },
+              "description": "**Failed Request**\n\nresponse_code=\"0\", response_flags=\"-\"\n\nresponse_code=\"200\", response_flags!=\"-\"\n\n**Successful Request**\n\nresponse_code=\"200\", response_flags=\"-\"\n\n**Response Flags**\n\n`DC` - Downstream connection termination.\n\n`UC` - Upstream connection termination.\n\n`UF` - Upstream connection failure.\n\n`UH` - No healthy upstream hosts.\n\n`UR` - Upstream remote reset.\n\n`URX` - The request was rejected because the upstream retry limit (HTTP) or maximum connect attempts (TCP) was reached.\n\n`UT` - Upstream request timeout.\n\nRef. https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage",
+              "fieldConfig": {
+                "defaults": {
+                  "color": {
+                    "mode": "palette-classic"
+                  },
+                  "custom": {
+                    "axisBorderShow": false,
+                    "axisCenteredZero": false,
+                    "axisColorMode": "text",
+                    "axisLabel": "",
+                    "axisPlacement": "auto",
+                    "barAlignment": 0,
+                    "drawStyle": "line",
+                    "fillOpacity": 0,
+                    "gradientMode": "none",
+                    "hideFrom": {
+                      "legend": false,
+                      "tooltip": false,
+                      "viz": false
+                    },
+                    "insertNulls": false,
+                    "lineInterpolation": "linear",
+                    "lineWidth": 1,
+                    "pointSize": 5,
+                    "scaleDistribution": {
+                      "type": "linear"
+                    },
+                    "showPoints": "never",
+                    "spanNulls": false,
+                    "stacking": {
+                      "group": "A",
+                      "mode": "none"
+                    },
+                    "thresholdsStyle": {
+                      "mode": "off"
+                    }
+                  },
+                  "mappings": [],
+                  "min": 0,
+                  "thresholds": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "color": "green",
+                        "value": null
+                      },
+                      {
+                        "color": "red",
+                        "value": 80
+                      }
+                    ]
+                  },
+                  "unit": "reqps",
+                  "unitScale": true
+                },
+                "overrides": []
+              },
+              "gridPos": {
+                "h": 10,
+                "w": 12,
+                "x": 12,
+                "y": 40
+              },
+              "id": 42,
+              "links": [],
+              "options": {
+                "legend": {
+                  "calcs": ["min", "max", "lastNotNull"],
+                  "displayMode": "table",
+                  "placement": "bottom",
+                  "showLegend": true,
+                  "sortBy": "Max",
+                  "sortDesc": true
+                },
+                "tooltip": {
+                  "mode": "single",
+                  "sort": "none"
+                }
+              },
+              "pluginVersion": "8.2.3",
+              "targets": [
+                {
+                  "datasource": {
+                    "type": "prometheus",
+                    "uid": "${metrics_datasource}"
+                  },
+                  "editorMode": "code",
+                  "expr": "sum by (source_workload, destination_workload, request_protocol, response_flags, response_code) (\n  rate(istio_requests_total{app=~\"$fmop_app_container\", reporter=\"destination\", request_protocol=\"grpc\"}[$__rate_interval])\n)",
+                  "instant": false,
+                  "legendFormat": "Response Code {{`{{response_code}}`}} | Response Flag {{`{{response_flags}}`}} | {{`{{source_workload}}`}} -> {{`{{destination_workload}}`}}",
+                  "range": true,
+                  "refId": "A"
+                },
+                {
+                  "datasource": {
+                    "type": "prometheus",
+                    "uid": "${metrics_datasource}"
+                  },
+                  "editorMode": "code",
+                  "expr": "sum by (destination_workload, request_protocol) (\n  rate(istio_requests_total{app=~\"$fmop_app_container\", reporter=\"destination\", request_protocol=\"grpc\"}[$__rate_interval])\n)",
+                  "hide": false,
+                  "instant": false,
+                  "legendFormat": "Response Code {{`{{response_code}}`}} | Total -> {{`{{destination_workload}}`}}",
+                  "range": true,
+                  "refId": "B"
+                }
+              ],
+              "title": "gRPC Request Rate",
+              "type": "timeseries"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${metrics_datasource}"
+              },
+              "description": "**Response Flags**\n\n`DC` - Downstream connection termination.\n\n`UC` - Upstream connection termination.\n\n`UF` - Upstream connection failure.\n\n`UH` - No healthy upstream hosts.\n\n`UR` - Upstream remote reset.\n\n`URX` - The request was rejected because the upstream retry limit (HTTP) or maximum connect attempts (TCP) was reached.\n\n`UT` - Upstream request timeout.\n\nRef. https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage",
+              "fieldConfig": {
+                "defaults": {
+                  "color": {
+                    "mode": "palette-classic"
+                  },
+                  "custom": {
+                    "axisBorderShow": false,
+                    "axisCenteredZero": false,
+                    "axisColorMode": "text",
+                    "axisLabel": "",
+                    "axisPlacement": "auto",
+                    "barAlignment": 0,
+                    "drawStyle": "line",
+                    "fillOpacity": 10,
+                    "gradientMode": "none",
+                    "hideFrom": {
+                      "legend": false,
+                      "tooltip": false,
+                      "viz": false
+                    },
+                    "insertNulls": false,
+                    "lineInterpolation": "linear",
+                    "lineWidth": 1,
+                    "pointSize": 5,
+                    "scaleDistribution": {
+                      "type": "linear"
+                    },
+                    "showPoints": "never",
+                    "spanNulls": true,
+                    "stacking": {
+                      "group": "A",
+                      "mode": "none"
+                    },
+                    "thresholdsStyle": {
+                      "mode": "area"
+                    }
+                  },
+                  "decimals": 2,
+                  "mappings": [],
+                  "thresholds": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "color": "green",
+                        "value": null
+                      },
+                      {
+                        "color": "yellow",
+                        "value": 5
+                      },
+                      {
+                        "color": "red",
+                        "value": 10
+                      }
+                    ]
+                  },
+                  "unit": "percent",
+                  "unitScale": true
+                },
+                "overrides": []
+              },
+              "gridPos": {
+                "h": 10,
+                "w": 12,
+                "x": 0,
+                "y": 50
+              },
+              "id": 37,
+              "links": [],
+              "options": {
+                "legend": {
+                  "calcs": ["min", "max", "lastNotNull"],
+                  "displayMode": "table",
+                  "placement": "bottom",
+                  "showLegend": true,
+                  "sortBy": "Max",
+                  "sortDesc": true
+                },
+                "tooltip": {
+                  "mode": "single",
+                  "sort": "none"
+                }
+              },
+              "pluginVersion": "8.2.3",
+              "targets": [
+                {
+                  "datasource": {
+                    "type": "prometheus",
+                    "uid": "${metrics_datasource}"
+                  },
+                  "editorMode": "code",
+                  "expr": "(\n    sum by (source_workload, destination_workload, request_protocol, response_flags, response_code) (\n        rate(istio_requests_total{app=~\"$fmop_app_container\", reporter=\"destination\", request_protocol=\"http\", response_code=~\"[4-5][0-9][0-9]\"}[$__rate_interval])\n    )\n    or\n    sum by (source_workload, destination_workload, request_protocol, response_flags, response_code) (\n        rate(istio_requests_total{app=~\"$fmop_app_container\", reporter=\"destination\", request_protocol=\"http\", response_code=~\"[4-5][0-9][0-9]\"}[$__rate_interval]) * 0\n    )\n/\n    sum by (source_workload, destination_workload, request_protocol, response_flags, response_code) (\n        rate(istio_requests_total{app=~\"$fmop_app_container\", reporter=\"destination\", request_protocol=\"http\"}[$__rate_interval])\n    )\n)",
+                  "hide": false,
+                  "instant": false,
+                  "legendFormat": "Response Code {{`{{response_code}}`}} | Flag {{`{{response_flags}}`}} | {{`{{source_workload}}`}} -> {{`{{destination_workload}}`}}",
+                  "range": true,
+                  "refId": "A"
+                }
+              ],
+              "title": "HTTP Error Rate",
+              "type": "timeseries"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${metrics_datasource}"
+              },
+              "description": "**Failed Request**\n\nresponse_code=\"0\", response_flags=\"-\"\n\nresponse_code=\"200\", response_flags!=\"-\"\n\n**Successful Request**\n\nresponse_code=\"200\", response_flags=\"-\"\n\n**Response Flags**\n\n`DC` - Downstream connection termination.\n\n`UC` - Upstream connection termination.\n\n`UF` - Upstream connection failure.\n\n`UH` - No healthy upstream hosts.\n\n`UR` - Upstream remote reset.\n\n`URX` - The request was rejected because the upstream retry limit (HTTP) or maximum connect attempts (TCP) was reached.\n\n`UT` - Upstream request timeout.\n\nRef. https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage",
+              "fieldConfig": {
+                "defaults": {
+                  "color": {
+                    "mode": "palette-classic"
+                  },
+                  "custom": {
+                    "axisBorderShow": false,
+                    "axisCenteredZero": false,
+                    "axisColorMode": "text",
+                    "axisLabel": "",
+                    "axisPlacement": "auto",
+                    "barAlignment": 0,
+                    "drawStyle": "line",
+                    "fillOpacity": 10,
+                    "gradientMode": "none",
+                    "hideFrom": {
+                      "legend": false,
+                      "tooltip": false,
+                      "viz": false
+                    },
+                    "insertNulls": false,
+                    "lineInterpolation": "linear",
+                    "lineWidth": 1,
+                    "pointSize": 5,
+                    "scaleDistribution": {
+                      "type": "linear"
+                    },
+                    "showPoints": "never",
+                    "spanNulls": true,
+                    "stacking": {
+                      "group": "A",
+                      "mode": "none"
+                    },
+                    "thresholdsStyle": {
+                      "mode": "area"
+                    }
+                  },
+                  "decimals": 3,
+                  "mappings": [],
+                  "thresholds": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "color": "green",
+                        "value": null
+                      },
+                      {
+                        "color": "yellow",
+                        "value": 5
+                      },
+                      {
+                        "color": "red",
+                        "value": 10
+                      }
+                    ]
+                  },
+                  "unit": "percent",
+                  "unitScale": true
+                },
+                "overrides": []
+              },
+              "gridPos": {
+                "h": 10,
+                "w": 12,
+                "x": 12,
+                "y": 50
+              },
+              "id": 45,
+              "links": [],
+              "options": {
+                "legend": {
+                  "calcs": ["min", "max", "lastNotNull"],
+                  "displayMode": "table",
+                  "placement": "bottom",
+                  "showLegend": true,
+                  "sortBy": "Max",
+                  "sortDesc": true
+                },
+                "tooltip": {
+                  "mode": "single",
+                  "sort": "none"
+                }
+              },
+              "pluginVersion": "8.2.3",
+              "targets": [
+                {
+                  "datasource": {
+                    "type": "prometheus",
+                    "uid": "${metrics_datasource}"
+                  },
+                  "editorMode": "code",
+                  "expr": "(\n    sum by (source_workload, destination_workload, request_protocol, response_flags, response_code) (\n        rate(istio_requests_total{app=~\"$fmop_app_container\", reporter=\"destination\", request_protocol=\"grpc\", response_code=\"0\", response_flags=\"-\"}[$__rate_interval])\n    )\n    or\n    sum by (source_workload, destination_workload, request_protocol, response_flags, response_code) (\n        rate(istio_requests_total{app=~\"$fmop_app_container\", reporter=\"destination\", request_protocol=\"grpc\", response_code=\"0\", response_flags=\"-\"}[$__rate_interval]) * 0\n    )\n    /\n    sum by (source_workload, destination_workload, request_protocol, response_flags, response_code) (\n        rate(istio_requests_total{app=~\"$fmop_app_container\", reporter=\"destination\", request_protocol=\"grpc\"}[$__rate_interval])\n    )\n)\nOR\n(\n    sum by (source_workload, destination_workload, request_protocol, response_flags, response_code) (\n        rate(istio_requests_total{app=~\"$fmop_app_container\", reporter=\"destination\", request_protocol=\"grpc\", response_code=\"200\", response_flags!=\"-\" }[$__rate_interval])\n    )\n    or\n    sum by (source_workload, destination_workload, request_protocol, response_flags, response_code) (\n        rate(istio_requests_total{app=~\"$fmop_app_container\", reporter=\"destination\", request_protocol=\"grpc\", response_code=\"200\", response_flags!=\"-\"}[$__rate_interval]) * 0\n    )\n    /\n    sum by (source_workload, destination_workload, request_protocol, response_flags, response_code) (\n        rate(istio_requests_total{app=~\"$fmop_app_container\", reporter=\"destination\", request_protocol=\"grpc\"}[$__rate_interval])\n    )\n)",
+                  "hide": false,
+                  "instant": false,
+                  "legendFormat": "Response Code {{`{{response_code}}`}} | Flag {{`{{response_flags}}`}} | {{`{{source_workload}}`}} -> {{`{{destination_workload}}`}}",
+                  "range": true,
+                  "refId": "A"
+                }
+              ],
+              "title": "gRPC Error Rate",
+              "type": "timeseries"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${metrics_datasource}"
+              },
+              "description": "**Response Flags**\n\n`DC` - Downstream connection termination.\n\n`UC` - Upstream connection termination.\n\n`UF` - Upstream connection failure.\n\n`UH` - No healthy upstream hosts.\n\n`UR` - Upstream remote reset.\n\n`URX` - The request was rejected because the upstream retry limit (HTTP) or maximum connect attempts (TCP) was reached.\n\n`UT` - Upstream request timeout.",
+              "fieldConfig": {
+                "defaults": {
+                  "color": {
+                    "mode": "palette-classic"
+                  },
+                  "custom": {
+                    "axisBorderShow": false,
+                    "axisCenteredZero": false,
+                    "axisColorMode": "text",
+                    "axisLabel": "",
+                    "axisPlacement": "auto",
+                    "barAlignment": 0,
+                    "drawStyle": "line",
+                    "fillOpacity": 10,
+                    "gradientMode": "none",
+                    "hideFrom": {
+                      "legend": false,
+                      "tooltip": false,
+                      "viz": false
+                    },
+                    "insertNulls": false,
+                    "lineInterpolation": "linear",
+                    "lineWidth": 1,
+                    "pointSize": 5,
+                    "scaleDistribution": {
+                      "type": "linear"
+                    },
+                    "showPoints": "never",
+                    "spanNulls": true,
+                    "stacking": {
+                      "group": "A",
+                      "mode": "none"
+                    },
+                    "thresholdsStyle": {
+                      "mode": "line+area"
+                    }
+                  },
+                  "mappings": [],
+                  "min": 0,
+                  "thresholds": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "color": "green",
+                        "value": null
+                      },
+                      {
+                        "color": "red",
+                        "value": 5000
+                      },
+                      {
+                        "color": "#EAB839",
+                        "value": 10000
+                      }
+                    ]
+                  },
+                  "unit": "ms",
+                  "unitScale": true
+                },
+                "overrides": []
+              },
+              "gridPos": {
+                "h": 10,
+                "w": 12,
+                "x": 0,
+                "y": 60
+              },
+              "id": 38,
+              "links": [],
+              "options": {
+                "legend": {
+                  "calcs": ["min", "max", "lastNotNull"],
+                  "displayMode": "table",
+                  "placement": "bottom",
+                  "showLegend": true,
+                  "sortBy": "Max",
+                  "sortDesc": true
+                },
+                "tooltip": {
+                  "mode": "single",
+                  "sort": "none"
+                }
+              },
+              "pluginVersion": "8.2.3",
+              "targets": [
+                {
+                  "datasource": {
+                    "type": "prometheus",
+                    "uid": "${metrics_datasource}"
+                  },
+                  "editorMode": "code",
+                  "expr": "sum by (source_workload, destination_workload, request_protocol, response_flags, response_code) (\n  rate(istio_request_duration_milliseconds_sum{app=~\"$fmop_app_container\", reporter=~\"destination\", request_protocol=\"http\"}[$__rate_interval])\n) \n  /\nsum by (source_workload, destination_workload, request_protocol, response_flags, response_code) (\n  rate(istio_request_duration_milliseconds_count{app=~\"$fmop_app_container\", reporter=~\"destination\", request_protocol=\"http\"}[$__rate_interval])\n)",
+                  "instant": false,
+                  "legendFormat": "Response Code {{`{{response_code}}`}} | Flag {{`{{response_flags}}`}} | {{`{{source_workload}}`}} -> {{`{{destination_workload}}`}}",
+                  "range": true,
+                  "refId": "A"
+                }
+              ],
+              "title": "HTTP Request Duration",
+              "type": "timeseries"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${metrics_datasource}"
+              },
+              "description": "**Failed Request**\n\nresponse_code=\"0\", response_flags=\"-\"\n\nresponse_code=\"200\", response_flags!=\"-\"\n\n**Successful Request**\n\nresponse_code=\"200\", response_flags=\"-\"\n\n**Response Flags**\n\n`DC` - Downstream connection termination.\n\n`UC` - Upstream connection termination.\n\n`UF` - Upstream connection failure.\n\n`UH` - No healthy upstream hosts.\n\n`UR` - Upstream remote reset.\n\n`URX` - The request was rejected because the upstream retry limit (HTTP) or maximum connect attempts (TCP) was reached.\n\n`UT` - Upstream request timeout.\n\nRef. https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage",
+              "fieldConfig": {
+                "defaults": {
+                  "color": {
+                    "mode": "palette-classic"
+                  },
+                  "custom": {
+                    "axisBorderShow": false,
+                    "axisCenteredZero": false,
+                    "axisColorMode": "text",
+                    "axisLabel": "",
+                    "axisPlacement": "auto",
+                    "barAlignment": 0,
+                    "drawStyle": "line",
+                    "fillOpacity": 10,
+                    "gradientMode": "none",
+                    "hideFrom": {
+                      "legend": false,
+                      "tooltip": false,
+                      "viz": false
+                    },
+                    "insertNulls": false,
+                    "lineInterpolation": "linear",
+                    "lineWidth": 1,
+                    "pointSize": 5,
+                    "scaleDistribution": {
+                      "type": "linear"
+                    },
+                    "showPoints": "never",
+                    "spanNulls": true,
+                    "stacking": {
+                      "group": "A",
+                      "mode": "none"
+                    },
+                    "thresholdsStyle": {
+                      "mode": "line+area"
+                    }
+                  },
+                  "mappings": [],
+                  "min": 0,
+                  "thresholds": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "color": "green",
+                        "value": null
+                      },
+                      {
+                        "color": "red",
+                        "value": 5000
+                      },
+                      {
+                        "color": "#EAB839",
+                        "value": 10000
+                      }
+                    ]
+                  },
+                  "unit": "ms",
+                  "unitScale": true
+                },
+                "overrides": []
+              },
+              "gridPos": {
+                "h": 10,
+                "w": 12,
+                "x": 12,
+                "y": 60
+              },
+              "id": 46,
+              "links": [],
+              "options": {
+                "legend": {
+                  "calcs": ["min", "max", "lastNotNull"],
+                  "displayMode": "table",
+                  "placement": "bottom",
+                  "showLegend": true,
+                  "sortBy": "Max",
+                  "sortDesc": true
+                },
+                "tooltip": {
+                  "mode": "single",
+                  "sort": "none"
+                }
+              },
+              "pluginVersion": "8.2.3",
+              "targets": [
+                {
+                  "datasource": {
+                    "type": "prometheus",
+                    "uid": "${metrics_datasource}"
+                  },
+                  "editorMode": "code",
+                  "expr": "sum by (source_workload, destination_workload, request_protocol, response_flags, response_code) (\n  rate(istio_request_duration_milliseconds_sum{app=~\"$fmop_app_container\", reporter=~\"destination\", request_protocol=\"grpc\"}[$__rate_interval])\n)\n  /\nsum by (source_workload, destination_workload, request_protocol, response_flags, response_code) (\n  rate(istio_request_duration_milliseconds_count{app=~\"$fmop_app_container\", reporter=~\"destination\", request_protocol=\"grpc\"}[$__rate_interval])\n)",
+                  "instant": false,
+                  "legendFormat": "Response Code {{`{{response_code}}`}} | Flag {{`{{response_flags}}`}} | {{`{{source_workload}}`}} -> {{`{{destination_workload}}`}}",
+                  "range": true,
+                  "refId": "A"
+                }
+              ],
+              "title": "gRPC Request Duration",
+              "type": "timeseries"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${metrics_datasource}"
+              },
+              "description": "",
+              "fieldConfig": {
+                "defaults": {
+                  "color": {
+                    "mode": "palette-classic"
+                  },
+                  "custom": {
+                    "axisBorderShow": false,
+                    "axisCenteredZero": false,
+                    "axisColorMode": "text",
+                    "axisLabel": "",
+                    "axisPlacement": "auto",
+                    "barAlignment": 0,
+                    "drawStyle": "line",
+                    "fillOpacity": 0,
+                    "gradientMode": "none",
+                    "hideFrom": {
+                      "legend": false,
+                      "tooltip": false,
+                      "viz": false
+                    },
+                    "insertNulls": false,
+                    "lineInterpolation": "linear",
+                    "lineWidth": 1,
+                    "pointSize": 5,
+                    "scaleDistribution": {
+                      "type": "linear"
+                    },
+                    "showPoints": "never",
+                    "spanNulls": false,
+                    "stacking": {
+                      "group": "A",
+                      "mode": "none"
+                    },
+                    "thresholdsStyle": {
+                      "mode": "off"
+                    }
+                  },
+                  "mappings": [],
+                  "min": 0,
+                  "thresholds": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "color": "green",
+                        "value": null
+                      },
+                      {
+                        "color": "red",
+                        "value": 80
+                      }
+                    ]
+                  },
+                  "unit": "s",
+                  "unitScale": true
+                },
+                "overrides": []
+              },
+              "gridPos": {
+                "h": 10,
+                "w": 24,
+                "x": 0,
+                "y": 70
+              },
+              "id": 60,
+              "links": [],
+              "options": {
+                "legend": {
+                  "calcs": ["min", "max", "lastNotNull"],
+                  "displayMode": "table",
+                  "placement": "bottom",
+                  "showLegend": true,
+                  "sortBy": "Max",
+                  "sortDesc": true
+                },
+                "tooltip": {
+                  "mode": "single",
+                  "sort": "desc"
+                }
+              },
+              "pluginVersion": "8.2.3",
+              "targets": [
+                {
+                  "datasource": {
+                    "type": "prometheus",
+                    "uid": "${metrics_datasource}"
+                  },
+                  "editorMode": "code",
+                  "expr": "sum by (app,class,exception,method,pod,lxp_version) (\n  method_execution_duration_seconds_max{container=~\"$fmop_app_container\",namespace=~\"$fmop_namespace\"}\n) ",
+                  "hide": false,
+                  "instant": false,
+                  "legendFormat": "{{`{{lxp_version}}`}} | {{`{{app}}`}} | Class {{`{{class}}`}} | Method {{`{{method}}`}} | Exception {{`{{exception}}`}}",
+                  "range": true,
+                  "refId": "A"
+                }
+              ],
+              "title": "Java App Method Execution Duration",
+              "type": "timeseries"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${metrics_datasource}"
+              },
+              "description": "",
+              "gridPos": {
+                "h": 1,
+                "w": 24,
+                "x": 0,
+                "y": 80
+              },
+              "id": 59,
+              "options": {
+                "code": {
+                  "language": "plaintext",
+                  "showLineNumbers": false,
+                  "showMiniMap": false
+                },
+                "content": "\n",
+                "mode": "markdown"
+              },
+              "pluginVersion": "10.3.1",
+              "title": "TCP",
+              "type": "text"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${metrics_datasource}"
+              },
+              "description": "**Response Flags**\n\n`DC` - Downstream connection termination.\n\n`UC` - Upstream connection termination.\n\n`UF` - Upstream connection failure.\n\n`UH` - No healthy upstream hosts.\n\n`UR` - Upstream remote reset.\n\n`URX` - The request was rejected because the upstream retry limit (HTTP) or maximum connect attempts (TCP) was reached.\n\n`UT` - Upstream request timeout.",
+              "fieldConfig": {
+                "defaults": {
+                  "color": {
+                    "mode": "palette-classic"
+                  },
+                  "custom": {
+                    "axisBorderShow": false,
+                    "axisCenteredZero": false,
+                    "axisColorMode": "text",
+                    "axisLabel": "",
+                    "axisPlacement": "auto",
+                    "barAlignment": 0,
+                    "drawStyle": "line",
+                    "fillOpacity": 0,
+                    "gradientMode": "none",
+                    "hideFrom": {
+                      "legend": false,
+                      "tooltip": false,
+                      "viz": false
+                    },
+                    "insertNulls": false,
+                    "lineInterpolation": "linear",
+                    "lineWidth": 1,
+                    "pointSize": 5,
+                    "scaleDistribution": {
+                      "type": "linear"
+                    },
+                    "showPoints": "never",
+                    "spanNulls": false,
+                    "stacking": {
+                      "group": "A",
+                      "mode": "none"
+                    },
+                    "thresholdsStyle": {
+                      "mode": "off"
+                    }
+                  },
+                  "mappings": [],
+                  "min": 0,
+                  "thresholds": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "color": "green",
+                        "value": null
+                      },
+                      {
+                        "color": "red",
+                        "value": 80
+                      }
+                    ]
+                  },
+                  "unit": "bytes",
+                  "unitScale": true
+                },
+                "overrides": []
+              },
+              "gridPos": {
+                "h": 10,
+                "w": 12,
+                "x": 0,
+                "y": 81
+              },
+              "id": 56,
+              "links": [],
+              "options": {
+                "legend": {
+                  "calcs": ["min", "max", "lastNotNull"],
+                  "displayMode": "table",
+                  "placement": "bottom",
+                  "showLegend": true,
+                  "sortBy": "Name",
+                  "sortDesc": true
+                },
+                "tooltip": {
+                  "mode": "single",
+                  "sort": "desc"
+                }
+              },
+              "pluginVersion": "8.2.3",
+              "targets": [
+                {
+                  "datasource": {
+                    "type": "prometheus",
+                    "uid": "${metrics_datasource}"
+                  },
+                  "editorMode": "code",
+                  "expr": "sum by (source_workload, destination_workload, destination_service_name, request_protocol, response_flags, response_code) (\n  rate(istio_tcp_sent_bytes_total{app=~\"$fmop_app_container\", reporter=\"source\"}[$__rate_interval])\n)",
+                  "hide": false,
+                  "instant": false,
+                  "legendFormat": "Protocol {{`{{request_protocol}}`}} | Status Code {{`{{response_code}}`}} | Flag {{`{{response_flags}}`}} | {{`{{source_workload}}`}} -> {{`{{destination_service_name}}`}}",
+                  "range": true,
+                  "refId": "A"
+                },
+                {
+                  "datasource": {
+                    "type": "prometheus",
+                    "uid": "${metrics_datasource}"
+                  },
+                  "editorMode": "code",
+                  "expr": "sum by (destination_workload, destination_service_name, request_protocol) (\n  rate(istio_tcp_sent_bytes_total{app=~\"$fmop_app_container\", reporter=\"source\"}[$__rate_interval])\n)",
+                  "hide": false,
+                  "instant": false,
+                  "legendFormat": "Protocol {{`{{request_protocol}}`}} | Total -> {{`{{destination_service_name}}`}}",
+                  "range": true,
+                  "refId": "B"
+                }
+              ],
+              "title": "TCP Bandwidth ",
+              "type": "timeseries"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${metrics_datasource}"
+              },
+              "description": "**Response Flags**\n\n`DC` - Downstream connection termination.\n\n`UC` - Upstream connection termination.\n\n`UF` - Upstream connection failure.\n\n`UH` - No healthy upstream hosts.\n\n`UR` - Upstream remote reset.\n\n`URX` - The request was rejected because the upstream retry limit (HTTP) or maximum connect attempts (TCP) was reached.\n\n`UT` - Upstream request timeout.",
+              "fieldConfig": {
+                "defaults": {
+                  "color": {
+                    "mode": "palette-classic"
+                  },
+                  "custom": {
+                    "axisBorderShow": false,
+                    "axisCenteredZero": false,
+                    "axisColorMode": "text",
+                    "axisLabel": "",
+                    "axisPlacement": "auto",
+                    "barAlignment": 0,
+                    "drawStyle": "line",
+                    "fillOpacity": 0,
+                    "gradientMode": "none",
+                    "hideFrom": {
+                      "legend": false,
+                      "tooltip": false,
+                      "viz": false
+                    },
+                    "insertNulls": false,
+                    "lineInterpolation": "linear",
+                    "lineWidth": 1,
+                    "pointSize": 5,
+                    "scaleDistribution": {
+                      "type": "linear"
+                    },
+                    "showPoints": "never",
+                    "spanNulls": false,
+                    "stacking": {
+                      "group": "A",
+                      "mode": "none"
+                    },
+                    "thresholdsStyle": {
+                      "mode": "off"
+                    }
+                  },
+                  "mappings": [],
+                  "min": 0,
+                  "thresholds": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "color": "green",
+                        "value": null
+                      },
+                      {
+                        "color": "red",
+                        "value": 80
+                      }
+                    ]
+                  },
+                  "unit": "short",
+                  "unitScale": true
+                },
+                "overrides": []
+              },
+              "gridPos": {
+                "h": 10,
+                "w": 12,
+                "x": 12,
+                "y": 81
+              },
+              "id": 57,
+              "links": [],
+              "options": {
+                "legend": {
+                  "calcs": ["min", "max", "lastNotNull"],
+                  "displayMode": "table",
+                  "placement": "bottom",
+                  "showLegend": true,
+                  "sortBy": "Name",
+                  "sortDesc": true
+                },
+                "tooltip": {
+                  "mode": "single",
+                  "sort": "desc"
+                }
+              },
+              "pluginVersion": "8.2.3",
+              "targets": [
+                {
+                  "datasource": {
+                    "type": "prometheus",
+                    "uid": "${metrics_datasource}"
+                  },
+                  "editorMode": "code",
+                  "expr": "sum by (source_workload, destination_workload, destination_service_name, request_protocol, response_flags, response_code) (\n  rate(istio_tcp_connections_opened_total{app=~\"$fmop_app_container\", reporter=\"source\"}[$__rate_interval])\n)",
+                  "hide": false,
+                  "instant": false,
+                  "legendFormat": "Protocol {{`{{request_protocol}}`}} | Status Code {{`{{response_code}}`}} | Flag {{`{{response_flags}}`}} | {{`{{source_workload}}`}} -> {{`{{destination_service_name}}`}}",
+                  "range": true,
+                  "refId": "A"
+                },
+                {
+                  "datasource": {
+                    "type": "prometheus",
+                    "uid": "${metrics_datasource}"
+                  },
+                  "editorMode": "code",
+                  "expr": "sum by (destination_workload, destination_service_name, request_protocol) (\n  rate(istio_tcp_connections_opened_total{app=~\"$fmop_app_container\", reporter=\"source\"}[$__rate_interval])\n)",
+                  "hide": false,
+                  "instant": false,
+                  "legendFormat": "Protocol {{`{{request_protocol}}`}} | Total -> {{`{{destination_service_name}}`}}",
+                  "range": true,
+                  "refId": "B"
+                }
+              ],
+              "title": "TCP Connections ",
+              "type": "timeseries"
+            }
+          ],
+          "title": "FMOP App RED",
+          "type": "row"
+        },
+        {
+          "collapsed": true,
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 39
+          },
+          "id": 47,
+          "panels": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${metrics_datasource}"
+              },
+              "fieldConfig": {
+                "defaults": {
+                  "color": {
+                    "mode": "palette-classic"
+                  },
+                  "custom": {
+                    "axisBorderShow": false,
+                    "axisCenteredZero": false,
+                    "axisColorMode": "text",
+                    "axisLabel": "",
+                    "axisPlacement": "auto",
+                    "barAlignment": 0,
+                    "drawStyle": "line",
+                    "fillOpacity": 0,
+                    "gradientMode": "none",
+                    "hideFrom": {
+                      "legend": false,
+                      "tooltip": false,
+                      "viz": false
+                    },
+                    "insertNulls": false,
+                    "lineInterpolation": "linear",
+                    "lineWidth": 1,
+                    "pointSize": 6,
+                    "scaleDistribution": {
+                      "type": "linear"
+                    },
+                    "showPoints": "auto",
+                    "spanNulls": false,
+                    "stacking": {
+                      "group": "A",
+                      "mode": "none"
+                    },
+                    "thresholdsStyle": {
+                      "mode": "off"
+                    }
+                  },
+                  "decimals": 2,
+                  "links": [
+                    {
+                      "targetBlank": true,
+                      "title": "(Span Only) Drill down to span name ${__field.labels.span_name}",
+                      "url": "/explore?schemaVersion=1&panes={\"Ur5\":{\"datasource\":\"${traces_datasource}\",\"queries\":[{\"refId\":\"A\",\"datasource\":{\"type\":\"tempo\",\"uid\":\"${traces_datasource}\"},\"queryType\":\"traceql\",\"limit\":20,\"tableType\":\"traces\",\"query\":\"{name=\\\"${__field.labels.span_name}\\\"}\"}],\"range\":{\"from\":\"${__from}\",\"to\":\"${__to}\"}}}&orgId=${__org}"
+                    },
+                    {
+                      "targetBlank": true,
+                      "title": "(gRPC Only) Drill down to grpc path ${__field.labels.grpc_path} ",
+                      "url": "/explore?schemaVersion=1&panes={\"Ur5\":{\"datasource\":\"${traces_datasource}\",\"queries\":[{\"refId\":\"A\",\"datasource\":{\"type\":\"tempo\",\"uid\":\"${traces_datasource}\"},\"queryType\":\"traceql\",\"limit\":20,\"tableType\":\"traces\",\"query\":\"{name=\\\"${__field.labels.span_name}\\\" %26%26 .grpc.path=\\\"${__field.labels.grpc_path}\\\"}\"}],\"range\":{\"from\":\"${__from}\",\"to\":\"${__to}\"}}}&orgId=${__org}"
+                    },
+                    {
+                      "targetBlank": true,
+                      "title": "(HTTP Only) Drill down to http target ${__field.labels.http_target}",
+                      "url": "/explore?schemaVersion=1&panes={\"Ur5\":{\"datasource\":\"${traces_datasource}\",\"queries\":[{\"refId\":\"A\",\"datasource\":{\"type\":\"tempo\",\"uid\":\"${traces_datasource}\"},\"queryType\":\"traceql\",\"limit\":20,\"tableType\":\"traces\",\"query\":\"{name=\\\"${__field.labels.span_name}\\\" %26%26 .http.target=\\\"${__field.labels.http_target}\\\"}\"}],\"range\":{\"from\":\"${__from}\",\"to\":\"${__to}\"}}}&orgId=${__org}"
+                    }
+                  ],
+                  "mappings": [],
+                  "thresholds": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "color": "green",
+                        "value": null
+                      },
+                      {
+                        "color": "yellow",
+                        "value": 5
+                      },
+                      {
+                        "color": "dark-red",
+                        "value": 10
+                      }
+                    ]
+                  },
+                  "unit": "reqps",
+                  "unitScale": true
+                },
+                "overrides": []
+              },
+              "gridPos": {
+                "h": 10,
+                "w": 12,
+                "x": 0,
+                "y": 70
+              },
+              "id": 31,
+              "options": {
+                "legend": {
+                  "calcs": ["min", "max", "lastNotNull"],
+                  "displayMode": "table",
+                  "placement": "bottom",
+                  "showLegend": true,
+                  "sortBy": "Max",
+                  "sortDesc": true
+                },
+                "tooltip": {
+                  "mode": "single",
+                  "sort": "none"
+                }
+              },
+              "pluginVersion": "10.3.1",
+              "targets": [
+                {
+                  "datasource": {
+                    "type": "prometheus",
+                    "uid": "${metrics_datasource}"
+                  },
+                  "editorMode": "code",
+                  "exemplar": false,
+                  "expr": "sum by (span_name,http_target) (\n    rate(traces_spanmetrics_calls_total{service=~\"$trace_service\",span_kind=\"SPAN_KIND_SERVER\",http_target=~\"$http_target\",http_target!=\"\",grpc_path=\"\"}[$__rate_interval])\n)",
+                  "hide": false,
+                  "instant": false,
+                  "legendFormat": "HTTP Only | {{`{{span_name}}`}} | {{`{{http_target}}`}}",
+                  "range": true,
+                  "refId": "A"
+                },
+                {
+                  "datasource": {
+                    "type": "prometheus",
+                    "uid": "${metrics_datasource}"
+                  },
+                  "editorMode": "code",
+                  "expr": "sum by (span_name,grpc_path) (\n    rate(traces_spanmetrics_calls_total{service=~\"$trace_service\",span_kind=\"SPAN_KIND_SERVER\",grpc_path=~\"$grpc_path\",grpc_path!=\"\",http_target=\"\"}[$__rate_interval])\n)",
+                  "hide": false,
+                  "instant": false,
+                  "legendFormat": "gRPC Only | {{`{{span_name}}`}} | {{`{{grpc_path}}`}}",
+                  "range": true,
+                  "refId": "B"
+                },
+                {
+                  "datasource": {
+                    "type": "prometheus",
+                    "uid": "${metrics_datasource}"
+                  },
+                  "editorMode": "code",
+                  "expr": "sum by (span_name,http_target,grpc_path) (\n    rate(traces_spanmetrics_calls_total{service=~\"$trace_service\",span_kind=\"SPAN_KIND_SERVER\",http_target=\"\",grpc_path=\"\"}[$__rate_interval])\n)",
+                  "hide": false,
+                  "instant": false,
+                  "legendFormat": "Span Only | {{`{{span_name}}`}}",
+                  "range": true,
+                  "refId": "C"
+                }
+              ],
+              "title": "Request Rate",
+              "type": "timeseries"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${metrics_datasource}"
+              },
+              "fieldConfig": {
+                "defaults": {
+                  "color": {
+                    "mode": "palette-classic"
+                  },
+                  "custom": {
+                    "axisBorderShow": false,
+                    "axisCenteredZero": false,
+                    "axisColorMode": "text",
+                    "axisLabel": "",
+                    "axisPlacement": "auto",
+                    "barAlignment": 0,
+                    "drawStyle": "line",
+                    "fillOpacity": 10,
+                    "gradientMode": "none",
+                    "hideFrom": {
+                      "legend": false,
+                      "tooltip": false,
+                      "viz": false
+                    },
+                    "insertNulls": false,
+                    "lineInterpolation": "linear",
+                    "lineWidth": 1,
+                    "pointSize": 6,
+                    "scaleDistribution": {
+                      "type": "linear"
+                    },
+                    "showPoints": "auto",
+                    "spanNulls": false,
+                    "stacking": {
+                      "group": "A",
+                      "mode": "none"
+                    },
+                    "thresholdsStyle": {
+                      "mode": "line+area"
+                    }
+                  },
+                  "decimals": 2,
+                  "links": [
+                    {
+                      "targetBlank": true,
+                      "title": "(Span Only) Drill down to span name ${__field.labels.span_name}",
+                      "url": "/explore?schemaVersion=1&panes={\"Ur5\":{\"datasource\":\"${traces_datasource}\",\"queries\":[{\"refId\":\"A\",\"datasource\":{\"type\":\"tempo\",\"uid\":\"${traces_datasource}\"},\"queryType\":\"traceql\",\"limit\":20,\"tableType\":\"traces\",\"query\":\"{name=\\\"${__field.labels.span_name}\\\"}\"}],\"range\":{\"from\":\"${__from}\",\"to\":\"${__to}\"}}}&orgId=${__org}"
+                    },
+                    {
+                      "targetBlank": true,
+                      "title": "(gRPC Only) Drill down to grpc path ${__field.labels.grpc_path} ",
+                      "url": "/explore?schemaVersion=1&panes={\"Ur5\":{\"datasource\":\"${traces_datasource}\",\"queries\":[{\"refId\":\"A\",\"datasource\":{\"type\":\"tempo\",\"uid\":\"${traces_datasource}\"},\"queryType\":\"traceql\",\"limit\":20,\"tableType\":\"traces\",\"query\":\"{name=\\\"${__field.labels.span_name}\\\" %26%26 .grpc.path=\\\"${__field.labels.grpc_path}\\\"}\"}],\"range\":{\"from\":\"${__from}\",\"to\":\"${__to}\"}}}&orgId=${__org}"
+                    },
+                    {
+                      "targetBlank": true,
+                      "title": "(HTTP Only) Drill down to http target ${__field.labels.http_target}",
+                      "url": "/explore?schemaVersion=1&panes={\"Ur5\":{\"datasource\":\"${traces_datasource}\",\"queries\":[{\"refId\":\"A\",\"datasource\":{\"type\":\"tempo\",\"uid\":\"${traces_datasource}\"},\"queryType\":\"traceql\",\"limit\":20,\"tableType\":\"traces\",\"query\":\"{name=\\\"${__field.labels.span_name}\\\" %26%26 .http.target=\\\"${__field.labels.http_target}\\\"}\"}],\"range\":{\"from\":\"${__from}\",\"to\":\"${__to}\"}}}&orgId=${__org}"
+                    }
+                  ],
+                  "mappings": [],
+                  "thresholds": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "color": "green",
+                        "value": null
+                      },
+                      {
+                        "color": "yellow",
+                        "value": 5
+                      },
+                      {
+                        "color": "dark-red",
+                        "value": 10
+                      }
+                    ]
+                  },
+                  "unit": "percent",
+                  "unitScale": true
+                },
+                "overrides": []
+              },
+              "gridPos": {
+                "h": 10,
+                "w": 12,
+                "x": 12,
+                "y": 70
+              },
+              "id": 32,
+              "options": {
+                "legend": {
+                  "calcs": ["min", "max", "lastNotNull"],
+                  "displayMode": "table",
+                  "placement": "bottom",
+                  "showLegend": true,
+                  "sortBy": "Max",
+                  "sortDesc": true
+                },
+                "tooltip": {
+                  "mode": "multi",
+                  "sort": "none"
+                }
+              },
+              "pluginVersion": "10.3.1",
+              "targets": [
+                {
+                  "datasource": {
+                    "type": "prometheus",
+                    "uid": "${metrics_datasource}"
+                  },
+                  "editorMode": "code",
+                  "exemplar": false,
+                  "expr": "(\n  sum by (span_name,http_target) (\n    rate(traces_spanmetrics_calls_total{service=~\"$trace_service\",span_kind=\"SPAN_KIND_SERVER\",status_code=\"STATUS_CODE_ERROR\",http_target=~\"$http_target\",http_target!=\"\",grpc_path=\"\"}[5m])\n  )\n    /\n  sum by (span_name,http_target) (\n    rate(traces_spanmetrics_calls_total{service=~\"$trace_service\",span_kind=\"SPAN_KIND_SERVER\",http_target=~\"$http_target\",http_target!=\"\",grpc_path=\"\"}[5m])\n  )\n) * 100",
+                  "hide": false,
+                  "instant": false,
+                  "legendFormat": "HTTP Only | {{`{{span_name}}`}} | {{`{{http_target}}`}}",
+                  "range": true,
+                  "refId": "A"
+                },
+                {
+                  "datasource": {
+                    "type": "prometheus",
+                    "uid": "${metrics_datasource}"
+                  },
+                  "editorMode": "code",
+                  "expr": "(\n  sum by (span_name,grpc_path) (\n    rate(traces_spanmetrics_calls_total{service=~\"$trace_service\",span_kind=\"SPAN_KIND_SERVER\",status_code=\"STATUS_CODE_ERROR\",grpc_path=~\"$grpc_path\",grpc_path!=\"\",http_target=\"\"}[5m])\n  )\n    /\n  sum by (span_name,grpc_path) (\n    rate(traces_spanmetrics_calls_total{service=~\"$trace_service\",span_kind=\"SPAN_KIND_SERVER\",grpc_path=~\"$grpc_path\",grpc_path!=\"\",http_target=\"\"}[5m])\n  )\n) * 100",
+                  "hide": false,
+                  "instant": false,
+                  "legendFormat": "gRPC Only | {{`{{span_name}}`}} | {{`{{grpc_path}}`}}",
+                  "range": true,
+                  "refId": "B"
+                },
+                {
+                  "datasource": {
+                    "type": "prometheus",
+                    "uid": "${metrics_datasource}"
+                  },
+                  "editorMode": "code",
+                  "expr": "(\n  sum by (span_name,http_target,grpc_path) (\n    rate(traces_spanmetrics_calls_total{service=~\"$trace_service\",span_kind=\"SPAN_KIND_SERVER\",status_code=\"STATUS_CODE_ERROR\",http_target=\"\",grpc_path=\"\"}[5m])\n  )\n    /\n  sum by (span_name,http_target,grpc_path) (\n    rate(traces_spanmetrics_calls_total{service=~\"$trace_service\",span_kind=\"SPAN_KIND_SERVER\",http_target=\"\",grpc_path=\"\"}[5m])\n  )\n) * 100",
+                  "hide": false,
+                  "instant": false,
+                  "legendFormat": "Span Only | {{`{{span_name}}`}}",
+                  "range": true,
+                  "refId": "C"
+                }
+              ],
+              "title": "Error Rate",
+              "type": "timeseries"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${metrics_datasource}"
+              },
+              "fieldConfig": {
+                "defaults": {
+                  "color": {
+                    "mode": "palette-classic"
+                  },
+                  "custom": {
+                    "axisBorderShow": false,
+                    "axisCenteredZero": false,
+                    "axisColorMode": "text",
+                    "axisLabel": "",
+                    "axisPlacement": "auto",
+                    "barAlignment": 0,
+                    "drawStyle": "line",
+                    "fillOpacity": 0,
+                    "gradientMode": "none",
+                    "hideFrom": {
+                      "legend": false,
+                      "tooltip": false,
+                      "viz": false
+                    },
+                    "insertNulls": false,
+                    "lineInterpolation": "linear",
+                    "lineWidth": 1,
+                    "pointSize": 6,
+                    "scaleDistribution": {
+                      "type": "linear"
+                    },
+                    "showPoints": "auto",
+                    "spanNulls": false,
+                    "stacking": {
+                      "group": "A",
+                      "mode": "none"
+                    },
+                    "thresholdsStyle": {
+                      "mode": "line+area"
+                    }
+                  },
+                  "links": [
+                    {
+                      "targetBlank": true,
+                      "title": "(Span Only) Drill down to span name ${__field.labels.span_name}",
+                      "url": "/explore?schemaVersion=1&panes={\"Ur5\":{\"datasource\":\"${traces_datasource}\",\"queries\":[{\"refId\":\"A\",\"datasource\":{\"type\":\"tempo\",\"uid\":\"${traces_datasource}\"},\"queryType\":\"traceql\",\"limit\":20,\"tableType\":\"traces\",\"query\":\"{name=\\\"${__field.labels.span_name}\\\"}\"}],\"range\":{\"from\":\"${__from}\",\"to\":\"${__to}\"}}}&orgId=${__org}"
+                    },
+                    {
+                      "targetBlank": true,
+                      "title": "(gRPC Only) Drill down to to grpc path ${__field.labels.grpc_path}",
+                      "url": "/explore?schemaVersion=1&panes={\"Ur5\":{\"datasource\":\"${traces_datasource}\",\"queries\":[{\"refId\":\"A\",\"datasource\":{\"type\":\"tempo\",\"uid\":\"${traces_datasource}\"},\"queryType\":\"traceql\",\"limit\":20,\"tableType\":\"traces\",\"query\":\"{name=\\\"${__field.labels.span_name}\\\" %26%26 .grpc.path=\\\"${__field.labels.grpc_path}\\\"}\"}],\"range\":{\"from\":\"${__from}\",\"to\":\"${__to}\"}}}&orgId=${__org}"
+                    },
+                    {
+                      "targetBlank": true,
+                      "title": "(HTTP Only) Drill down to http target ${__field.labels.http_target}",
+                      "url": "/explore?schemaVersion=1&panes={\"Ur5\":{\"datasource\":\"${traces_datasource}\",\"queries\":[{\"refId\":\"A\",\"datasource\":{\"type\":\"tempo\",\"uid\":\"${traces_datasource}\"},\"queryType\":\"traceql\",\"limit\":20,\"tableType\":\"traces\",\"query\":\"{name=\\\"${__field.labels.span_name}\\\" %26%26 .http.target=\\\"${__field.labels.http_target}\\\"}\"}],\"range\":{\"from\":\"${__from}\",\"to\":\"${__to}\"}}}&orgId=${__org}"
+                    }
+                  ],
+                  "mappings": [],
+                  "thresholds": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "color": "green",
+                        "value": null
+                      },
+                      {
+                        "color": "yellow",
+                        "value": 5
+                      },
+                      {
+                        "color": "dark-red",
+                        "value": 10
+                      }
+                    ]
+                  },
+                  "unit": "s",
+                  "unitScale": true
+                },
+                "overrides": []
+              },
+              "gridPos": {
+                "h": 10,
+                "w": 12,
+                "x": 0,
+                "y": 80
+              },
+              "id": 33,
+              "options": {
+                "legend": {
+                  "calcs": ["min", "max", "lastNotNull"],
+                  "displayMode": "table",
+                  "placement": "bottom",
+                  "showLegend": true,
+                  "sortBy": "Max",
+                  "sortDesc": true
+                },
+                "tooltip": {
+                  "mode": "single",
+                  "sort": "none"
+                }
+              },
+              "pluginVersion": "10.3.1",
+              "targets": [
+                {
+                  "datasource": {
+                    "type": "prometheus",
+                    "uid": "${metrics_datasource}"
+                  },
+                  "editorMode": "code",
+                  "exemplar": false,
+                  "expr": "sum by (span_name,http_target) (\n    rate(traces_spanmetrics_latency_sum{service=~\"$trace_service\",span_kind=\"SPAN_KIND_SERVER\",http_target=~\"$http_target\",http_target!=\"\",grpc_path=\"\"}[$__rate_interval])\n)\n    / \nsum by (span_name,http_target) (\n    rate(traces_spanmetrics_latency_count{service=~\"$trace_service\",span_kind=\"SPAN_KIND_SERVER\",http_target=~\"$http_target\",http_target!=\"\",grpc_path=\"\"}[$__rate_interval])\n)",
+                  "hide": false,
+                  "instant": false,
+                  "legendFormat": "HTTP Only | {{`{{span_name}}`}} | {{`{{http_target}}`}}",
+                  "range": true,
+                  "refId": "A"
+                },
+                {
+                  "datasource": {
+                    "type": "prometheus",
+                    "uid": "${metrics_datasource}"
+                  },
+                  "editorMode": "code",
+                  "expr": "sum by (span_name,grpc_path) (\n    rate(traces_spanmetrics_latency_sum{service=~\"$trace_service\",span_kind=\"SPAN_KIND_SERVER\",grpc_path=~\"$grpc_path\",grpc_path!=\"\",http_target=\"\"}[$__rate_interval])\n)\n    / \nsum by (span_name,grpc_path) (\n    rate(traces_spanmetrics_latency_count{service=~\"$trace_service\",span_kind=\"SPAN_KIND_SERVER\",grpc_path=~\"$grpc_path\",grpc_path!=\"\",http_target=\"\"}[$__rate_interval])\n)",
+                  "hide": false,
+                  "instant": false,
+                  "legendFormat": "gRPC Only | {{`{{span_name}}`}} | {{`{{http_target}}`}}",
+                  "range": true,
+                  "refId": "B"
+                },
+                {
+                  "datasource": {
+                    "type": "prometheus",
+                    "uid": "${metrics_datasource}"
+                  },
+                  "editorMode": "code",
+                  "expr": "sum by (span_name) (\n    rate(traces_spanmetrics_latency_sum{service=~\"$trace_service\",span_kind=\"SPAN_KIND_SERVER\",http_target=\"\",grpc_path=\"\"}[$__rate_interval])\n)\n    / \nsum by (span_name) (\n    rate(traces_spanmetrics_latency_count{service=~\"$trace_service\",span_kind=\"SPAN_KIND_SERVER\",http_target=\"\",grpc_path=\"\"}[$__rate_interval])\n)",
+                  "hide": false,
+                  "instant": false,
+                  "legendFormat": "Span Only | {{`{{span_name}}`}}",
+                  "range": true,
+                  "refId": "C"
+                }
+              ],
+              "title": "Request Duration",
+              "type": "timeseries"
+            }
+          ],
+          "title": "FMOP App Traces",
+          "type": "row"
+        },
+        {
+          "collapsed": true,
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 40
+          },
+          "id": 54,
+          "panels": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${metrics_datasource}"
+              },
+              "fieldConfig": {
+                "defaults": {
+                  "color": {
+                    "mode": "palette-classic"
+                  },
+                  "custom": {
+                    "axisBorderShow": false,
+                    "axisCenteredZero": false,
+                    "axisColorMode": "text",
+                    "axisLabel": "",
+                    "axisPlacement": "auto",
+                    "barAlignment": -1,
+                    "drawStyle": "line",
+                    "fillOpacity": 10,
+                    "gradientMode": "opacity",
+                    "hideFrom": {
+                      "legend": false,
+                      "tooltip": false,
+                      "viz": false
+                    },
+                    "insertNulls": false,
+                    "lineInterpolation": "smooth",
+                    "lineStyle": {
+                      "fill": "solid"
+                    },
+                    "lineWidth": 1,
+                    "pointSize": 3,
+                    "scaleDistribution": {
+                      "type": "linear"
+                    },
+                    "showPoints": "auto",
+                    "spanNulls": false,
+                    "stacking": {
+                      "group": "A",
+                      "mode": "none"
+                    },
+                    "thresholdsStyle": {
+                      "mode": "off"
+                    }
+                  },
+                  "links": [],
+                  "mappings": [],
+                  "min": 0,
+                  "thresholds": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "color": "green",
+                        "value": null
+                      }
+                    ]
+                  },
+                  "unit": "percent",
+                  "unitScale": true
+                },
+                "overrides": [
+                  {
+                    "matcher": {
+                      "id": "byName",
+                      "options": "Usage"
+                    },
+                    "properties": []
+                  }
+                ]
+              },
+              "gridPos": {
+                "h": 10,
+                "w": 12,
+                "x": 0,
+                "y": 41
+              },
+              "id": 24,
+              "options": {
+                "legend": {
+                  "calcs": ["min", "max", "lastNotNull"],
+                  "displayMode": "table",
+                  "placement": "bottom",
+                  "showLegend": true
+                },
+                "tooltip": {
+                  "mode": "multi",
+                  "sort": "none"
+                }
+              },
+              "pluginVersion": "8.2.3",
+              "targets": [
+                {
+                  "datasource": {
+                    "type": "prometheus",
+                    "uid": "${metrics_datasource}"
+                  },
+                  "editorMode": "code",
+                  "expr": "(sum by (container, namespace, pod) (\n  container_memory_working_set_bytes{container=~\"$fmop_stateful_container\"} \n))\n/\n(max by (container, namespace, pod) (\n  kube_pod_container_resource_limits{container=~\"$fmop_stateful_container\",resource=\"memory\",unit=\"byte\"}\n)) * 100",
+                  "instant": false,
+                  "legendFormat": "Namespace {{`{{namespace}}`}} | Container {{`{{container}}`}} | Pod {{`{{pod}}`}} | Usage",
+                  "range": true,
+                  "refId": "A"
+                }
+              ],
+              "title": "Middleware Memory Usage",
+              "type": "timeseries"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${metrics_datasource}"
+              },
+              "fieldConfig": {
+                "defaults": {
+                  "color": {
+                    "mode": "palette-classic"
+                  },
+                  "custom": {
+                    "axisBorderShow": false,
+                    "axisCenteredZero": false,
+                    "axisColorMode": "text",
+                    "axisLabel": "",
+                    "axisPlacement": "auto",
+                    "barAlignment": -1,
+                    "drawStyle": "line",
+                    "fillOpacity": 10,
+                    "gradientMode": "opacity",
+                    "hideFrom": {
+                      "legend": false,
+                      "tooltip": false,
+                      "viz": false
+                    },
+                    "insertNulls": false,
+                    "lineInterpolation": "smooth",
+                    "lineWidth": 1,
+                    "pointSize": 3,
+                    "scaleDistribution": {
+                      "type": "linear"
+                    },
+                    "showPoints": "auto",
+                    "spanNulls": false,
+                    "stacking": {
+                      "group": "A",
+                      "mode": "none"
+                    },
+                    "thresholdsStyle": {
+                      "mode": "off"
+                    }
+                  },
+                  "links": [],
+                  "mappings": [],
+                  "min": 0,
+                  "thresholds": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "color": "green",
+                        "value": null
+                      }
+                    ]
+                  },
+                  "unit": "percent",
+                  "unitScale": true
+                },
+                "overrides": [
+                  {
+                    "matcher": {
+                      "id": "byName",
+                      "options": "Limit | Namespace default | Container analytics"
+                    },
+                    "properties": [
+                      {
+                        "id": "color",
+                        "value": {
+                          "fixedColor": "red",
+                          "mode": "fixed"
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "matcher": {
+                      "id": "byName",
+                      "options": "Limit"
+                    },
+                    "properties": [
+                      {
+                        "id": "color",
+                        "value": {
+                          "fixedColor": "red",
+                          "mode": "fixed"
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "matcher": {
+                      "id": "byName",
+                      "options": "Request"
+                    },
+                    "properties": [
+                      {
+                        "id": "color",
+                        "value": {
+                          "fixedColor": "yellow",
+                          "mode": "fixed"
+                        }
+                      }
+                    ]
+                  }
+                ]
+              },
+              "gridPos": {
+                "h": 10,
+                "w": 12,
+                "x": 12,
+                "y": 41
+              },
+              "id": 25,
+              "options": {
+                "legend": {
+                  "calcs": ["min", "max", "lastNotNull"],
+                  "displayMode": "table",
+                  "placement": "bottom",
+                  "showLegend": true
+                },
+                "tooltip": {
+                  "mode": "multi",
+                  "sort": "none"
+                }
+              },
+              "pluginVersion": "8.2.3",
+              "targets": [
+                {
+                  "datasource": {
+                    "type": "prometheus",
+                    "uid": "${metrics_datasource}"
+                  },
+                  "editorMode": "code",
+                  "expr": "(sum by (container, namespace, pod) (\n  rate(container_cpu_usage_seconds_total{container=~\"$fmop_stateful_container\"}[$__rate_interval]))\n)\n/\n(max by (container, namespace, pod) (\n  kube_pod_container_resource_limits{container=~\"$fmop_stateful_container\",resource=\"cpu\",unit=\"core\"}\n)) * 100",
+                  "hide": false,
+                  "instant": false,
+                  "legendFormat": "Namespace {{`{{namespace}}`}} | Container {{`{{container}}`}} | Pod {{`{{pod}}`}} | Usage",
+                  "range": true,
+                  "refId": "A"
+                }
+              ],
+              "title": "Middleware CPU Usage",
+              "type": "timeseries"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${metrics_datasource}"
+              },
+              "fieldConfig": {
+                "defaults": {
+                  "color": {
+                    "mode": "palette-classic"
+                  },
+                  "custom": {
+                    "axisBorderShow": false,
+                    "axisCenteredZero": false,
+                    "axisColorMode": "text",
+                    "axisLabel": "",
+                    "axisPlacement": "auto",
+                    "barAlignment": 0,
+                    "drawStyle": "line",
+                    "fillOpacity": 0,
+                    "gradientMode": "none",
+                    "hideFrom": {
+                      "legend": false,
+                      "tooltip": false,
+                      "viz": false
+                    },
+                    "insertNulls": false,
+                    "lineInterpolation": "linear",
+                    "lineWidth": 1,
+                    "pointSize": 5,
+                    "scaleDistribution": {
+                      "type": "linear"
+                    },
+                    "showPoints": "auto",
+                    "spanNulls": false,
+                    "stacking": {
+                      "group": "A",
+                      "mode": "none"
+                    },
+                    "thresholdsStyle": {
+                      "mode": "off"
+                    }
+                  },
+                  "links": [],
+                  "mappings": [],
+                  "thresholds": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "color": "green",
+                        "value": null
+                      },
+                      {
+                        "color": "yellow",
+                        "value": 80
+                      },
+                      {
+                        "color": "semi-dark-red",
+                        "value": 90
+                      }
+                    ]
+                  },
+                  "unit": "percent",
+                  "unitScale": false
+                },
+                "overrides": []
+              },
+              "gridPos": {
+                "h": 10,
+                "w": 24,
+                "x": 0,
+                "y": 51
+              },
+              "id": 26,
+              "options": {
+                "legend": {
+                  "calcs": ["min", "max", "lastNotNull"],
+                  "displayMode": "table",
+                  "placement": "bottom",
+                  "showLegend": true,
+                  "sortBy": "Name",
+                  "sortDesc": false
+                },
+                "tooltip": {
+                  "mode": "multi",
+                  "sort": "none"
+                }
+              },
+              "pluginVersion": "10.3.1",
+              "targets": [
+                {
+                  "datasource": {
+                    "type": "prometheus",
+                    "uid": "${metrics_datasource}"
+                  },
+                  "editorMode": "code",
+                  "exemplar": false,
+                  "expr": "(sum by (namespace,persistentvolumeclaim) (kubelet_volume_stats_capacity_bytes{job=\"kubelet\", metrics_path=\"/metrics\", namespace=~\"$fmop_namespace\", persistentvolumeclaim=~\"$persistentvolumeclaim\"})\n-\nsum by (namespace,persistentvolumeclaim) (kubelet_volume_stats_available_bytes{job=\"kubelet\", metrics_path=\"/metrics\", namespace=~\"$fmop_namespace\", persistentvolumeclaim=~\"$persistentvolumeclaim\"}))\n/\nsum by (namespace,persistentvolumeclaim) (kubelet_volume_stats_capacity_bytes{job=\"kubelet\", metrics_path=\"/metrics\", namespace=~\"$fmop_namespace\", persistentvolumeclaim=~\"$persistentvolumeclaim\"}) * 100",
+                  "format": "time_series",
+                  "instant": false,
+                  "legendFormat": "Volume {{`{{persistentvolumeclaim}}`}}",
+                  "range": true,
+                  "refId": "A"
+                }
+              ],
+              "title": "Middleware Volume Usage",
+              "transformations": [],
+              "type": "timeseries"
+            }
+          ],
+          "title": "FMOP Middleware",
+          "type": "row"
+        }
+      ],
+      "refresh": "1m",
+      "schemaVersion": 39,
+      "tags": ["leapxpert"],
+      "templating": {
+        "list": [
+          {
+            "current": {
+              "selected": false,
+              "text": "Prometheus",
+              "value": "Prometheus"
+            },
+            "hide": 0,
+            "includeAll": false,
+            "label": "Metric Datasource",
+            "multi": false,
+            "name": "metrics_datasource",
+            "options": [],
+            "query": "prometheus",
+            "queryValue": "saas",
+            "refresh": 1,
+            "regex": "",
+            "skipUrlSync": false,
+            "type": "datasource"
+          },
+          {
+            "current": {
+              "selected": false,
+              "text": "Loki",
+              "value": "loki"
+            },
+            "hide": 0,
+            "includeAll": false,
+            "label": "Log Datasource",
+            "multi": false,
+            "name": "log_datasource",
+            "options": [],
+            "query": "loki",
+            "queryValue": "",
+            "refresh": 1,
+            "regex": "",
+            "skipUrlSync": false,
+            "type": "datasource"
+          },
+          {
+            "current": {
+              "selected": false,
+              "text": "Tempo",
+              "value": "tempo"
+            },
+            "description": "",
+            "hide": 0,
+            "includeAll": false,
+            "label": "Trace Datasource",
+            "multi": false,
+            "name": "traces_datasource",
+            "options": [],
+            "query": "tempo",
+            "queryValue": "",
+            "refresh": 1,
+            "regex": "",
+            "skipUrlSync": false,
+            "type": "datasource"
+          },
+          {
+            "current": {
+              "selected": true,
+              "text": ["All"],
+              "value": ["$__all"]
+            },
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${metrics_datasource}"
+            },
+            "definition": "label_values(promtail_read_lines_total,exported_namespace)",
+            "hide": 0,
+            "includeAll": true,
+            "label": "FMOP Namespace",
+            "multi": true,
+            "name": "fmop_namespace",
+            "options": [],
+            "query": {
+              "qryType": 1,
+              "query": "label_values(promtail_read_lines_total,exported_namespace)",
+              "refId": "PrometheusVariableQueryEditor-VariableQuery"
+            },
+            "refresh": 2,
+            "regex": "",
+            "skipUrlSync": false,
+            "sort": 1,
+            "type": "query"
+          },
+          {
+            "current": {
+              "selected": true,
+              "text": ["All"],
+              "value": ["$__all"]
+            },
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${metrics_datasource}"
+            },
+            "definition": "label_values(container_memory_working_set_bytes{namespace=~\"$fmop_namespace\", container!~\"vault.*|keycloak|minio.*|matrix|synapse.*\"},container)",
+            "hide": 0,
+            "includeAll": true,
+            "label": "FMOP App",
+            "multi": true,
+            "name": "fmop_app_container",
+            "options": [],
+            "query": {
+              "qryType": 1,
+              "query": "label_values(container_memory_working_set_bytes{namespace=~\"$fmop_namespace\", container!~\"vault.*|keycloak|minio.*|matrix|synapse.*\"},container)",
+              "refId": "PrometheusVariableQueryEditor-VariableQuery"
+            },
+            "refresh": 2,
+            "regex": "",
+            "skipUrlSync": false,
+            "sort": 1,
+            "type": "query"
+          },
+          {
+            "allValue": "",
+            "current": {
+              "selected": true,
+              "text": ["All"],
+              "value": ["$__all"]
+            },
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${metrics_datasource}"
+            },
+            "definition": "label_values(container_memory_working_set_bytes{container=~\"matrix|keycloak|vault|kafka|zookeeper|minio|elasticsearch|postgres|mongodb-primary|mongodb-secondary|mongodb-arbiter|synapse.*\"},container)",
+            "hide": 0,
+            "includeAll": true,
+            "label": "FMOP Middleware",
+            "multi": true,
+            "name": "fmop_stateful_container",
+            "options": [],
+            "query": {
+              "qryType": 1,
+              "query": "label_values(container_memory_working_set_bytes{container=~\"matrix|keycloak|vault|kafka|zookeeper|minio|elasticsearch|postgres|mongodb-primary|mongodb-secondary|mongodb-arbiter|synapse.*\"},container)",
+              "refId": "PrometheusVariableQueryEditor-VariableQuery"
+            },
+            "refresh": 2,
+            "regex": "",
+            "skipUrlSync": false,
+            "sort": 1,
+            "type": "query"
+          },
+          {
+            "allValue": ".*",
+            "current": {
+              "selected": true,
+              "text": ["All"],
+              "value": ["$__all"]
+            },
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${metrics_datasource}"
+            },
+            "definition": "label_values(kubelet_volume_stats_capacity_bytes,persistentvolumeclaim)",
+            "hide": 0,
+            "includeAll": true,
+            "label": "FMOP Persistent Volume",
+            "multi": true,
+            "name": "persistentvolumeclaim",
+            "options": [],
+            "query": {
+              "qryType": 1,
+              "query": "label_values(kubelet_volume_stats_capacity_bytes,persistentvolumeclaim)",
+              "refId": "PrometheusVariableQueryEditor-VariableQuery"
+            },
+            "refresh": 2,
+            "regex": "",
+            "skipUrlSync": false,
+            "sort": 1,
+            "type": "query"
+          },
+          {
+            "current": {
+              "selected": true,
+              "text": ["All"],
+              "value": ["$__all"]
+            },
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${metrics_datasource}"
+            },
+            "definition": "label_values(istio_agent_go_info,lxp_version)",
+            "hide": 0,
+            "includeAll": true,
+            "label": "FMOP Release Version",
+            "multi": true,
+            "name": "fmop_release_version",
+            "options": [],
+            "query": {
+              "qryType": 1,
+              "query": "label_values(istio_agent_go_info,lxp_version)",
+              "refId": "PrometheusVariableQueryEditor-VariableQuery"
+            },
+            "refresh": 2,
+            "regex": "",
+            "skipUrlSync": false,
+            "sort": 1,
+            "type": "query"
+          },
+          {
+            "current": {
+              "selected": false,
+              "text": ["All"],
+              "value": ["$__all"]
+            },
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${metrics_datasource}"
+            },
+            "definition": "label_values(traces_spanmetrics_calls_total,service)",
+            "hide": 0,
+            "includeAll": true,
+            "label": "Trace Service",
+            "multi": true,
+            "name": "trace_service",
+            "options": [],
+            "query": {
+              "qryType": 1,
+              "query": "label_values(traces_spanmetrics_calls_total,service)",
+              "refId": "PrometheusVariableQueryEditor-VariableQuery"
+            },
+            "refresh": 1,
+            "regex": "",
+            "skipUrlSync": false,
+            "sort": 1,
+            "type": "query"
+          },
+          {
+            "allValue": ".*",
+            "current": {
+              "selected": false,
+              "text": ["All"],
+              "value": ["$__all"]
+            },
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${metrics_datasource}"
+            },
+            "definition": "label_values(traces_spanmetrics_calls_total{service=~\"$trace_service\", span_kind=~\"SPAN_KIND_SERVER\"},span_name)",
+            "hide": 0,
+            "includeAll": true,
+            "label": "Span Name",
+            "multi": true,
+            "name": "span_name",
+            "options": [],
+            "query": {
+              "qryType": 1,
+              "query": "label_values(traces_spanmetrics_calls_total{service=~\"$trace_service\", span_kind=~\"SPAN_KIND_SERVER\"},span_name)",
+              "refId": "PrometheusVariableQueryEditor-VariableQuery"
+            },
+            "refresh": 1,
+            "regex": "",
+            "skipUrlSync": false,
+            "sort": 1,
+            "type": "query"
+          },
+          {
+            "allValue": ".*",
+            "current": {
+              "selected": true,
+              "text": ["All"],
+              "value": ["$__all"]
+            },
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${metrics_datasource}"
+            },
+            "definition": "label_values(traces_spanmetrics_calls_total{service=~\"$trace_service\", span_name=~\"$span_name\"},grpc_path)",
+            "hide": 0,
+            "includeAll": true,
+            "label": "gRPC Path",
+            "multi": true,
+            "name": "grpc_path",
+            "options": [],
+            "query": {
+              "qryType": 1,
+              "query": "label_values(traces_spanmetrics_calls_total{service=~\"$trace_service\", span_name=~\"$span_name\"},grpc_path)",
+              "refId": "PrometheusVariableQueryEditor-VariableQuery"
+            },
+            "refresh": 2,
+            "regex": "",
+            "skipUrlSync": false,
+            "sort": 1,
+            "type": "query"
+          },
+          {
+            "allValue": ".*",
+            "current": {
+              "selected": true,
+              "text": ["All"],
+              "value": ["$__all"]
+            },
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${metrics_datasource}"
+            },
+            "definition": "label_values(traces_spanmetrics_calls_total{service=~\"$trace_service\", span_name=~\"$span_name\"},http_target)",
+            "hide": 0,
+            "includeAll": true,
+            "label": "HTTP Target",
+            "multi": true,
+            "name": "http_target",
+            "options": [],
+            "query": {
+              "qryType": 1,
+              "query": "label_values(traces_spanmetrics_calls_total{service=~\"$trace_service\", span_name=~\"$span_name\"},http_target)",
+              "refId": "PrometheusVariableQueryEditor-VariableQuery"
+            },
+            "refresh": 2,
+            "regex": "",
+            "skipUrlSync": false,
+            "sort": 1,
+            "type": "query"
+          }
+        ]
+      },
+      "time": {
+        "from": "now-1h",
+        "to": "now"
+      },
+      "timepicker": {},
+      "timezone": "",
+      "title": "LXP / Investigation",
+      "uid": "lxp-investigation",
+      "version": 6,
+      "weekStart": ""
+    }
+{{- end }}
+{{- end }}

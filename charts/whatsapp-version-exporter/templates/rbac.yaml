@@ -1,0 +1,25 @@
+{{- if .Values.serviceAccount.create -}}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ include "whatsapp-version-exporter.fullname" . }}
+  namespace: {{ include "whatsapp-version-exporter.namespace" . }}
+rules:
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["get", "watch", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ include "whatsapp-version-exporter.fullname" . }}
+  namespace: {{ include "whatsapp-version-exporter.namespace" . }}
+subjects:
+- kind: ServiceAccount
+  name: {{ include "whatsapp-version-exporter.serviceAccountName" . }}
+  namespace: {{ include "whatsapp-version-exporter.namespace" . }}
+roleRef:
+  kind: Role
+  name: {{ include "whatsapp-version-exporter.fullname" . }}
+  apiGroup: rbac.authorization.k8s.io
+{{- end }}

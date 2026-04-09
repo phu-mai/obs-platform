@@ -1,0 +1,163 @@
+{{- $kubeTargetVersion := default .Capabilities.KubeVersion.GitVersion .Values.kubeTargetVersionOverride }}
+{{- if and (semverCompare ">=1.14.0-0" $kubeTargetVersion) (semverCompare "<9.9.9-9" $kubeTargetVersion) .Values.defaultRules.rules.whatsappApi }}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ template "kube-prometheus-stack-add-ons.fullname" . }}-whatsapp
+  namespace: {{ template "kube-prometheus-stack-add-ons.namespace" . }}
+  labels:
+{{ include "kube-prometheus-stack-add-ons.labels" . | indent 4 }}
+spec:
+  groups:
+    - name: whatsapp-api.rules
+      rules:
+        {{- if not (.Values.defaultRules.disabled.WhatsappApiError | default false) }}
+        - alert: WhatsappApiError
+          annotations:
+            summary: |
+              WhatsApp client number {{`{{`}} $labels.number {{`}}`}} has error code {{`{{`}} $labels.result {{`}}`}}
+              with error message {{`{{`}} $labels.error_name {{`}}`}}
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-whatsappapierror"
+            {{- end }}
+            description: |
+              Errors detected in client number {{`{{`}} $labels.number {{`}}`}}". Please check Prometheus with this query 'endpoint_requests{result!="ok"}' to find out which service is affected. Then check the error code here: https://developers.facebook.com/docs/whatsapp/on-premises/errors
+          expr: |
+            increase((sum by (app,cluster,result,number,error_name) (whatsapp_client_endpoint_requests{result!~"ok|1006|1013|1009|2001"}) OR vector(0))[5m:]) > 0
+            or
+            increase((sum by (app,cluster,result,number,error_name) (endpoint_requests{result!~"ok|1006|1013|1009|2001"}) OR vector(0))[5m:]) > 0
+          for: 2m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.WhatsappApiErrorTemplateGetBanned | default false) }}
+        - alert: WhatsappApiErrorTemplateGetBanned
+          annotations:
+            summary: |
+              WhatsApp client number {{`{{`}} $labels.number {{`}}`}} has error code {{`{{`}} $labels.result {{`}}`}}
+              with error message {{`{{`}} $labels.error_name {{`}}`}}.
+              This error code usually means Whatsapp template gets reported by user and gets banned by Meta.
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-whatsappapierrortemplategetbanned"
+            {{- end }}
+            description: |
+              This alert will be triggered when Whatsapp template gets banned by Meta.
+          expr: |
+            increase((sum by (app,cluster,result,number,error_name) (whatsapp_client_endpoint_requests{result="2001"}) OR vector(0))[5m:]) > 0
+            or
+            increase((sum by (app,cluster,result,number,error_name) (endpoint_requests{result="2001"}) OR vector(0))[5m:]) > 0
+          for: 0m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+            {{- with .Values.defaultRules.extraLabels.l2Support }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.WhatsappApiErrorParameterValueIsNotValid | default false) }}
+        - alert: WhatsappApiErrorParameterValueIsNotValid
+          annotations:
+            summary: |
+              WhatsApp client number {{`{{`}} $labels.number {{`}}`}} has error code {{`{{`}} $labels.result {{`}}`}}
+              with error message {{`{{`}} $labels.error_name {{`}}`}}.
+              This error code usually means that template not found detected on WhatsApp client phone number.
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-whatsappapierrorparametervalueisnotvalid"
+            {{- end }}
+            description: |
+              This alert will be triggered when Whatsapp client detects unconfigured template.
+          expr: |
+            increase((sum by (app,cluster,result,number,error_name) (whatsapp_client_endpoint_requests{result="1009"}) OR vector(0))[5m:]) > 0
+            or
+            increase((sum by (app,cluster,result,number,error_name) (endpoint_requests{result="1009"}) OR vector(0))[5m:]) > 0
+          for: 2m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+            {{- with .Values.defaultRules.extraLabels.l2Support }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.WhatsappVersionExpired | default false) }}
+        - alert: WhatsappVersionExpired
+          annotations:
+            summary: "WhatsApp number {{`{{`}} $labels.number {{`}}`}} is using a version that is already expired."
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-whatsappversionexpired"
+            {{- end }}
+            description: |
+              Whatsapp version expired. Please upgrade to a newer version as soon as possible.
+          expr: |
+            sum by (app,cluster,number) (whatsapp_version_expired) > 0
+          for: 0m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        - alert: WhatsappVersionExpiry15Days
+          annotations:
+            summary: "WhatsApp number {{`{{`}} $labels.number {{`}}`}} is using a version that will expire in 15 days"
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-whatsappversionexpiry15days"
+            {{- end }}
+            description: |
+              Whatsapp version will expire soon. Please upgrade to a newer version as soon as possible.
+          expr: |
+            sum by (app,cluster,number) (whatsapp_version_expiry - time()) < 86400 * 15
+          for: 0m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        - alert: WhatsappVersionExpiry7Days
+          annotations:
+            summary: "WhatsApp number {{`{{`}} $labels.number {{`}}`}} is using a version that will expire in 7 days"
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-whatsappversionexpiry7days"
+            {{- end }}
+            description: |
+              Whatsapp version will expire soon. Please upgrade to a newer version as soon as possible.
+          expr: |
+            sum by (app,cluster,number) (whatsapp_version_expiry - time()) < 86400 * 7
+          for: 0m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- if not (.Values.defaultRules.disabled.WhatsappOutMessageError | default false) }}
+        - alert: WhatsappOutMessageError
+          annotations:
+            summary: |
+              WhatsApp number {{`{{`}} $labels.number {{`}}`}} having out message error code {{`{{`}} $labels.status {{`}}`}}, error message {{`{{`}} $labels.error_name {{`}}`}}
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-whatsappoutmessageerror"
+            {{- end }}
+            description: |
+              Whatsapp number has out message error.
+          expr: |
+            increase((sum by (app, cluster, number, status, error_name) (whatsapp_client_out_message_status{status=~"[0-9]+", status!~"470|472"}) OR vector(0))[5m:]) > 0
+            or
+            increase((sum by (app, cluster, number, status, error_name) (out_message_status{status=~"[0-9]+", status!~"470|472"}) OR vector(0))[5m:]) > 0
+          for: 2m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+            {{- with .Values.defaultRules.extraLabels.l2Support }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+{{- end }}

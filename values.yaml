@@ -1,0 +1,2700 @@
+---
+prometheusAzureMetricsExporter:
+  enabled: false
+# ---------------------------------------------
+prometheus-azure-metrics-exporter:
+  fullnameOverride: prometheus-azure-metrics-exporter
+
+  imagePullSecrets:
+    - name: lxp-docker-registry-key
+
+  image:
+    repository: leapxpert.azurecr.io/public/leapxpert/thirdparties/webdevops/azure-metrics-exporter
+
+  service:
+    type: ClusterIP
+    port: 80
+
+  resources:
+    limits:
+      cpu: 100m
+      memory: 128Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+
+  podMonitor:
+    additionalLabels:
+      observability: prometheus-operator
+    podMetricsEndpoints:
+      interval: 5m
+      scrapeTimeout: 30s
+# ---------------------------------------------
+kubePrometheusStack:
+  enabled: true
+
+kube-prometheus-stack:
+  fullnameOverride: kube-prometheus-stack
+
+  whatsappMonitor:
+    enabled: false
+    staticTargets: []
+    # - whatsapp-core-wa-18456528412.whatsapp:2080
+    # - whatsapp-core-wa-18456528414:2080
+    errorCodes:
+      "400": "Media download error"
+      "402": "Business eligibility — Payment issue"
+      "408": "Message is not valid"
+      "410": "Message expired"
+      "429": "Rate limit hit"
+      "430": "Unsigned certificate"
+      "432": "Certificate ID mismatch"
+      "433": "Certificate signature invalid"
+      "470": "Reengagement message"
+      "471": "Spam rate limit hit"
+      "472": "Number of user is part of an experiment"
+      "480": "User potentially changed"
+      "500": "Generic error"
+      "501": "Message type is not currently supported."
+      "1000": "Generic error"
+      "1001": "Message too long"
+      "1002": "Invalid recipient type"
+      "1004": "Resource already exists"
+      "1005": "Access denied"
+      "1006": "Resource not found"
+      "1007": "Recipient blocked to receive message (Deprecated)"
+      "1008": "Required parameter is missing"
+      "1009": "Parameter value is not valid"
+      "1010": "Parameter is not required"
+      "1011": "Service not ready"
+      "1013": "User is not valid"
+      "1014": "Internal error"
+      "1015": "Too many requests"
+      "1016": "System overloaded"
+      "1017": "Not Primary Master"
+      "1018": "Not Primary Coreapp"
+      "1021": "Bad User"
+      "1022": "Webhooks URL is not configured"
+      "1023": "Database error occurred"
+      "1024": "Password Change Required"
+      "1025": "Invalid Request"
+      "1026": "Receiver Incapable"
+      "1028": "A user_identity_changed system notification requires acknowledgement"
+      "1031": "Sender account has been locked"
+      "2000": "Template Param Count Mismatch"
+      "2001": "Template Missing"
+      "2002": "Template Fetch Failed"
+      "2003": "Template Pack Missing"
+      "2004": "Template Param Length Too Long"
+      "2005": "Template Hydrated Text Too Long"
+      "2006": "Template White Space Policy Violated"
+      "2007": "Template Format Character Policy Violated"
+      "2008": "Template Media Format Unsupported"
+      "2009": "Template Required Component Missing"
+      "2010": "Template Invalid Hydrated URL"
+      "2011": "Template Invalid Phone Number"
+      "2012": "Template Parameter Format Mismatch"
+      "2013": "Template Buttons Unsupported"
+      "2014": "Expected Namespace is Empty"
+      "2015": "Invalid number of sections"
+      "2016": "Invalid number of rows"
+      "2017": "Character Policy Violated"
+      "2023": "Invalid number of product"
+      "2024": "Catalog ID not found"
+      "2025": "Catalog ID not linked to API number"
+      "2026": "Missing products"
+      "2027": "No products found"
+      "2028": "List all products failed compliance"
+      "2029": "List some products failed compliance"
+      "2030": "List mixed products invalid and failed compliance"
+      "2036": "Invalid Header Structure"
+      "2050": "Missing Compliance Info"
+  whatsappCloudMonitor:
+    errorCodes:
+      "0": "AuthException"
+      "1": "API Unknown"
+      "10": "Permission Denied"
+      "100": "Invalid parameter"
+      "130429": "Rate limit hit"
+      "130472": "Number of user is part of an experiment"
+      "131000": "Something went wrong"
+      "131005": "Access denied"
+      "131008": "Required parameter is missing"
+      "131009": "Parameter value is not valid"
+      "131016": "Service unavailable"
+      "131021": "Recipient cannot be sender"
+      "131026": "Message Undeliverable"
+      "131031": "Account has been locked"
+      "131042": "Business eligibility payment issue"
+      "131045": "Incorrect certificate"
+      "131047": "Re-engagement message"
+      "131048": "Spam rate limit hit"
+      "131051": "Unsupported message type"
+      "131052": "Media download error"
+      "131053": "Media upload error"
+      "131056": "(Business Account, Consumer Account) pair rate limit hit"
+      "131057": "Account in maintenance mode"
+      "132000": "Template Param Count Mismatch"
+      "132001": "Template does not exist"
+      "132005": "Template Hydrated Text Too Long"
+      "132007": "Template Format Character Policy Violated"
+      "132012": "Template Parameter Format Mismatch"
+      "132015": "Template is Paused"
+      "132016": "Template is Disabled"
+      "132068": "Flow is blocked"
+      "132069": "Flow is throttled"
+      "133000": "Incomplete Deregistration"
+      "133004": "Server Temporarily Unavailable"
+      "133005": "Two step verification PIN Mismatch"
+      "133006": "Phone number re-verification needed"
+      "133008": "Too Many two step verification PIN Guesses"
+      "133009": "Two step verification PIN Guessed Too Fast"
+      "133010": "Phone number Not Registered"
+      "133015": "Please wait a few minutes before attempting to register this phone number"
+      "133016": "Account register deregister rate limit exceeded"
+      "135000": "Generic user error"
+      "190": "Access token has expired"
+      "2": "API Service"
+      "2[0-9][0-9]": "API Permission"
+      "3": API Method
+      "33": Parameter value is not valid
+      "368": "Temporarily blocked for policies violations"
+      "4": "API Too Many Calls"
+      "80007": "Rate limit issues"
+
+  kubeApiServer:
+    enabled: false
+
+  kubeControllerManager:
+    enabled: false
+
+  kubeEtcd:
+    enabled: false
+
+  kubeScheduler:
+    enabled: false
+
+  kubeProxy:
+    enabled: false
+
+  coreDns:
+    enabled: false
+
+  kubeDns:
+    enabled: false
+
+  commonLabels:
+    observability: prometheus-operator
+
+  defaultRules:
+    rules:
+      kubeApiserverAvailability: false
+      kubeApiserverBurnrate: false
+      kubeApiserverHistogram: false
+      kubeApiserverSlos: false
+      kubeControllerManager: false
+      kubePrometheusNodeRecording: false
+      kubeSchedulerAlerting: false
+      kubeSchedulerRecording: false
+    disabled:
+      CPUThrottlingHigh: true
+      KubeCPUOvercommit: true
+      KubeMemoryOvercommit: true
+      PrometheusNotConnectedToAlertmanagers: true
+      PrometheusRuleFailures: true
+
+  customRules:
+    KubeDeploymentReplicasMismatch:
+      severity: critical
+    KubeStatefulSetReplicasMismatch:
+      severity: critical
+
+  global:
+    rbac:
+      pspEnabled: false
+    imagePullSecrets:
+      - lxp-docker-registry-key
+
+  alertmanager:
+    enabled: true
+    ingress:
+      enabled: false
+    alertmanagerSpec:
+      image:
+        registry: leapxpert.azurecr.io/public/leapxpert/thirdparties/quay.io
+        repository: prometheus/alertmanager
+      resources:
+        limits:
+          cpu: 200m
+          memory: 200Mi
+        requests:
+          cpu: 100m
+          memory: 100Mi
+      storage:
+        volumeClaimTemplate:
+          spec:
+            storageClassName: lxp-default
+            accessModes: ["ReadWriteOnce"]
+            resources:
+              requests:
+                storage: 1Gi
+    templateFiles:
+      slack.tmpl: |-
+        {{ define "status.icon" }}{{ if eq .Status "firing" }}{{ .Alerts.Firing | len }}:fire:{{ else if eq .Status "resolved" }}:heavy_check_mark:{{ else }}{{ .Status | toUpper }}{{ end }}{{ end }}
+        {{ define "severity.icon" }}
+          {{- if eq . "warning" -}}
+            :warning:
+          {{- else if eq . "error" -}}
+            :heavy_exclamation_mark:
+          {{- else -}}
+            {{- . | toUpper -}}
+          {{- end -}}
+        {{ end }}
+        {{ define "slack.emoji" }}{{ if eq .Status "firing" }}:fire:{{ else }}:unicorn_face:{{ end }}{{ end }}
+        {{ define "slack.title" }}{{ template "severity.icon" .CommonLabels.severity }} {{ template "status.icon" . }} | {{ .GroupLabels.alertname }}{{ end }}
+
+      pagerduty.tmpl: |-
+        {{ define "pagerduty.description" }}{{ template "__subject" . }}{{ end }}
+        {{ define "pagerduty.client" }}{{ template "__alertmanager" . }}{{ end }}
+        {{ define "pagerduty.clientURL" }}{{ template "__alertmanagerURL" . }}{{ end }}
+        {{ define "pagerduty.instances" }}{{ template "__text_alert_list" . }}{{ end }}
+
+      email.tmpl: |-
+        {{- define "email.subject" -}}
+            LeapXpert FMOP - Alerts - {{ if eq .Status "firing" }}{{ .Alerts.Firing | len }} 🔥{{ end }} - {{ .GroupLabels.alertname }}
+        {{- end -}}
+        {{ define "email.html" }}
+        <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+        <html xmlns="http://www.w3.org/1999/xhtml" style="margin: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; box-sizing: border-box; font-size: 14px;">
+        <head>
+        <meta name="viewport" content="width=device-width">
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        <title>{{ template "__subject" . }}</title>
+        <style>
+        @media only screen and (max-width: 640px) {
+          body {
+            padding: 0 !important;
+          }
+
+          h1,
+        h2,
+        h3,
+        h4 {
+            font-weight: 800 !important;
+            margin: 20px 0 5px !important;
+          }
+
+          h1 {
+            font-size: 22px !important;
+          }
+
+          h2 {
+            font-size: 18px !important;
+          }
+
+          h3 {
+            font-size: 16px !important;
+          }
+
+          .container {
+            padding: 0 !important;
+            width: 100% !important;
+          }
+
+          .content {
+            padding: 0 !important;
+          }
+
+          .content-wrap {
+            padding: 10px !important;
+          }
+
+          .invoice {
+            width: 100% !important;
+          }
+        }
+        </style>
+        </head>
+
+        <body itemscope itemtype="http://schema.org/EmailMessage" style="margin: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; box-sizing: border-box; font-size: 14px; -webkit-font-smoothing: antialiased; -webkit-text-size-adjust: none; height: 100%; line-height: 1.6em; background-color: #f6f6f6; width: 100%;">
+
+        <table class="body-wrap" style="margin: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; box-sizing: border-box; font-size: 14px; background-color: #f6f6f6; width: 100%;" width="100%" bgcolor="#f6f6f6">
+          <tr style="margin: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; box-sizing: border-box; font-size: 14px;">
+            <td style="margin: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; box-sizing: border-box; font-size: 14px; vertical-align: top;" valign="top"></td>
+            <td class="container" width="600" style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; box-sizing: border-box; font-size: 14px; vertical-align: top; display: block; max-width: 600px; margin: 0 auto; clear: both;" valign="top" align="center">
+              <img src="https://www.leap.expert/wp-content/uploads/2020/02/logo-1.png" />
+            </td>
+          </tr>
+          <tr style="margin: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; box-sizing: border-box; font-size: 14px;">
+            <td style="margin: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; box-sizing: border-box; font-size: 14px; vertical-align: top;" valign="top"></td>
+            <td class="container" width="600" style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; box-sizing: border-box; font-size: 14px; vertical-align: top; display: block; max-width: 600px; margin: 0 auto; clear: both;" valign="top">
+              <div class="content" style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; box-sizing: border-box; font-size: 14px; max-width: 600px; margin: 0 auto; display: block; padding: 20px;">
+                <table class="main" width="100%" cellpadding="0" cellspacing="0" style="margin: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; box-sizing: border-box; font-size: 14px; background-color: #fff; border: 1px solid #e9e9e9; border-radius: 3px;" bgcolor="#fff">
+                  <tr style="margin: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; box-sizing: border-box; font-size: 14px;">
+                    {{ if gt (len .Alerts.Firing) 0 }}
+                    <td class="alert alert-warning" style="margin: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; box-sizing: border-box; vertical-align: top; font-size: 16px; color: #fff; font-weight: 500; padding: 20px; text-align: center; border-radius: 3px 3px 0 0; background-color: #E6522C;" valign="top" align="center" bgcolor="#E6522C">
+                    {{ else }}
+                    </td><td class="alert alert-good" style="margin: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; box-sizing: border-box; vertical-align: top; font-size: 16px; color: #fff; font-weight: 500; padding: 20px; text-align: center; border-radius: 3px 3px 0 0; background-color: #68B90F;" valign="top" align="center" bgcolor="#68B90F">
+                    {{ end }}
+                      {{ .Alerts | len }} alert{{ if gt (len .Alerts) 1 }}s{{ end }} for {{ range .GroupLabels.SortedPairs }}
+                        {{ .Name }}={{ .Value }}
+                      {{ end }}
+                    </td>
+                  </tr>
+                  <tr style="margin: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; box-sizing: border-box; font-size: 14px;">
+                    <td class="content-wrap" style="margin: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; box-sizing: border-box; font-size: 14px; vertical-align: top; padding: 30px;" valign="top">
+                      <table width="100%" cellpadding="0" cellspacing="0" style="margin: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; box-sizing: border-box; font-size: 14px;">
+                        <tr style="margin: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; box-sizing: border-box; font-size: 14px;">
+                          <td class="content-block" style="margin: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; box-sizing: border-box; font-size: 14px; vertical-align: top; padding: 0 0 20px;" valign="top">
+                            <a href="{{ template "__alertmanagerURL" . }}" class="btn-primary" style="margin: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; box-sizing: border-box; font-size: 14px; text-decoration: none; color: #FFF; background-color: #348eda; border: solid #348eda; border-width: 10px 20px; line-height: 2em; font-weight: bold; text-align: center; cursor: pointer; display: inline-block; border-radius: 5px; text-transform: capitalize;">View in {{ template "__alertmanager" . }}</a>
+                          </td>
+                        </tr>
+                        {{ if gt (len .Alerts.Firing) 0 }}
+                        <tr style="margin: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; box-sizing: border-box; font-size: 14px;">
+                          <td class="content-block" style="margin: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; box-sizing: border-box; font-size: 14px; vertical-align: top; padding: 0 0 20px;" valign="top">
+                            <strong style="margin: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; box-sizing: border-box; font-size: 14px;">[{{ .Alerts.Firing | len }}] Firing</strong>
+                          </td>
+                        </tr>
+                        {{ end }}
+                        {{ range .Alerts.Firing }}
+                        <tr style="margin: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; box-sizing: border-box; font-size: 14px;">
+                          <td class="content-block" style="margin: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; box-sizing: border-box; font-size: 14px; vertical-align: top; padding: 0 0 20px;" valign="top">
+                            <strong style="margin: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; box-sizing: border-box; font-size: 14px;">Labels</strong><br style="margin: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; box-sizing: border-box; font-size: 14px;">
+                            {{ range .Labels.SortedPairs }}{{ .Name }} = {{ .Value }}<br style="margin: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; box-sizing: border-box; font-size: 14px;">{{ end }}
+                            {{ if gt (len .Annotations) 0 }}<strong style="margin: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; box-sizing: border-box; font-size: 14px;">Annotations</strong><br style="margin: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; box-sizing: border-box; font-size: 14px;">{{ end }}
+                            {{ range .Annotations.SortedPairs }}{{ .Name }} = {{ .Value }}<br style="margin: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; box-sizing: border-box; font-size: 14px;">{{ end }}
+                            <a href="{{ .GeneratorURL }}" style="margin: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; box-sizing: border-box; font-size: 14px; color: #348eda; text-decoration: underline;">Source</a><br style="margin: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; box-sizing: border-box; font-size: 14px;">
+                          </td>
+                        </tr>
+                        {{ end }}
+
+                        {{ if gt (len .Alerts.Resolved) 0 }}
+                          {{ if gt (len .Alerts.Firing) 0 }}
+                        <tr style="margin: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; box-sizing: border-box; font-size: 14px;">
+                          <td class="content-block" style="margin: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; box-sizing: border-box; font-size: 14px; vertical-align: top; padding: 0 0 20px;" valign="top">
+                            <br style="margin: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; box-sizing: border-box; font-size: 14px;">
+                            <hr style="margin: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; box-sizing: border-box; font-size: 14px;">
+                            <br style="margin: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; box-sizing: border-box; font-size: 14px;">
+                          </td>
+                        </tr>
+                          {{ end }}
+                        <tr style="margin: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; box-sizing: border-box; font-size: 14px;">
+                          <td class="content-block" style="margin: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; box-sizing: border-box; font-size: 14px; vertical-align: top; padding: 0 0 20px;" valign="top">
+                            <strong style="margin: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; box-sizing: border-box; font-size: 14px;">[{{ .Alerts.Resolved | len }}] Resolved</strong>
+                          </td>
+                        </tr>
+                        {{ end }}
+                        {{ range .Alerts.Resolved }}
+                        <tr style="margin: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; box-sizing: border-box; font-size: 14px;">
+                          <td class="content-block" style="margin: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; box-sizing: border-box; font-size: 14px; vertical-align: top; padding: 0 0 20px;" valign="top">
+                            <strong style="margin: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; box-sizing: border-box; font-size: 14px;">Labels</strong><br style="margin: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; box-sizing: border-box; font-size: 14px;">
+                            {{ range .Labels.SortedPairs }}{{ .Name }} = {{ .Value }}<br style="margin: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; box-sizing: border-box; font-size: 14px;">{{ end }}
+                            {{ if gt (len .Annotations) 0 }}<strong style="margin: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; box-sizing: border-box; font-size: 14px;">Annotations</strong><br style="margin: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; box-sizing: border-box; font-size: 14px;">{{ end }}
+                            {{ range .Annotations.SortedPairs }}{{ .Name }} = {{ .Value }}<br style="margin: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; box-sizing: border-box; font-size: 14px;">{{ end }}
+                            <a href="{{ .GeneratorURL }}" style="margin: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; box-sizing: border-box; font-size: 14px; color: #348eda; text-decoration: underline;">Source</a><br style="margin: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; box-sizing: border-box; font-size: 14px;">
+                          </td>
+                        </tr>
+                        {{ end }}
+                      </table>
+                    </td>
+                  </tr>
+                </table>
+
+                <div class="footer" style="margin: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; box-sizing: border-box; font-size: 14px; width: 100%; clear: both; color: #999; padding: 20px;">
+                  <table width="100%" style="margin: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; box-sizing: border-box; font-size: 14px;">
+                    <tr style="margin: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; box-sizing: border-box; font-size: 14px;">
+                      <td class="aligncenter content-block" style="margin: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; box-sizing: border-box; vertical-align: top; padding: 0 0 20px; text-align: center; color: #999; font-size: 12px;" valign="top" align="center"><a href="{{ .ExternalURL }}" style="margin: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; box-sizing: border-box; text-decoration: underline; color: #999; font-size: 12px;">Sent by {{ template "__alertmanager" . }}</a></td>
+                    </tr>
+                  </table>
+                </div></div>
+            </td>
+            <td style="margin: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; box-sizing: border-box; font-size: 14px; vertical-align: top;" valign="top"></td>
+          </tr>
+        </table>
+
+        </body>
+        </html>
+
+        {{ end }}
+
+  mimirRemoteWrite:
+    enabled: false
+
+  prometheusOperator:
+    image:
+      registry: leapxpert.azurecr.io/public/leapxpert/thirdparties/quay.io
+      repository: prometheus-operator/prometheus-operator
+    admissionWebhooks:
+      patch:
+        image:
+          registry: leapxpert.azurecr.io/public/leapxpert/thirdparties/registry.k8s.io
+          repository: ingress-nginx/kube-webhook-certgen
+          tag: v1.9.1
+    prometheusConfigReloader:
+      image:
+        registry: leapxpert.azurecr.io/public/leapxpert/thirdparties/quay.io
+        repository: prometheus-operator/prometheus-config-reloader
+    resources:
+      limits:
+        cpu: 200m
+        memory: 300Mi
+      requests:
+        cpu: 100m
+        memory: 100Mi
+
+  prometheus:
+    enabled: true
+    ingress:
+      enabled: false
+    prometheusSpec:
+      enableRemoteWriteReceiver: true
+      prometheusExternalLabelNameClear: true
+      replicaExternalLabelNameClear: true
+      enableFeatures:
+        - no-default-scrape-port
+      serviceMonitorSelector:
+        matchLabels:
+          observability: prometheus-operator
+      podMonitorSelector:
+        matchLabels:
+          observability: prometheus-operator
+      probeSelector:
+        matchLabels:
+          observability: prometheus-operator
+      ruleSelector:
+        matchLabels:
+          observability: prometheus-operator
+      image:
+        registry: leapxpert.azurecr.io/public/leapxpert/thirdparties/quay.io
+        repository: prometheus/prometheus
+      resources:
+        limits:
+          cpu: 1
+          memory: 5Gi
+        requests:
+          cpu: 100m
+          memory: 2.5Gi
+      awsNodeExporter: []
+        # - accountId: '498691965545'
+        #   region: ap-southeast-1
+        #   accessKey: accessKey1
+        #   secretKey: secretKey1
+        # - accountId: '498691965546'
+        #   region: ap-southeast-2
+        #   accessKey: accessKey2
+        #   secretKey: secretKey2
+      dcNodeExporter: {}
+        # basicAuth:
+        #   username: example_user
+        #   password: example_password
+        # cluster: example_tenant_id
+      certManager: {}
+        # enabled: true
+        # namespace: cert-manager
+
+      retention: 7d
+      paused: false
+      shards: 1
+      replicas: 1
+      remoteWrite: []
+      storageSpec:
+        volumeClaimTemplate:
+          spec:
+            accessModes: ["ReadWriteOnce"]
+            storageClassName: lxp-default
+            resources:
+              requests:
+                storage: 30Gi
+      additionalScrapeConfigs: |
+        - job_name: 'envoy-stats'
+          metrics_path: /stats/prometheus
+          kubernetes_sd_configs:
+            - role: pod
+          relabel_configs:
+            - source_labels: [__meta_kubernetes_pod_name]
+              action: replace
+              replacement: $1
+              regex: (.*)
+              target_label: pod
+            - source_labels: [__meta_kubernetes_pod_label_app_kubernetes_io_name]
+              action: replace
+              replacement: $1
+              regex: (.*)
+              target_label: app
+            - source_labels: [__meta_kubernetes_pod_container_name]
+              action: keep
+              regex: istio-proxy
+            - source_labels: [__meta_kubernetes_pod_label_app]
+              action: drop
+              regex: istio-ingressgateway|istio-egressgateway
+            - source_labels: [__meta_kubernetes_pod_controller_kind]
+              regex: job
+              action: drop
+            - source_labels: [__meta_kubernetes_pod_phase]
+              regex: "Succeeded|Failed|Completed"
+              action: "drop"
+            - source_labels: [__address__]
+              action: replace
+              regex: ([^:]+):15090
+              replacement: $1:15020
+              target_label: __address__
+            - source_labels: [__meta_kubernetes_namespace]
+              action: replace
+              replacement: $1
+              regex: (.*)
+              target_label: namespace
+            - source_labels: [__meta_kubernetes_pod_label_leap_expert_version]
+              action: replace
+              replacement: $1
+              regex: (.*)
+              target_label: lxp_version
+            - source_labels: [__meta_kubernetes_pod_label_leap_expert_app]
+              action: replace
+              replacement: $1
+              regex: (.*)
+              target_label: container
+          metric_relabel_configs:
+            - source_labels: [__name__]
+              regex: lettuce_command_(.*)
+              target_label: __name__
+              replacement: redis_lettuce_command_$1
+            - source_labels: [__name__]
+              regex: '(^envoy_.*|^service_http_.*)'
+              action: drop
+            - regex: "cluster"
+              action: labeldrop
+            {{- range $key, $value := .Values.whatsappCloudMonitor.errorCodes }}
+            - source_labels: [container,status]
+              separator: '@'
+              regex: 'whatsapp-native-integration@{{ $key }}'
+              target_label: status_name
+              replacement: '{{ $value }}'
+              action: replace
+            {{- end }}
+        {{- if .Values.whatsappMonitor.enabled }}
+        {{- if eq (len .Values.whatsappMonitor.staticTargets) 0 }}
+        - job_name: whatsapp-metrics
+          kubernetes_sd_configs:
+            - role: pod
+          scheme: http
+          metrics_path: /metrics
+          params:
+            format:
+              - prometheus
+          relabel_configs:
+            - source_labels: [__meta_kubernetes_pod_container_name]
+              regex: "whatsapp-api-proxy-sidecar"
+              action: keep
+            - source_labels: [__address__]
+              action: replace
+              target_label: __address__
+              regex: (.+?)(:\d+)?
+              replacement: $1:2080
+            - source_labels: [__meta_kubernetes_pod_label_app_kubernetes_io_name]
+              action: replace
+              replacement: $1
+              regex: (.*)
+              target_label: app
+            - source_labels: [__meta_kubernetes_pod_label_app_kubernetes_io_instance]
+              regex: (.*)-(\d+)
+              replacement: $2
+              target_label: number
+              action: replace
+            - source_labels: [__meta_kubernetes_pod_name]
+              target_label: pod
+              action: replace
+          metric_relabel_configs:
+            - source_labels: [__name__]
+              regex: (.*)
+              target_label: __name__
+              replacement: whatsapp_client_$1
+        - job_name: whatsapp-app-stats
+          kubernetes_sd_configs:
+            - role: pod
+          scheme: http
+          metrics_path: /v1/stats/app
+          params:
+            format:
+              - prometheus
+          relabel_configs:
+            - source_labels: [__meta_kubernetes_pod_container_name]
+              regex: "whatsapp-api-proxy-sidecar"
+              action: keep
+            - source_labels: [__address__]
+              action: replace
+              target_label: __address__
+              regex: (.+?)(:\d+)?
+              replacement: $1:2080
+            - source_labels: [__meta_kubernetes_pod_label_app_kubernetes_io_instance]
+              regex: (.*)-(\d+)
+              replacement: $2
+              target_label: number
+              action: replace
+            - source_labels: [__meta_kubernetes_pod_name]
+              target_label: pod
+              action: replace
+          metric_relabel_configs:
+            {{- range $key, $value := .Values.whatsappMonitor.errorCodes }}
+            - source_labels: [result]
+              regex: "{{ $key }}"
+              replacement: "{{ $value }}"
+              target_label: "error_name"
+              action: "replace"
+            - source_labels: [status]
+              regex: "{{ $key }}"
+              replacement: "{{ $value }}"
+              target_label: "error_name"
+              action: "replace"
+            {{- end }}
+            - source_labels: [__name__]
+              regex: (.*)
+              target_label: __name__
+              replacement: whatsapp_client_$1
+        - job_name: whatsapp-health
+          kubernetes_sd_configs:
+            - role: pod
+          scheme: http
+          metrics_path: /probe
+          params:
+            module: [ http_whatsapp_2xx ]
+          relabel_configs:
+            - source_labels: [__meta_kubernetes_pod_container_name]
+              regex: "whatsapp-api-proxy-sidecar"
+              action: keep
+            - source_labels: [__meta_kubernetes_pod_label_app_kubernetes_io_instance]
+              regex: (.*)-(\d+)
+              replacement: $2
+              target_label: number
+              action: replace
+            - source_labels: [__meta_kubernetes_pod_name]
+              target_label: pod
+              action: replace
+            - source_labels: [__address__]
+              regex: (.+)
+              replacement: $1/v1/health
+              target_label: __param_target
+            - source_labels: [__address__]
+              target_label: instance
+            - target_label: __address__
+              replacement: prometheus-blackbox-exporter:9115
+            - source_labels: [__param_module]
+              target_label: module
+            - action: replace
+              target_label: app
+              replacement: whatsapp-client
+        {{- else }}
+        {{- with .Values.whatsappMonitor.staticTargets }}
+        - job_name: whatsapp-metrics
+          static_configs:
+            - targets:
+              {{- range . }}
+              - {{ . }}
+              {{- end }}
+          scheme: http
+          metrics_path: /metrics
+          params:
+            format:
+              - prometheus
+          relabel_configs:
+            - source_labels: [__address__]
+              regex: (.+?)-(\d+)(.+?)
+              replacement: $2
+              target_label: number
+              action: replace
+          metric_relabel_configs:
+            - source_labels: [__name__]
+              regex: (.*)
+              target_label: __name__
+              replacement: whatsapp_client_$1
+        - job_name: whatsapp-app-stats
+          static_configs:
+            - targets:
+              {{- range . }}
+              - {{ . }}
+              {{- end }}
+          scheme: http
+          metrics_path: /v1/app/stats
+          params:
+            format:
+              - prometheus
+          relabel_configs:
+            - source_labels: [__address__]
+              regex: (.+?)-(\d+)(.+?)
+              replacement: $2
+              target_label: number
+              action: replace
+          metric_relabel_configs:
+            - source_labels: [__name__]
+              regex: (.*)
+              target_label: __name__
+              replacement: whatsapp_client_$1
+        - job_name: whatsapp-health
+          static_configs:
+            - targets:
+              {{- range . }}
+              - {{ . }}
+              {{- end }}
+          scheme: http
+          metrics_path: /probe
+          params:
+            module: [ http_whatsapp_2xx ]
+          relabel_configs:
+            - source_labels: [__address__]
+              regex: (.+?)-(\d+)(.+?)
+              replacement: $2
+              target_label: number
+              action: replace
+            - source_labels: [__address__]
+              regex: (.+)
+              replacement: $1/v1/health
+              target_label: __param_target
+            - source_labels: [__address__]
+              target_label: instance
+            - target_label: __address__
+              replacement: prometheus-blackbox-exporter:9115
+            - source_labels: [__param_module]
+              target_label: module
+            - action: replace
+              target_label: app
+              replacement: whatsapp-client
+        {{- end }}
+        {{- end }}
+        {{- end }}
+
+        {{- with .Values.prometheus.prometheusSpec.awsNodeExporter }}
+        {{- range . }}
+        - job_name: node-exporter-ec2-{{ .accountId }}
+          ec2_sd_configs:
+            - region: {{ .region }}
+              access_key: {{ .accessKey }}
+              secret_key: {{ .secretKey }}
+              refresh_interval: 300s
+              port: 9100
+              filters:
+                - name: tag:imessage
+                  values:
+                    - 'true'
+          relabel_configs:
+            - target_label: 'sysname'
+              replacement: 'Darwin'
+            - target_label: 'aws_account_id'
+              replacement: '{{ .accountId }}'
+            - source_labels: [job]
+              target_label: job
+              replacement: 'node-exporter'
+            - source_labels: [__meta_ec2_instance_id]
+              target_label: instance
+              replacement: '${1}'
+              action: replace
+            - source_labels: [__meta_ec2_region]
+              target_label: region
+              replacement: '${1}'
+              action: replace
+            - source_labels: [__meta_ec2_public_ip]
+              target_label: public_ip
+              replacement: '${1}'
+              action: replace
+            - source_labels: [__meta_ec2_tag_Name]
+              target_label: domain
+              replacement: '${1}'
+              action: replace
+            - source_labels: [public_ip]
+              target_label: __address__
+              regex: (.*)
+              replacement: '${1}:9100'
+          metric_relabel_configs:
+            - source_labels: [__name__]
+              regex: '(^promhttp_.*|^go_.*)'
+              action: drop
+        - job_name: igateway-stats-ec2-{{ .accountId }}
+          scheme: https
+          ec2_sd_configs:
+            - region: {{ .region }}
+              access_key: {{ .accessKey }}
+              secret_key: {{ .secretKey }}
+              refresh_interval: 300s
+              port: 9100
+              filters:
+                - name: tag:imessage
+                  values:
+                    - 'true'
+          tls_config:
+            insecure_skip_verify: true
+          relabel_configs:
+            - source_labels: [__meta_ec2_tag_Name]
+              target_label: __address__
+              regex: (.*)
+            - source_labels: [__meta_ec2_tag_Name]
+              regex: (.*)
+              target_label: domain
+              replacement: '$1'
+            - action: replace
+              target_label: app
+              replacement: imessage-archiving-gateway
+        - job_name: igateway-probe-ec2-{{ .accountId }}
+          scheme: http
+          ec2_sd_configs:
+            - region: {{ .region }}
+              access_key: {{ .accessKey }}
+              secret_key: {{ .secretKey }}
+              refresh_interval: 300s
+              port: 9100
+              filters:
+                - name: tag:imessage
+                  values:
+                    - 'true'
+          metrics_path: /probe
+          params:
+            module: [ http_2xx_3xx_4xx ]
+          relabel_configs:
+            - source_labels: [__meta_ec2_tag_Name]
+              target_label: __address__
+              regex: (.*)
+            - source_labels: [__address__]
+              target_label: domain
+              regex: (.*)
+            - source_labels: [domain]
+              regex: (.+)
+              replacement: https://$1/imessage/v1/secure-ping
+              target_label: __param_target
+            - source_labels: [__param_target]
+              target_label: target
+            - target_label: __address__
+              replacement: prometheus-blackbox-exporter:9115
+            - source_labels: [__address__]
+              target_label: instance
+            - source_labels: [__param_module]
+              target_label: module
+            - action: replace
+              target_label: app
+              replacement: imessage-archiving-gateway
+        {{- end }}
+        {{- end }}
+
+        - job_name: fmop-be-readiness-check
+          kubernetes_sd_configs:
+            - role: service
+          scheme: http
+          metrics_path: /probe
+          params:
+            module: [ http_2xx_3xx_4xx ]
+          relabel_configs:
+            - source_labels: [__meta_kubernetes_service_label_app_kubernetes_io_name]
+              action: replace
+              replacement: $1
+              regex: (.*)
+              target_label: app
+            - source_labels: [__meta_kubernetes_service_label_leap_expert_product]
+              action: keep
+            - source_labels: [__meta_kubernetes_service_label_leap_expert_language]
+              regex: 'golang|java|quarkus'
+              action: keep
+            - source_labels: [__meta_kubernetes_service_label_leap_expert_subsystem]
+              regex: 'backend'
+              action: keep
+            - source_labels: [__meta_kubernetes_service_port_name]
+              regex: 'platform'
+              action: keep
+            - source_labels: [__meta_kubernetes_service_label_leap_expert_product]
+              regex: 'fmop'
+              action: keep
+            - source_labels: [__meta_kubernetes_service_name, __meta_kubernetes_namespace, __meta_kubernetes_service_port_number]
+              separator: .
+              target_label: __address__
+              regex: "(.*).(.*):(.*)"
+              replacement: '${1}.${2}:${3}'
+              action: replace
+            - source_labels: [__address__]
+              regex: (.+)
+              replacement: $1/readiness
+              target_label: __param_target
+            - source_labels: [__param_target]
+              target_label: target
+            - target_label: __address__
+              replacement: prometheus-blackbox-exporter:9115
+            - source_labels: [__address__]
+              target_label: instance
+            - source_labels: [__param_module]
+              target_label: module
+
+        - job_name: voip-be-readiness-check
+          kubernetes_sd_configs:
+            - role: service
+          scheme: http
+          metrics_path: /probe
+          params:
+            module: [ http_2xx_3xx_4xx ]
+          relabel_configs:
+            - source_labels: [__meta_kubernetes_service_label_app_kubernetes_io_name]
+              action: replace
+              replacement: $1
+              regex: (.*)
+              target_label: app
+            - source_labels: [__meta_kubernetes_service_name]
+              regex: '(^voip-mgr.*)'
+              action: drop
+            - source_labels: [__meta_kubernetes_service_label_leap_expert_product]
+              action: keep
+            - source_labels: [__meta_kubernetes_service_label_leap_expert_language]
+              regex: 'golang|java|quarkus'
+              action: keep
+            - source_labels: [__meta_kubernetes_service_label_leap_expert_subsystem]
+              regex: 'backend'
+              action: keep
+            - source_labels: [__meta_kubernetes_service_port_name]
+              regex: 'platform'
+              action: keep
+            - source_labels: [__meta_kubernetes_service_label_leap_expert_product]
+              regex: 'voip'
+              action: keep
+            - source_labels: [__address__]
+              action: replace
+              regex: ([^:]+):10080
+              replacement: $1:8081 # voice and cic readiness check port
+              target_label: __address__
+            - source_labels: [__address__]
+              regex: (.+)
+              replacement: $1/healthcheck
+              target_label: __param_target
+            - source_labels: [__param_target]
+              target_label: target
+            - target_label: __address__
+              replacement: prometheus-blackbox-exporter:9115
+            - source_labels: [__address__]
+              target_label: instance
+            - source_labels: [__param_module]
+              target_label: module
+
+        {{- with .Values.prometheus.prometheusSpec.dcNodeExporter }}
+        - job_name: node-exporter-dc-{{ .cluster }}
+          scheme: http
+          http_sd_configs:
+            - url: https://dcsd.obs.leapxpert.io/{{ .cluster }}
+              basic_auth:
+                username: {{ .basicAuth.username }}
+                password: {{ .basicAuth.password }}
+          relabel_configs:
+            - target_label: 'sysname'
+              replacement: 'Darwin'
+            - source_labels: [job]
+              target_label: job
+              replacement: 'node-exporter'
+            - source_labels: [__address__]
+              target_label: domain
+              regex: (.*)
+            - source_labels: [domain]
+              target_label: __address__
+              regex: (.*)
+              replacement: '${1}:9100'
+          metric_relabel_configs:
+            - source_labels: [__name__]
+              regex: '(^promhttp_.*|^go_.*)'
+              action: drop
+        - job_name: igateway-probe-dc-{{ .cluster }}
+          scheme: http
+          metrics_path: /probe
+          params:
+            module: [ http_2xx_3xx_4xx ]
+          http_sd_configs:
+            - url: https://dcsd.obs.leapxpert.io/{{ .cluster }}
+              basic_auth:
+                username: {{ .basicAuth.username }}
+                password: {{ .basicAuth.password }}
+          relabel_configs:
+            - source_labels: [__address__]
+              target_label: domain
+              regex: (.*)
+            - source_labels: [domain]
+              regex: (.+)
+              replacement: https://$1/imessage/v1/secure-ping
+              target_label: __param_target
+            - source_labels: [__param_target]
+              target_label: target
+            - target_label: __address__
+              replacement: prometheus-blackbox-exporter:9115
+            - source_labels: [__address__]
+              target_label: instance
+            - source_labels: [__param_module]
+              target_label: module
+            - action: replace
+              target_label: app
+              replacement: imessage-archiving-gateway
+        - job_name: igateway-stats-dc-{{ .cluster }}
+          scheme: https
+          http_sd_configs:
+            - url: https://dcsd.obs.leapxpert.io/{{ .cluster }}
+              basic_auth:
+                username: {{ .basicAuth.username }}
+                password: {{ .basicAuth.password }}
+          tls_config:
+            insecure_skip_verify: true
+          relabel_configs:
+            - target_label: 'sysname'
+              replacement: 'Darwin'
+            - source_labels: [__address__]
+              target_label: domain
+              regex: (.*)
+        {{- end }}
+
+        {{- with .Values.prometheus.prometheusSpec.certManager }}
+        - job_name: cert-manager
+          scheme: http
+          kubernetes_sd_configs:
+            - role: pod
+              namespaces:
+                names:
+                  - {{ .namespace }}
+          relabel_configs:
+            - source_labels: [__meta_kubernetes_pod_label_app_kubernetes_io_name]
+              action: replace
+              replacement: $1
+              regex: (.*)
+              target_label: app
+            - source_labels: [__meta_kubernetes_pod_container_port_number]
+              separator: ;
+              regex: "9402"
+              replacement: $1
+              action: keep
+            - source_labels: [__meta_kubernetes_namespace]
+              separator: ;
+              regex: (.*)
+              target_label: namespace
+              replacement: $1
+              action: replace
+            - source_labels: [__meta_kubernetes_pod_name]
+              separator: ;
+              regex: (.*)
+              target_label: pod
+              replacement: $1
+              action: replace
+            - source_labels: [__meta_kubernetes_pod_container_name]
+              separator: ;
+              regex: (.*)
+              target_label: container
+              replacement: $1
+              action: replace
+        {{- end }}
+
+        {{- with .Values.prometheus.prometheusSpec.additionalScrapeConfigAppendix }}
+        {{ tpl . $ }}
+        {{- end }}
+  # Ref. https://helm.sh/docs/chart_template_guide/control_structures/#modifying-scope-using-with
+
+  grafana:
+    enabled: true
+    image:
+      registry: leapxpert.azurecr.io/public/leapxpert/thirdparties
+      tag: 9.5.2
+    downloadDashboardsImage:
+      repository: leapxpert.azurecr.io/public/leapxpert/thirdparties/curlimages/curl
+    initChownData:
+      image:
+        registry: leapxpert.azurecr.io/public/leapxpert/thirdparties
+        repository: busybox
+        tag: "1.34.0"
+    defaultDashboardsEnabled: true
+    adminPassword: ""
+    useStatefulSet: true
+    testFramework:
+      enabled: false
+    rbac:
+      pspEnabled: false
+    grafana.ini:
+      unified_alerting:
+        enabled: true
+      alerting:
+        enabled: false
+      plugins:
+        enable_alpha: true
+    sidecar:
+      image:
+        registry: leapxpert.azurecr.io/public/leapxpert/thirdparties/quay.io
+        tag: 1.25.3
+      dashboards:
+        enabled: true
+        label: grafana_dashboard
+    persistence:
+      enabled: true
+      type: statefulset
+      storageClassName: lxp-default
+    imageRenderer:
+      enabled: false
+      image:
+        registry: leapxpert.azurecr.io/public/leapxpert/thirdparties
+        tag: 3.8.4
+        pullSecrets:
+          - lxp-docker-registry-key
+    resources:
+      limits:
+        cpu: 100m
+        memory: 500Mi
+      requests:
+        cpu: 100m
+        memory: 100Mi
+    istio:
+      ingressNamespace: default
+
+  kube-state-metrics:
+    image:
+      registry: leapxpert.azurecr.io/public/leapxpert/thirdparties/registry.k8s.io
+    podSecurityPolicy:
+      enabled: false
+    prometheus:
+      monitor:
+        additionalLabels:
+          observability: prometheus-operator
+        relabelings:
+          - sourceLabels: [__meta_kubernetes_pod_node_name]
+            separator: ;
+            regex: (.*)
+            targetLabel: node
+            replacement: $1
+            action: replace
+    resources:
+      limits:
+        cpu: 100m
+        memory: 200Mi
+      requests:
+        cpu: 100m
+        memory: 100Mi
+
+  prometheus-node-exporter:
+    image:
+      registry: leapxpert.azurecr.io/public/leapxpert/thirdparties/quay.io
+    prometheus:
+      monitor:
+        metricRelabelings:
+        # Drop node metrics in the top 30 list
+        - sourceLabels: [__name__]
+          regex: '(node_filesystem_device_error)'
+          action: drop
+        additionalLabels:
+          observability: prometheus-operator
+    resources:
+      limits:
+        cpu: 200m
+        memory: 100Mi
+      requests:
+        cpu: 100m
+        memory: 30Mi
+# ---------------------------------------------
+kubePrometheusStackAddOns:
+  enabled: true
+# ---------------------------------------------
+kube-prometheus-stack-add-ons:
+  fullnameOverride: kube-prometheus-stack-add-ons
+
+  namespaceSelector:
+    istiod:
+      enabled: true
+      namespace: istio-system
+    kafka:
+      enabled: true
+      namespace: lxp-data
+    synapse:
+      enabled: true
+      namespace: lxp-core
+    vault:
+      enabled: true
+      namespace: lxp-core
+    velero:
+      enabled: true
+      namespace: velero
+
+  dashboardsSelector:
+    elasticsearch:
+      enabled: true
+    lxpApplicationBusinessMetrics:
+      enabled: true
+    lxpCore:
+      enabled: true
+    lxpData:
+      enabled: true
+    lxpGrafanaAgent:
+      enabled: true
+    lxpIstio:
+      enabled: true
+    lxpResourcesByRelease:
+      enabled: true
+    lxpStatus:
+      enabled: true
+    lxpStatusInsights:
+      enabled: true
+    lxpMacInstances:
+      enabled: true
+    lxpKafka:
+      enabled: true
+    lxpInvestigation:
+      enabled: true
+    matrix:
+      enabled: true
+    velero:
+      enabled: true
+
+  defaultRules:
+    rules:
+      appMethodExecution: false
+    disabled:
+      RedisOutOfConfiguredMaxmemory: true
+  kafkaLagThreshold:
+    - topics:
+        - audit
+        - matrix-events
+        - matrix-room-events
+        - usermanagement-events
+      consumerGroups:
+        - report-management
+        - analytics
+      duration: 15m
+      matchedThreshold: 1000
+      excludeThreshold: 50
+    - topics:
+        - room-lifecycle-events
+      consumerGroups:
+        - wechatintegration
+        - slack2bintegration
+        - whatsappnativeintegration
+        - team2bintegration
+      duration: 15m
+      matchedThreshold: 50
+      excludeThreshold: null
+    - topics:
+        - serviceprofile-events
+      consumerGroups:
+        - whatsappnativeintegration
+        - usermanagement
+        - wechatminiappintegration
+        - voiceintegration
+        - proxymessaging
+      duration: 15m
+      matchedThreshold: 10
+      excludeThreshold: null
+    - topics:
+        - proxymessaging
+        - audit
+        - notification
+        - realtimesync
+        - report-management
+        - wechatintegration
+        - lineintegration
+        - signal
+        - sms
+        - wechatminiappintegration
+        - whatsappnative
+        - teams2bintegration
+        - slack2bintegration
+        - usermanagement
+        - events-api
+        - chatbot
+        - voice-integration-local
+        - message-tracking
+        - wecomintegration
+        - whatapparchived
+        - search
+        - analytics
+        - authentication
+        - default
+        - poolmanagement
+        - room-conditions
+        - imessagearchived
+        - sms2bintegration
+      consumerGroups: []
+      duration: 15m
+      matchedThreshold: 50
+      excludeThreshold: null
+    - topics:
+        - usermanagement
+        - proxymessaging
+        - message-tracking
+      consumerGroups: []
+      duration: 15m
+      matchedThreshold: 100
+      excludeThreshold: null
+    - topics:
+        - molap-audit-aggregation
+      consumerGroups: []
+      duration: 15m
+      matchedThreshold: 1500
+      excludeThreshold: null
+    - topics:
+        - molap-audit-migration
+        - molap-audit-source
+        - molap-audit-failed-aggregate
+      consumerGroups: []
+      duration: 15m
+      matchedThreshold: 3000
+      excludeThreshold: null
+    - topics:
+        - incoming-message-passive-imessage
+      consumerGroups: []
+      duration: 30m
+      matchedThreshold: 1000
+      excludeThreshold: null
+# ---------------------------------------------
+loki:
+  enabled: true
+
+  deploymentMode: SingleBinary
+  singleBinary:
+    replicas: 1
+    resources:
+      limits:
+        cpu: 1000m
+        memory: 3Gi
+      requests:
+        cpu: 100m
+        memory: 1.5Gi
+    extraVolumes:
+      - name: lokirules
+        emptyDir: {}
+    extraVolumeMounts:
+      - name: lokirules
+        mountPath: /rules
+
+  backend:
+    replicas: 0
+  read:
+    replicas: 0
+  write:
+    replicas: 0
+
+  gateway:
+    enabled: false
+  test:
+    enabled: false
+  lokiCanary:
+    enabled: false
+  chunksCache:
+    enabled: false
+  resultsCache:
+    enabled: false
+
+  imagePullSecrets:
+    - name: lxp-docker-registry-key
+  rbac:
+    pspEnabled: false
+  serviceMonitor:
+    enabled: true
+
+  loki:
+    auth_enabled: false
+    commonConfig:
+      replication_factor: 1
+    storage:
+      type: filesystem
+    schemaConfig:
+      configs:
+        - from: 2024-06-19
+          store: tsdb
+          object_store: filesystem
+          schema: v13
+          index:
+            prefix: loki_index_
+            period: 24h
+    image:
+      registry: leapxpert.azurecr.io
+      repository: public/leapxpert/thirdparties/grafana/loki
+# ---------------------------------------------
+grafanaAgent:
+  enabled: true
+# ---------------------------------------------
+grafana-agent:
+  image:
+    registry: leapxpert.azurecr.io/public/leapxpert/thirdparties/docker.io
+    pullSecrets:
+      - name: lxp-docker-registry-key
+  crds:
+    create: false
+  agent:
+    common:
+      hideSecret:
+        enabled: false
+    static:
+      daemonset:
+        enabled: true
+        mode: static
+        extraArgs:
+          - -enable-features=integrations-next
+          - -config.expand-env=true
+        extraPorts:
+          - name: otlp-grpc
+            port: 4317
+            targetPort: 4317
+            protocol: TCP
+          - name: zipkin
+            port: 9411
+            targetPort: 9411
+            protocol: TCP
+          - name: app-agent
+            port: 12347
+            targetPort: 12347
+            protocol: TCP
+          - name: syslog
+            port: 1514
+            targetPort: 1514
+            protocol: TCP
+        volumes:
+          extra:
+            - name: queue-volume
+              hostPath:
+                path: /tmp/agent
+        mounts:
+          varlog: true
+          extra:
+            - name: queue-volume
+              mountPath: /tmp/agent
+        resources:
+          limits:
+            cpu: 200m
+            memory: 512Mi
+          requests:
+            cpu: 100m
+            memory: 128Mi
+        logsClientsConfig:
+          enabled: true
+          remoteWriteConfig: []
+          additionalLogsConfigs: []
+        tracesClientsConfig:
+          enabled: true
+          remoteWriteConfig: []
+          additionalTracesReceiverConfigs: {}
+        metricsClientsConfig:
+          enabled: false
+        integrationsConfig:
+          frontendMonitoring:
+            enabled: false
+            corsAllowedOrigins: []
+            rateLimiting: {}
+            istioIngress:
+              namespace: ""
+              domains: []
+          additionalIntegrationsConfigs: {}
+        configMap:
+          create: true
+          content: |-
+            server:
+              log_level: info
+              log_format: logfmt
+            {{- if .Values.agent.static.daemonset.logsClientsConfig.enabled }}
+            logs:
+              positions_directory: /tmp/agent/positions.yaml
+              configs:
+                - name: default
+                  {{- if not .Values.agent.common.hideSecret.enabled }}
+                  clients: {{ toYaml .Values.agent.static.daemonset.logsClientsConfig.remoteWriteConfig | nindent 8 }}
+                  {{- else }}
+                  clients:
+                    - url: https://logging.obs.leapxpert.io/loki/api/v1/push
+                      tenant_id: ${CENTRAL_OBS_TENANT_ID}
+                      external_labels:
+                        cluster: ${CENTRAL_OBS_TENANT_ID}
+                      basic_auth:
+                        username: ${CENTRAL_OBS_LOG_USER}
+                        password: ${CENTRAL_OBS_LOG_PASSWORD}
+                  {{- end }}
+                  limits_config:
+                  scrape_configs:
+                    - job_name: kubernetes-pods
+                      pipeline_stages:
+                        - cri: {}
+                        - match:
+                            selector: '{product=~"fmop|maxen|voip"}'
+                            stages:
+                            - json:
+                                expressions:
+                                  level: level
+                            - replace:
+                                expression: "(\\w+)"
+                                source: "level"
+                                replace: '{{`{{`}} .Value | ToUpper {{`}}`}}'
+                            - replace:
+                                expression: "(WARNING|warning)"
+                                source: "level"
+                                replace: 'WARN'
+                            - labels:
+                                level: null
+                            - metrics:
+                                fmop_logs_by_level:
+                                  type: Counter
+                                  description: "The number of logs lines by level"
+                                  source: level
+                                  max_idle_duration: 30m
+                                  config:
+                                    match_all: true
+                                    action: inc
+                            - match:
+                                selector: '{product=~"fmop|maxen|voip",language=~"java|quarkus"} |~ "[a-zA-Z$0-9]+Exception"'
+                                stages:
+                                - json:
+                                    expressions:
+                                      exception: exception
+                                - regex:
+                                    expression: "(?P<exception_name>[a-zA-Z$0-9]+Exception)"
+                                    source: exception
+                                - labels:
+                                    exception_name: null
+                                - metrics:
+                                    fmop_logs_by_exception_java:
+                                      type: Counter
+                                      description: "The number of logs lines by exception"
+                                      source: exception_name
+                                      max_idle_duration: 30m
+                                      config:
+                                        match_all: true
+                                        action: inc
+                      kubernetes_sd_configs:
+                        - role: pod
+                      relabel_configs:
+                        - source_labels:
+                            - __meta_kubernetes_pod_controller_name
+                          regex: ([0-9a-z-.]+?)(-[0-9a-f]{8,10})?
+                          action: replace
+                          target_label: __tmp_controller_name
+                        - source_labels:
+                            - __meta_kubernetes_pod_label_app_kubernetes_io_name
+                            - __meta_kubernetes_pod_label_app
+                            - __tmp_controller_name
+                            - __meta_kubernetes_pod_name
+                          regex: ^;*([^;]+)(;.*)?$
+                          action: replace
+                          target_label: app
+                        - source_labels:
+                            - __meta_kubernetes_pod_label_app_kubernetes_io_instance
+                            - __meta_kubernetes_pod_label_release
+                          regex: ^;*([^;]+)(;.*)?$
+                          action: replace
+                          target_label: instance
+                        - source_labels:
+                            - __meta_kubernetes_pod_label_app_kubernetes_io_component
+                            - __meta_kubernetes_pod_label_component
+                          regex: ^;*([^;]+)(;.*)?$
+                          action: replace
+                          target_label: component
+                        - action: replace
+                          source_labels:
+                          - __meta_kubernetes_pod_node_name
+                          target_label: node_name
+                        - action: replace
+                          source_labels:
+                          - __meta_kubernetes_namespace
+                          target_label: namespace
+                        - action: replace
+                          replacement: $1
+                          separator: /
+                          source_labels:
+                          - namespace
+                          - app
+                          target_label: job
+                        - action: replace
+                          source_labels:
+                          - __meta_kubernetes_pod_name
+                          target_label: pod
+                        - action: replace
+                          source_labels:
+                          - __meta_kubernetes_pod_container_name
+                          target_label: container
+                        - action: replace
+                          replacement: /var/log/pods/*$1/*.log
+                          separator: /
+                          source_labels:
+                          - __meta_kubernetes_pod_uid
+                          - __meta_kubernetes_pod_container_name
+                          target_label: __path__
+                        - action: replace
+                          regex: true/(.*)
+                          replacement: /var/log/pods/*$1/*.log
+                          separator: /
+                          source_labels:
+                          - __meta_kubernetes_pod_annotationpresent_kubernetes_io_config_hash
+                          - __meta_kubernetes_pod_annotation_kubernetes_io_config_hash
+                          - __meta_kubernetes_pod_container_name
+                          target_label: __path__
+                        - action: labelmap
+                          regex: __meta_kubernetes_pod_label_leap_expert_(.+)
+                {{- with .Values.agent.static.daemonset.logsClientsConfig.additionalLogsConfigs }}
+                {{- toYaml . | nindent 8 }}
+                {{- end -}}
+            {{- end -}}
+            {{- if .Values.agent.static.daemonset.tracesClientsConfig.enabled }}
+            traces:
+              configs:
+                - name: default
+                  batch: {}
+                  receivers:
+                    otlp:
+                      protocols:
+                        grpc:
+                          endpoint: 0.0.0.0:4317
+                        http:
+                          endpoint: 0.0.0.0:4318
+                    zipkin:
+                      endpoint: 0.0.0.0:9411
+                    {{- with .Values.agent.static.daemonset.tracesClientsConfig.additionalTracesReceiverConfigs }}
+                    {{- toYaml . | nindent 8 }}
+                    {{- end }}
+                  {{- if not .Values.agent.common.hideSecret.enabled }}
+                  remote_write: {{ toYaml .Values.agent.static.daemonset.tracesClientsConfig.remoteWriteConfig | nindent 8 }}
+                  {{- else }}
+                  remote_write:
+                    - endpoint: tracing-write.obs.leapxpert.io:443
+                      headers:
+                        x-scope-orgid: ${CENTRAL_OBS_TENANT_ID}
+                        authorization: Basic ${CENTRAL_OBS_TRACE_SECRET}
+                      sending_queue:
+                        num_consumers: 10
+                        queue_size: 5000
+                      retry_on_failure:
+                        enabled: true
+                        initial_interval: 10s
+                        max_interval: 60s
+                        max_elapsed_time: 10m
+                  {{- end }}
+                  service_graphs:
+                    enabled: true
+                  tail_sampling:
+                    policies:
+                      - name: drop_noisy_traces_by_user_agent_original
+                        type: string_attribute
+                        string_attribute:
+                          key: user_agent.original
+                          values:
+                            - ^(Blackbox Exporter\/.*)$
+                            - ^(kube-probe\/.*)$
+                            - ^(Prometheus\/.*)$
+                            - ^(OTel-OTLP-Exporter-Java\/.*)$
+                            - ^(FreshpingBot\/.*)$
+                          enabled_regex_matching: true
+                          invert_match: true
+                      - name: drop_noisy_traces_by_user_agent
+                        type: string_attribute
+                        string_attribute:
+                          key: user_agent
+                          values:
+                            - ^(Blackbox Exporter\/.*)$
+                            - ^(kube-probe\/.*)$
+                            - ^(Prometheus\/.*)$
+                            - ^(OTel-OTLP-Exporter-Java\/.*)$
+                            - ^(FreshpingBot\/.*)$
+                          enabled_regex_matching: true
+                          invert_match: true
+                      - name: drop_noisy_traces_by_http_url
+                        type: string_attribute
+                        string_attribute:
+                          key: http.url
+                          values:
+                            - ^(https:\/\/.+\/_matrix\/client\/.+\/sync.*)$
+                            - ^(http:\/\/zipkin\/.*)$
+                          enabled_regex_matching: true
+                          invert_match: true
+            {{- end -}}
+            {{- if .Values.agent.static.daemonset.metricsClientsConfig.enabled }}
+            metrics:
+              wal_directory: /tmp/wal
+              global:
+                scrape_interval: 30s
+                scrape_timeout: 30s
+                external_labels:
+                  component: faro
+              configs:
+                - name: default
+                  remote_write:
+                    - url: http://kube-prometheus-stack-prometheus.{{ .Release.Namespace }}:9090/api/v1/write
+            {{- end }}
+            integrations:
+            {{- if .Values.agent.static.daemonset.integrationsConfig.frontendMonitoring.enabled }}
+            {{- with .Values.agent.static.daemonset.integrationsConfig.frontendMonitoring }}
+              app_agent_receiver_configs:
+                - autoscrape:
+                    enable: true
+                    metrics_instance: default
+                  instance: frontend
+                  logs_instance: default
+                  traces_instance: default
+                  server:
+                    host: 0.0.0.0
+                    port: 12347
+                    api_key: ${CENTRAL_OBS_FARO_API_KEY}
+                    cors_allowed_origins:
+                    {{- toYaml .corsAllowedOrigins | nindent 10 }}
+                    rate_limiting: {{ toYaml .rateLimiting | nindent 10 }}
+                  logs_labels:
+                    component: faro
+                    app_name: ''
+                    kind: ''
+                  logs_send_timeout: 5000
+                  sourcemaps:
+                    download: true
+            {{- end }}
+            {{- end }}
+            {{- with .Values.agent.static.daemonset.integrationsConfig.additionalIntegrationsConfigs }}
+            {{- toYaml . | nindent 2 }}
+            {{- end -}}
+
+      statefulset:
+        enabled: true
+        mode: static
+        extraArgs:
+          - -enable-features=integrations-next
+          - -config.expand-env=true
+        logsClientsConfig:
+          remoteWriteConfig: []
+        snmpMonitoring:
+          enabled: false
+          config:
+            snmpTargets: []
+        resources:
+          limits:
+            cpu: 50m
+            memory: 128Mi
+          requests:
+            cpu: 10m
+            memory: 128Mi
+        configMap:
+          create: true
+          content: |
+            server:
+              log_level: info
+
+            integrations:
+              eventhandler:
+                cache_path: "/etc/eventhandler/eventhandler.cache"
+              {{- if .Values.agent.static.statefulset.snmpMonitoring.enabled }}
+              snmp:
+                config_file: /tmp/secret/snmp.yaml
+                snmp_targets: {{- toYaml .Values.agent.static.statefulset.snmpMonitoring.config.snmpTargets | nindent 6 }}
+                walk_params:
+                  private:
+                    retries: 3
+                    timeout: 60s
+              {{- end }}
+            logs:
+              positions_directory: /data/agent/positions.yaml
+              configs:
+              - name: default
+                {{- if not .Values.agent.common.hideSecret.enabled }}
+                clients: {{ toYaml .Values.agent.static.statefulset.logsClientsConfig.remoteWriteConfig | nindent 8 }}
+                {{- else }}
+                clients:
+                  - url: https://logging.obs.leapxpert.io/loki/api/v1/push
+                    tenant_id: ${CENTRAL_OBS_TENANT_ID}
+                    external_labels:
+                      cluster: ${CENTRAL_OBS_TENANT_ID}
+                    basic_auth:
+                      username: ${CENTRAL_OBS_LOG_USER}
+                      password: ${CENTRAL_OBS_LOG_PASSWORD}
+                {{- end }}
+
+            {{- if .Values.agent.static.statefulset.snmpMonitoring.enabled }}
+            metrics:
+              global:
+                scrape_interval: 60s
+                scrape_timeout: 60s
+                external_labels:
+                  app: voip-sbc
+                  component: snmp
+              configs:
+                - name: default
+                  remote_write:
+                    - url: http://kube-prometheus-stack-prometheus.{{ .Release.Namespace }}:9090/api/v1/write
+            {{- end }}
+        mounts:
+          extra:
+            - name: data
+              mountPath: /data
+        volumeClaimTemplates:
+          - metadata:
+              name: data
+            spec:
+              accessModes: [ "ReadWriteOnce" ]
+              storageClassName: "lxp-default"
+              resources:
+                requests:
+                  storage: 1Gi
+
+    flow:
+      daemonset:
+        enabled: true
+        extraArgs:
+          - --config.extra-args="-enable-features=integrations-next -config.expand-env"
+        hostPID: true
+        securityContext:
+          privileged: true
+          runAsGroup: 0
+          runAsUser: 0
+        nodeSelector:
+          kubernetes.io/os: replace_me
+        clustering:
+          enabled: true
+        resources:
+          limits:
+            cpu: 100m
+            memory: 128Mi
+          requests:
+            cpu: 10m
+            memory: 128Mi
+        extraEnv:
+          - name: LEAPXPERT_EXCLUDED_JAVA_APPS
+            value: "wecomintegration"
+          - name: LEAPXPERT_INCLUDED_JAVA_APPS
+            value: "*"
+          - name: LEAPXPERT_EXCLUDED_GOLANG_APPS
+            value: null
+          - name: LEAPXPERT_INCLUDED_GOLANG_APPS
+            value: "*"
+        configMap:
+          create: true
+          content: |-
+            logging {
+              level  = "info"
+              format = "logfmt"
+            }
+
+            discovery.kubernetes "local_pods" {
+              selectors {
+                field = "spec.nodeName=" + env("HOSTNAME")
+                role = "pod"
+              }
+              role = "pod"
+            }
+
+            discovery.process "all" {
+              join = discovery.kubernetes.local_pods.targets
+            }
+
+            discovery.relabel "java_pods" {
+              targets = discovery.process.all.targets
+
+              // Filter out all non-java processes
+              rule {
+                action = "keep"
+                regex = "^(.*/java)$"
+                source_labels = ["__meta_process_exe"]
+              }
+
+              // Drop all pods that are not in Running state
+              rule {
+                action = "drop"
+                regex = "Succeeded|Failed|Completed"
+                source_labels = ["__meta_kubernetes_pod_phase"]
+              }
+
+              // Drop all pods that have workload type job
+              rule {
+                action = "drop"
+                regex = "job"
+                source_labels = ["__meta_kubernetes_pod_label_leap_expert_workload_type"]
+              }
+
+              // Collect profile from services with leap.expert/product=fmop label
+              rule {
+                action = "keep"
+                regex = "fmop"
+                source_labels = ["__meta_kubernetes_pod_label_leap_expert_product"]
+              }
+
+              // Collect profile from services with leap.expert/language=java label
+              rule {
+                action = "keep"
+                regex = "java"
+                source_labels = ["__meta_kubernetes_pod_label_leap_expert_language"]
+              }
+
+              // Drop profile from services with leap.expert/app=<app_name> label
+              rule {
+                action = "drop"
+                regex = env("LEAPXPERT_EXCLUDED_JAVA_APPS")
+                source_labels = ["__meta_kubernetes_pod_label_leap_expert_app"]
+              }
+
+              // Collect profile from services with leap.expert/product=fmop label
+              rule {
+                action = "keep"
+                regex = env("LEAPXPERT_INCLUDED_JAVA_APPS")
+                source_labels = ["__meta_kubernetes_pod_label_leap_expert_app"]
+              }
+
+              // Extract label namespace
+              rule {
+                action = "replace"
+                target_label = "namespace"
+                source_labels = ["__meta_kubernetes_namespace"]
+              }
+
+              // Extract label pod
+              rule {
+                action = "replace"
+                source_labels = ["__meta_kubernetes_pod_name"]
+                target_label = "pod"
+              }
+
+              // Extract label node
+              rule {
+                action = "replace"
+                source_labels = ["__meta_kubernetes_pod_node_name"]
+                target_label = "node"
+              }
+
+              // Extract label container
+              rule {
+                action = "replace"
+                source_labels = ["__meta_kubernetes_pod_container_name"]
+                target_label = "container"
+              }
+
+              // Provide arbitrary service_name label, otherwise it will be inferred from discovery labels automatically
+              rule {
+                action = "replace"
+                regex = "(.*)@(.*)"
+                replacement = "java/${1}/${2}"
+                separator = "@"
+                source_labels = ["__meta_kubernetes_namespace", "__meta_kubernetes_pod_container_name"]
+                target_label = "service_name"
+              }
+            }
+
+            pyroscope.java "java" {
+              targets = discovery.relabel.java_pods.output
+              forward_to = [pyroscope.write.endpoint.receiver]
+            }
+
+            discovery.relabel "golang_pods" {
+              targets = discovery.process.all.targets
+
+              // Drop all pods that are not in Running state
+              rule {
+                action = "drop"
+                regex = "Succeeded|Failed|Completed"
+                source_labels = ["__meta_kubernetes_pod_phase"]
+              }
+
+              // Drop all pods that have workload type job
+              rule {
+                action = "drop"
+                regex = "job"
+                source_labels = ["__meta_kubernetes_pod_label_leap_expert_workload_type"]
+              }
+
+              // Collect profile from services with leap.expert/product=fmop label
+              rule {
+                action = "keep"
+                regex = "fmop"
+                source_labels = ["__meta_kubernetes_pod_label_leap_expert_product"]
+              }
+
+              // Collect profile from services with leap.expert/language=golang label
+              rule {
+                action = "keep"
+                regex = "golang"
+                source_labels = ["__meta_kubernetes_pod_label_leap_expert_language"]
+              }
+
+              // Drop profile from services with leap.expert/app=<app_name> label
+              rule {
+                action = "drop"
+                regex = env("LEAPXPERT_EXCLUDED_GOLANG_APPS")
+                source_labels = ["__meta_kubernetes_pod_label_leap_expert_app"]
+              }
+
+              // Collect profile from services with leap.expert/product=fmop label
+              rule {
+                action = "keep"
+                regex = env("LEAPXPERT_INCLUDED_GOLANG_APPS")
+                source_labels = ["__meta_kubernetes_pod_label_leap_expert_app"]
+              }
+
+              // Extract label namespace
+              rule {
+                action = "replace"
+                target_label = "namespace"
+                source_labels = ["__meta_kubernetes_namespace"]
+              }
+
+              // Extract label pod
+              rule {
+                action = "replace"
+                source_labels = ["__meta_kubernetes_pod_name"]
+                target_label = "pod"
+              }
+
+              // Extract label node
+              rule {
+                action = "replace"
+                source_labels = ["__meta_kubernetes_pod_node_name"]
+                target_label = "node"
+              }
+
+              // Extract label container
+              rule {
+                action = "replace"
+                source_labels = ["__meta_kubernetes_pod_container_name"]
+                target_label = "container"
+              }
+
+              // Provide arbitrary service_name label, otherwise it will be inferred from discovery labels automatically
+              rule {
+                action = "replace"
+                regex = "(.*)@(.*)"
+                replacement = "golang/${1}/${2}"
+                separator = "@"
+                source_labels = ["__meta_kubernetes_namespace", "__meta_kubernetes_pod_container_name"]
+                target_label = "service_name"
+              }
+            }
+
+            pyroscope.scrape "golang" {
+              targets = discovery.relabel.golang_pods.output
+              forward_to = [pyroscope.write.endpoint.receiver]
+            }
+
+            {{- if not .Values.agent.common.hideSecret.enabled }}
+            {{- with .Values.agent.flow.daemonset.pyroScopeClientsConfig }}
+            pyroscope.write "endpoint" {
+              endpoint {
+                basic_auth {
+                  password = "{{ .password }}"
+                  username = "{{ .username }}"
+                }
+                headers = {
+                  "X-Scope-OrgID" = "{{ .cluster }}",
+                }
+                url = "https://profiling.obs.leapxpert.io"
+              }
+              external_labels = {
+                "cluster" = "{{ .cluster }}",
+              }
+            }
+            {{- end }}
+            {{- else }}
+            pyroscope.write "endpoint" {
+              endpoint {
+                basic_auth {
+                  username = env("CENTRAL_OBS_PROFILE_USER")
+                  password = env("CENTRAL_OBS_PROFILE_PASSWORD")
+                }
+                headers = {
+                  "X-Scope-OrgID" = env("CENTRAL_OBS_TENANT_ID"),
+                }
+                url = "https://profiling.obs.leapxpert.io"
+              }
+              external_labels = {
+                "cluster" = env("CENTRAL_OBS_TENANT_ID"),
+              }
+            }
+            {{- end }}
+  service:
+    static:
+      daemonset:
+        enabled: true
+    flow:
+      daemonset:
+        enabled: true
+  serviceMonitor:
+    static:
+      daemonset:
+        enabled: true
+        additionalLabels:
+          observability: prometheus-operator
+        relabelings:
+          - sourceLabels: [__meta_kubernetes_pod_label_app_kubernetes_io_name]
+            action: replace
+            replacement: $1
+            regex: (.*)
+            targetLabel: app
+        metricRelabelings:
+          - action: replace
+            sourceLabels:
+              - path
+            regex: '/var/log/pods/([a-zA-Z0-9-]+)_([a-zA-Z0-9-]+)_[a-f0-9-]+/([a-zA-Z0-9-]+)/.*.log'
+            replacement: '$1'
+            targetLabel: exported_namespace
+          - action: replace
+            sourceLabels:
+              - path
+            regex: '/var/log/pods/([a-zA-Z0-9-]+)_([a-zA-Z0-9-]+)_[a-f0-9-]+/([a-zA-Z0-9-]+)/.*.log'
+            replacement: '$2'
+            targetLabel: exported_pod
+          - action: replace
+            sourceLabels:
+              - path
+            regex: '/var/log/pods/([a-zA-Z0-9-]+)_([a-zA-Z0-9-]+)_[a-f0-9-]+/([a-zA-Z0-9-]+)/.*.log'
+            replacement: '$3'
+            targetLabel: exported_container
+          - action: replace
+            sourceLabels:
+              - level
+            regex: 'warning|WARNING|warn'
+            replacement: 'WARN'
+            targetLabel: level
+          - action: replace
+            sourceLabels:
+              - level
+            regex: 'info'
+            replacement: 'INFO'
+            targetLabel: level
+          - action: replace
+            sourceLabels:
+              - level
+            regex: 'debug'
+            replacement: 'DEBUG'
+            targetLabel: level
+          - action: replace
+            sourceLabels:
+              - level
+            regex: 'error'
+            replacement: 'ERROR'
+            targetLabel: level
+      statefulset:
+        additionalLabels:
+          observability: prometheus-operator
+        relabelings:
+          - sourceLabels: [__meta_kubernetes_pod_label_app_kubernetes_io_name]
+            action: replace
+            replacement: $1
+            regex: (.*)
+            targetLabel: app
+# ---------------------------------------------
+lokiLegacy:
+  enabled: false
+# ---------------------------------------------
+loki-legacy:
+  enabled: false
+  image:
+    repository: leapxpert.azurecr.io/public/leapxpert/thirdparties/grafana/loki
+    pullSecrets:
+      - lxp-docker-registry-key
+  fullnameOverride: observability-loki
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 2Gi
+    requests:
+      cpu: 100m
+      memory: 1.5Gi
+  rbac:
+    pspEnabled: false
+  serviceAccount:
+    name: observability-loki
+  serviceMonitor:
+    enabled: true
+    namespace: monitoring
+    additionalLabels:
+      observability: prometheus-operator
+# ---------------------------------------------
+opentelemetryCollector:
+  enabled: false
+# ---------------------------------------------
+opentelemetry-collector:
+  fullnameOverride: opentelemetry-collector
+  image:
+    repository: leapxpert.azurecr.io/public/leapxpert/thirdparties/otel/opentelemetry-collector-k8s
+  imagePullSecrets:
+    - name: lxp-docker-registry-key
+  mode: daemonset
+  config:
+    processors:
+      tail_sampling:
+        policies:
+          [
+            {
+              name: drop_noisy_traces_by_user_agent_original,
+              type: string_attribute,
+              string_attribute: {
+                key: user_agent.original,
+                values: [
+                  ^(Blackbox Exporter\/.*)$,
+                  ^(kube-probe\/.*)$,
+                  ^(Prometheus\/.*)$,
+                  ^(OTel-OTLP-Exporter-Java\/.*)$,
+                  ^(FreshpingBot\/.*)$
+                ],
+                enabled_regex_matching: true,
+                invert_match: true
+              }
+            },
+            {
+              name: drop_noisy_traces_by_user_agent,
+              type: string_attribute,
+              string_attribute: {
+                key: user_agent,
+                values: [
+                  ^(Blackbox Exporter\/.*)$,
+                  ^(kube-probe\/.*)$,
+                  ^(Prometheus\/.*)$,
+                  ^(OTel-OTLP-Exporter-Java\/.*)$,
+                  ^(FreshpingBot\/.*)$
+                ],
+                enabled_regex_matching: true,
+                invert_match: true
+              }
+            },
+            {
+              name: drop_noisy_traces_by_http_url,
+              type: string_attribute,
+              string_attribute: {
+                key: http.url,
+                values: [
+                  ^(https:\/\/.+\/_matrix\/client\/.+\/sync.*)$,
+                  ^(http:\/\/zipkin\/.*)$
+                ],
+                enabled_regex_matching: true,
+                invert_match: true
+              }
+            },
+          ]
+    receivers:
+      jaeger: null
+      otlp:
+        protocols:
+          grpc:
+            endpoint: 0.0.0.0:4317
+          http:
+            endpoint: 0.0.0.0:4318
+      prometheus: null
+      zipkin:
+        endpoint: 0.0.0.0:9411
+    exporters:
+      otlp:
+        endpoint: jaeger.tracing:4317
+        tls:
+          insecure: true
+    service:
+      telemetry: null
+      extensions:
+        - health_check
+        - memory_ballast
+      pipelines:
+        logs: null
+        metrics: null
+        traces:
+          exporters:
+            - otlp
+          processors:
+            - memory_limiter
+            - batch
+            - tail_sampling
+          receivers:
+            - otlp
+            - zipkin
+
+  serviceMonitor:
+    enabled: true
+    extraLabels:
+      observability: prometheus-operator
+
+  service:
+    enabled: true
+
+  ports:
+    jaeger-compact:
+      enabled: false
+    jaeger-thrift:
+      enabled: false
+    jaeger-grpc:
+      enabled: false
+    metrics:
+      enabled: true
+# ---------------------------------------------
+prometheusBlackboxExporter:
+  enabled: false
+# ---------------------------------------------
+prometheus-blackbox-exporter:
+  fullnameOverride: prometheus-blackbox-exporter
+  image:
+    registry: leapxpert.azurecr.io/public/leapxpert/thirdparties/quay.io
+    pullSecrets:
+      - lxp-docker-registry-key
+  replicas: 2
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        - labelSelector:
+            matchExpressions:
+              - key: app.kubernetes.io/name
+                operator: In
+                values:
+                  - prometheus-blackbox-exporter
+          topologyKey: kubernetes.io/hostname
+  config:
+    modules:
+      http_2xx_3xx_4xx:
+        http:
+          no_follow_redirects: false
+          preferred_ip_protocol: ip4
+          valid_status_codes:
+            - 200
+            - 301
+            - 302
+            - 308
+            - 401
+            - 403
+          valid_http_versions:
+            - HTTP/1.1
+            - HTTP/2.0
+          tls_config:
+            insecure_skip_verify: true
+        prober: http
+        timeout: 30s
+      http_whatsapp_2xx:
+        prober: http
+        timeout: 30s
+        http:
+          valid_status_codes:
+            - 200
+          method: GET
+          headers:
+            Content-Type: application/json
+          fail_if_body_not_matches_regexp:
+            - '"connected"|"connecting"'
+      tcp_connect:
+        prober: tcp
+        timeout: 30s
+  serviceAccount:
+    name: blackbox-exporter
+  pspEnabled: false
+  podAnnotations:
+    proxy.istio.io/config: '{ "holdApplicationUntilProxyStarts": true }'
+    sidecar.istio.io/inject: "true"
+    sidecar.istio.io/proxyCPU: 50m
+    sidecar.istio.io/proxyCPULimit: 500m
+    sidecar.istio.io/proxyMemory: 64Mi
+    sidecar.istio.io/proxyMemoryLimit: 640Mi
+  resources:
+    limits:
+      cpu: 100m
+      memory: 100Mi
+    requests:
+      cpu: 50m
+      memory: 50Mi
+# ---------------------------------------------
+prometheusCloudwatchExporter:
+  enabled: false
+# ---------------------------------------------
+prometheus-cloudwatch-exporter:
+  fullnameOverride: prometheus-cloudwatch-exporter
+  region: ap-southeast-1
+  period_seconds: 300
+  image:
+    repository: leapxpert.azurecr.io/public/leapxpert/thirdparties/prom/cloudwatch-exporter
+    pullSecrets:
+      - name: lxp-docker-registry-key
+
+  serviceMonitor:
+    enabled: true
+    labels:
+      observability: prometheus-operator
+    interval: 300s
+    timeout: 60s
+
+  serviceAccount:
+    name: cloudwatch-exporter
+# ---------------------------------------------
+prometheusMongodbExporter:
+  enabled: false
+# ---------------------------------------------
+prometheus-mongodb-exporter:
+  fullnameOverride: prometheus-mongodb-exporter
+  image:
+    repository: leapxpert.azurecr.io/public/leapxpert/thirdparties/percona/mongodb_exporter
+  imagePullSecrets:
+    - name: lxp-docker-registry-key
+  resources:
+    limits:
+      cpu: 250m
+      memory: 192Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+  serviceMonitor:
+    enabled: true
+    additionalLabels:
+      observability: prometheus-operator
+# ---------------------------------------------
+prometheusElasticsearchExporter:
+  enabled: false
+# ---------------------------------------------
+prometheus-elasticsearch-exporter:
+  fullnameOverride: prometheus-elasticsearch-exporter
+  image:
+    repository: leapxpert.azurecr.io/public/leapxpert/thirdparties/quay.io/prometheuscommunity/elasticsearch-exporter
+    pullSecret: lxp-docker-registry-key
+  es:
+    uri: https://elasticsearch-master.lxp-core:9200
+    sslSkipVerify: true
+  env:
+    ES_USERNAME: elastic
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 100m
+      memory: 128Mi
+  serviceMonitor:
+    enabled: true
+    labels:
+      observability: prometheus-operator
+    relabelings:
+      - sourceLabels: [__meta_kubernetes_pod_label_app_kubernetes_io_name]
+        action: replace
+        replacement: $1
+        regex: (.*)
+        targetLabel: app
+    metricRelabelings:
+      - regex: "cluster"
+        action: labeldrop
+# ---------------------------------------------
+promtail:
+  enabled: true
+  image:
+    registry: leapxpert.azurecr.io/public/leapxpert/thirdparties/docker.io
+  imagePullSecrets:
+    - name: lxp-docker-registry-key
+  resources:
+    limits:
+      cpu: 200m
+      memory: 256Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+  rbac:
+    pspEnabled: false
+  config:
+    snippets:
+      pipelineStages:
+        - cri: {}
+        - match:
+            selector: '{product=~"fmop|maxen|voip"}'
+            stages:
+              - json:
+                  expressions:
+                    level: level
+              - replace:
+                  expression: "(\\w+)"
+                  source: "level"
+                  replace: '{{`{{`}} .Value | ToUpper {{`}}`}}'
+              - replace:
+                  expression: "(WARNING|warning)"
+                  source: "level"
+                  replace: 'WARN'
+              - labels:
+                  level: null
+              - metrics:
+                  fmop_logs_by_level:
+                    type: Counter
+                    description: "The number of logs lines by level"
+                    source: level
+                    max_idle_duration: 30m
+                    config:
+                      match_all: true
+                      action: inc
+              - match:
+                  selector: '{product=~"fmop|maxen|voip",language=~"java|quarkus"} |~ "[a-zA-Z$0-9]+Exception"'
+                  stages:
+                  - json:
+                      expressions:
+                        exception: exception
+                  - regex:
+                      expression: "(?P<exception_name>[a-zA-Z$0-9]+Exception)"
+                      source: exception
+                  - labels:
+                      exception_name: null
+                  - metrics:
+                      fmop_logs_by_exception_java:
+                        type: Counter
+                        description: "The number of logs lines by exception"
+                        source: exception_name
+                        max_idle_duration: 30m
+                        config:
+                          match_all: true
+                          action: inc
+      extraRelabelConfigs:
+        - action: labelmap
+          regex: __meta_kubernetes_pod_label_leap_expert_(.+)
+    clients:
+      - url: http://observability-loki:3100/loki/api/v1/push
+  serviceMonitor:
+    enabled: true
+    labels:
+      observability: prometheus-operator
+# ---------------------------------------------
+tempo:
+  enabled: false
+  tempo:
+    repository: leapxpert.azurecr.io/public/leapxpert/thirdparties/grafana/tempo
+    resources:
+      requests:
+        cpu: 100m
+        memory: 2Gi
+      limits:
+        cpu: 1000m
+        memory: 2.5Gi
+    extraArgs:
+      distributor.log-received-spans.enabled: false
+      distributor.log-received-spans.filter-by-status-error: false
+      distributor.log-received-spans.include-attributes: false
+    global_overrides:
+      max_bytes_per_trace: 1000000
+      per_tenant_override_config: /conf/overrides.yaml
+  tempoQuery:
+    repository: leapxpert.azurecr.io/public/leapxpert/thirdparties/grafana/tempo-query
+    resources:
+      requests:
+        cpu: 100m
+        memory: 50Mi
+      limits:
+        cpu: 500m
+        memory: 200Mi
+  serviceAccount:
+    create: true
+    name: tempo
+    imagePullSecrets:
+      - name: lxp-docker-registry-key
+  serviceMonitor:
+    enabled: true
+    additionalLabels:
+      observability: prometheus-operator
+# ---------------------------------------------
+jaeger:
+  enabled: false
+  image:
+    repository: leapxpert.azurecr.io/public/leapxpert/thirdparties/jaegertracing/all-in-one
+    pullPolicy: IfNotPresent
+
+  imagePullSecrets:
+    - name: lxp-docker-registry-key
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 1Gi
+    limits:
+      cpu: 1000m
+      memory: 2.5Gi
+
+  persistence:
+    enabled: true
+    storageClassName: lxp-default
+    accessModes:
+      - ReadWriteOnce
+    size: 100Gi
+
+  config:
+    dataRetention: 720h
+
+# ---------------------------------------------
+prometheusAwsSnapshotsChecker:
+  enabled: false
+
+prometheus-aws-snapshots-checker:
+  fullnameOverride: prometheus-aws-snapshots-checker
+
+  imagePullSecrets:
+    - name: lxp-docker-registry-key
+
+  resources:
+    limits:
+      cpu: 100m
+      memory: 128Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+
+  serviceMonitor:
+    interval: 300s
+    additionalLabels:
+      observability: prometheus-operator
+    scrapeTimeout: 30s
+
+# ---------------------------------------------
+whatsappVersionExporter:
+  enabled: false
+
+whatsapp-version-exporter:
+  fullnameOverride: whatsapp-version-exporter
+
+  imagePullSecrets:
+    - name: lxp-docker-registry-key
+
+  serviceMonitor:
+    additionalLabels:
+      observability: prometheus-operator
+
+  resources:
+    limits:
+      cpu: 50m
+      memory: 256Mi
+    requests:
+      cpu: 10m
+      memory: 128Mi
+
+# ---------------------------------------------
+prometheusEventhubsExporter:
+  enabled: false
+
+prometheus-eventhubs-exporter:
+  fullnameOverride: promtheus-eventhubs-exporter
+
+  imagePullSecrets:
+    - name: lxp-docker-registry-key
+
+  serviceMonitor:
+    additionalLabels:
+      observability: prometheus-operator
+
+  resources:
+    limits:
+      cpu: 1
+      memory: 512Mi
+    requests:
+      cpu: 300m
+      memory: 256Mi
+
+# ---------------------------------------------
+prometheusKafkaExporter:
+  enabled: false
+
+prometheus-kafka-exporter:
+  image:
+    repository: leapxpert.azurecr.io/public/leapxpert/thirdparties/danielqsj/kafka-exporter
+
+  fullnameOverride: prometheus-kafka-exporter
+
+  imagePullSecrets:
+    - name: lxp-docker-registry-key
+
+  prometheus:
+    serviceMonitor:
+      enabled: true
+      interval: "30s"
+      additionalLabels:
+        observability: prometheus-operator
+
+  resources:
+    limits:
+      cpu: 1
+      memory: 512Mi
+    requests:
+      cpu: 300m
+      memory: 256Mi
+
+# ---------------------------------------------
+prometheusNosqlExporter:
+  enabled: false
+
+prometheus-nosql-exporter:
+  fullnameOverride: prometheus-nosql-exporter
+
+  imagePullSecrets:
+    - name: lxp-docker-registry-key
+
+  serviceMonitor:
+    additionalLabels:
+      observability: prometheus-operator
+
+  resources:
+    limits:
+      cpu: 1
+      memory: 512Mi
+    requests:
+      cpu: 300m
+      memory: 256Mi

@@ -1,0 +1,69 @@
+{{- $kubeTargetVersion := default .Capabilities.KubeVersion.GitVersion .Values.kubeTargetVersionOverride }}
+{{- if and (semverCompare ">=1.14.0-0" $kubeTargetVersion) (semverCompare "<9.9.9-9" $kubeTargetVersion) .Values.defaultRules.rules.recordingIstio }}
+{{- if and .Values.slo.enabled .Values.namespaceSelector.istiod.enabled }}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ template "kube-prometheus-stack-add-ons.fullname" . }}-istio-recording
+  namespace: {{ template "kube-prometheus-stack-add-ons.namespace" . }}
+  labels:
+{{ include "kube-prometheus-stack-add-ons.labels" . | indent 4 }}
+spec:
+  groups:
+    - name: istio.metricsAggregation-rules
+      interval: 1m
+      rules:
+        - record: slo:istio:istio_success_rate_5m
+          expr: sum(irate(istio_requests_total{response_code!~"5[0-9][0-9]"}[5m:])) / sum(irate(istio_requests_total[5m:])) * 100
+        - record: slo:istio:istio_success_rate_30m
+          expr: sum(irate(istio_requests_total{response_code!~"5[0-9][0-9]"}[30m:])) / sum(irate(istio_requests_total[30m:])) * 100
+        - record: slo:istio:istio_success_rate_1h
+          expr: sum(irate(istio_requests_total{response_code!~"5[0-9][0-9]"}[1h:])) / sum(irate(istio_requests_total[1h:])) * 100
+        - record: slo:istio:istio_success_rate_2h
+          expr: sum(irate(istio_requests_total{response_code!~"5[0-9][0-9]"}[2h:])) / sum(irate(istio_requests_total[2h:])) * 100
+        - record: slo:istio:istio_success_rate_6h
+          expr: sum(irate(istio_requests_total{response_code!~"5[0-9][0-9]"}[6h:])) / sum(irate(istio_requests_total[6h:])) * 100
+        - record: slo:istio:istio_success_rate_1d
+          expr: sum(irate(istio_requests_total{response_code!~"5[0-9][0-9]"}[1d:])) / sum(irate(istio_requests_total[1d:])) * 100
+        - record: slo:istio:istio_success_rate_3d
+          expr: sum(irate(istio_requests_total{response_code!~"5][0-9][0-9]"}[3d:])) / sum(irate(istio_requests_total[3d:])) * 100
+        - record: slo:istio:istio_success_rate_30d
+          expr: sum(irate(istio_requests_total{response_code!~"5[0-9][0-9]"}[30d])) / sum(irate(istio_requests_total[30d])) * 100
+
+        - record: slo:istio:istio_error_rate_5m
+          expr: sum(irate(istio_requests_total{response_code=~"5[0-9][0-9]"}[5m:])) / sum(irate(istio_requests_total[5m:])) * 100
+        - record: slo:istio:istio_error_rate_30m
+          expr: sum(irate(istio_requests_total{response_code=~"5[0-9][0-9]"}[30m:])) / sum(irate(istio_requests_total[30m:])) * 100
+        - record: slo:istio:istio_error_rate_1h
+          expr: sum(irate(istio_requests_total{response_code=~"5[0-9][0-9]"}[1h:])) / sum(irate(istio_requests_total[1h:])) * 100
+        - record: slo:istio:istio_error_rate_2h
+          expr: sum(irate(istio_requests_total{response_code=~"5[0-9][0-9]"}[2h:])) / sum(irate(istio_requests_total[2h:])) * 100
+        - record: slo:istio:istio_error_rate_6h
+          expr: sum(irate(istio_requests_total{response_code=~"5[0-9][0-9]"}[6h:])) / sum(irate(istio_requests_total[6h:])) * 100
+        - record: slo:istio:istio_error_rate_1d
+          expr: sum(irate(istio_requests_total{response_code=~"5[0-9][0-9]"}[1d:])) / sum(irate(istio_requests_total[1d:])) * 100
+        - record: slo:istio:istio_error_rate_3d
+          expr: sum(irate(istio_requests_total{response_code=~"5[0-9][0-9]"}[3d:])) / sum(irate(istio_requests_total[3d:])) * 100
+        - record: slo:istio:istio_error_rate_30d
+          expr: sum(irate(istio_requests_total{response_code=~"5[0-9][0-9]"}[30d])) / sum(irate(istio_requests_total[30d])) * 100
+
+        # Total request rate by destination and namespace
+        - record: slo:istio:istio_success_rate_by_destination_5m
+          expr: sum(rate(istio_requests_total{response_code!~"5[0-9][0-9]",reporter="source"}[5m:])) by (destination_workload, destination_workload_namespace) /sum(rate(istio_requests_total{reporter="source"}[5m:])) by (destination_workload, destination_workload_namespace) * 100
+        - record: slo:istio:istio_success_rate_by_destination_30m
+          expr: sum(rate(istio_requests_total{response_code!~"5[0-9][0-9]",reporter="source"}[30m:])) by (destination_workload, destination_workload_namespace) / sum(rate(istio_requests_total{reporter="source"}[30m:])) by (destination_workload, destination_workload_namespace) * 100
+        - record: slo:istio:istio_success_rate_by_destination_1h
+          expr: sum(rate(istio_requests_total{response_code!~"5[0-9][0-9]",reporter="source"}[1h:])) by (destination_workload, destination_workload_namespace) / sum(rate(istio_requests_total{reporter="source"}[1h:])) by (destination_workload, destination_workload_namespace) * 100
+        - record: slo:istio:istio_success_rate_by_destination_2h
+          expr: sum(rate(istio_requests_total{response_code!~"5[0-9][0-9]",reporter="source"}[2h:])) by (destination_workload, destination_workload_namespace) / sum(rate(istio_requests_total{reporter="source"}[2h:])) by (destination_workload, destination_workload_namespace) * 100
+        - record: slo:istio:istio_success_rate_by_destination_6h
+          expr: sum(rate(istio_requests_total{response_code!~"5[0-9][0-9]",reporter="source"}[6h:])) by (destination_workload, destination_workload_namespace) / sum(rate(istio_requests_total{reporter="source"}[6h:])) by (destination_workload, destination_workload_namespace) * 100
+        - record: slo:istio:istio_success_rate_by_destination_1d
+          expr: sum(rate(istio_requests_total{response_code!~"5[0-9][0-9]",reporter="source"}[1d:])) by (destination_workload, destination_workload_namespace) / sum(rate(istio_requests_total{reporter="source"}[1d:])) by (destination_workload, destination_workload_namespace) * 100
+        - record: slo:istio:istio_success_rate_by_destination_3d
+          expr: sum(rate(istio_requests_total{response_code!~"5[0-9][0-9]",reporter="source"}[3d:])) by (destination_workload, destination_workload_namespace) / sum(rate(istio_requests_total{reporter="source"}[3d:])) by (destination_workload, destination_workload_namespace) * 100
+        - record: slo:istio:istio_success_rate_by_destination_30d
+          expr: sum(rate(istio_requests_total{response_code!~"5[0-9][0-9]",reporter="source"}[30d])) by (destination_workload, destination_workload_namespace) / sum(rate(istio_requests_total{reporter="source"}[30d])) by (destination_workload, destination_workload_namespace) * 100
+{{- end }}
+{{- end }}

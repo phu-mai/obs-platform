@@ -1,0 +1,19 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "jaeger-standalone.fullname" . }}
+  namespace: {{ template "jaeger-standalone.namespace" . }}
+  labels:
+    {{- include "jaeger-standalone.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    {{- range .Values.containerPorts }}
+    - port: {{ .port }}
+      name: {{ .name }}
+      targetPort: {{ .port }}
+      protocol: {{ .protocol }}
+    {{- end }}
+  selector:
+    {{- include "jaeger-standalone.selectorLabels" . | nindent 4 }}

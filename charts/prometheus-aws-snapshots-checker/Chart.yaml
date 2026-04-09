@@ -1,0 +1,6 @@
+apiVersion: v2
+name: prometheus-aws-snapshots-checker
+description: A Helm chart to use AWS CLI to check snapshots of specified AWS Services and push to Prometheus Pushgateway
+type: application
+version: 0.1.1
+appVersion: "v0.0.3"

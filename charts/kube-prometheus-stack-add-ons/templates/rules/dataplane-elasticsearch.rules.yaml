@@ -1,0 +1,114 @@
+{{- $kubeTargetVersion := default .Capabilities.KubeVersion.GitVersion .Values.kubeTargetVersionOverride }}
+{{- if and (semverCompare ">=1.14.0-0" $kubeTargetVersion) (semverCompare "<9.9.9-9" $kubeTargetVersion) .Values.defaultRules.rules.dataplaneElasticsearch }}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ template "kube-prometheus-stack-add-ons.fullname" . }}-dataplane-elasticsearch
+  namespace: {{ template "kube-prometheus-stack-add-ons.namespace" . }}
+  labels:
+{{ include "kube-prometheus-stack-add-ons.labels" . | indent 4 }}
+spec:
+  groups:
+    - name: elasticsearch.rules
+      rules:
+        {{- if not (.Values.defaultRules.disabled.ElasticsearchClusterRed | default false) }}
+        - alert: ElasticsearchClusterRed
+          annotations:
+            summary: "Elasticsearch cluster in namespace {{`{{`}} $labels.namespace {{`}}`}} has been in red status for 2m"
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-elasticsearchclusterred"
+            {{- end }}
+          expr: sum by (app,cluster,namespace) (elasticsearch_cluster_health_status{color="red"}) == 1
+          for: 2m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.ElasticsearchClusterYellow | default false) }}
+        - alert: ElasticsearchClusterYellow
+          annotations:
+            summary: "Elasticsearch cluster in namespace {{`{{`}} $labels.namespace {{`}}`}} has been in red status for 2m"
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-elasticsearchclusteryellow"
+            {{- end }}
+          expr: sum by (app,cluster,namespace) (elasticsearch_cluster_health_status{color="yellow"}) == 1
+          for: 2m
+          labels:
+            severity: warning
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.ElasticsearchHeapUsageTooHigh | default false) }}
+        - alert: ElasticsearchHeapUsageTooHigh
+          annotations:
+            summary: "Elasticsearch instance {{`{{`}} $labels.name {{`}}`}} has high heap usage more than 90% for 2m"
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-elasticsearchheapusagetoohigh"
+            {{- end }}
+          expr: |
+            sum by (app,cluster,name,namespace) (elasticsearch_jvm_memory_used_bytes{area="heap"})
+              /
+            sum by (app,cluster,name,namespace) (elasticsearch_jvm_memory_max_bytes{area="heap"}) * 100 > 90
+          for: 2m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.ElasticsearchHeapUsageWarning | default false) }}
+        - alert: ElasticsearchHeapUsageWarning
+          annotations:
+            summary: "Elasticsearch instance {{`{{`}} $labels.name {{`}}`}} has high heap usage more than 80% for 2m"
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-elasticsearchheapusagewarning"
+            {{- end }}
+          expr: |
+            sum by (app,cluster,name,namespace) (elasticsearch_jvm_memory_used_bytes{area="heap"})
+              /
+            sum by (app,cluster,name,namespace) (elasticsearch_jvm_memory_max_bytes{area="heap"}) * 100 > 80
+          for: 2m
+          labels:
+            severity: warning
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.ElasticsearchUnhealthyNodes | default false) }}
+        - alert: ElasticsearchUnhealthyNodes
+          annotations:
+            summary: "Elasticsearch cluster has less than 3 healthy nodes. Current healthy nodes are {{`{{`}} $value {{`}}`}}"
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-elasticsearchunhealthynodes"
+            {{- end }}
+          expr: sum by (app,cluster,namespace) (elasticsearch_cluster_health_number_of_nodes) < 3
+          for: 2m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+            {{- with .Values.defaultRules.extraLabels.l2Support }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.ElasticsearchUnassignedShards | default false) }}
+        - alert: ElasticsearchUnassignedShards
+          annotations:
+            summary: "Elasticsearch cluster has unassigned shards for 2m. Current unassigned shards are {{`{{`}} $value {{`}}`}}"
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-elasticsearchunassignedshards"
+            {{- end }}
+          expr: sum by (app,cluster,namespace) (elasticsearch_cluster_health_unassigned_shards) > 0
+          for: 2m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+{{- end }}

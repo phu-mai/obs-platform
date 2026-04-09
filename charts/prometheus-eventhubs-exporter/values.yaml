@@ -1,0 +1,55 @@
+replicaCount: 1
+
+image:
+  repository: leapxpert.azurecr.io/public/leapxpert/thirdparties/prometheus-eventhubs-exporter
+  pullPolicy: IfNotPresent
+  tag: null
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+eventhubs:
+  bootstrapServer: example.servicebus.windows.net:9093
+  properties: |
+    security.protocol=SASL_SSL
+    sasl.mechanism=PLAIN
+    sasl.jaas.config=
+
+serviceMonitor:
+  enabled: true
+  interval: "120s"
+  additionalLabels: {}
+  annotations: {}
+  scrapeTimeout: 90s
+
+podAnnotations: {}
+
+podSecurityContext: {}
+  # fsGroup: 2000
+
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+service:
+  type: ClusterIP
+  port: 9088
+
+resources:
+  limits:
+    cpu: 1
+    memory: 512Mi
+  requests:
+    cpu: 300m
+    memory: 256Mi
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}

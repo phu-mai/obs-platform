@@ -1,0 +1,28 @@
+{{- $kubeTargetVersion := default .Capabilities.KubeVersion.GitVersion .Values.kubeTargetVersionOverride }}
+{{- if and (semverCompare ">=1.14.0-0" $kubeTargetVersion) (semverCompare "<9.9.9-9" $kubeTargetVersion) .Values.defaultRules.rules.prometheus }}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ template "kube-prometheus-stack-add-ons.fullname" . }}-prometheus
+  namespace: {{ template "kube-prometheus-stack-add-ons.namespace" . }}
+  labels:
+{{ include "kube-prometheus-stack-add-ons.labels" . | indent 4 }}
+spec:
+  groups:
+    - name: prometheus.rules
+      rules:
+        - alert: PrometheusTenantDisappeared
+          annotations:
+            summary: 'Prometheus in cluster "{{`{{`}} $labels.cluster {{`}}`}}" has disappeared for more than 15 minutes. No data from this Prometheus instance has been sent to central observability environment.'
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-prometheustenantdisappeared"
+            {{- end }}
+          expr: label_replace(absent(up{job=~".*-prometheus"}), "cluster", "${TENANT}", "cluster", "^$")
+          for: 15m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+{{- end }}

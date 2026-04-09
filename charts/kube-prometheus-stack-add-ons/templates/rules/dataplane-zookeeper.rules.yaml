@@ -1,0 +1,122 @@
+{{- $kubeTargetVersion := default .Capabilities.KubeVersion.GitVersion .Values.kubeTargetVersionOverride }}
+{{- if and (semverCompare ">=1.14.0-0" $kubeTargetVersion) (semverCompare "<9.9.9-9" $kubeTargetVersion) .Values.defaultRules.rules.dataplaneZookeeper }}
+{{- if .Values.namespaceSelector.kafka.enabled }}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ template "kube-prometheus-stack-add-ons.fullname" . }}-dataplane-zookeeper
+  namespace: {{ template "kube-prometheus-stack-add-ons.namespace" . }}
+  labels:
+{{ include "kube-prometheus-stack-add-ons.labels" . | indent 4 }}
+spec:
+  groups:
+    - name: zookeeper.rules
+      rules:
+        {{- if not (.Values.defaultRules.disabled.ZookeeperDown | default false) }}
+        - alert: ZookeeperDown
+          annotations:
+            summary: "Zookeeper instance {{`{{`}} $labels.strimzi_io_name {{`}}`}} in namespace {{`{{`}} $labels.namespace {{`}}`}} has been down for 2m"
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-zookeeperdown"
+            {{- end }}
+          expr: up{container="zookeeper"} == 0
+          for: 2m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+            {{- with .Values.defaultRules.extraLabels.l2Support }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.ZookeeperMissingLeader | default false) }}
+        - alert: ZookeeperMissingLeader
+          annotations:
+            summary: "Zookeeper cluster {{`{{`}} $labels.strimzi_io_name {{`}}`}} in namespace {{`{{`}} $labels.namespace {{`}}`}} has no selected leader for 2m"
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-zookeepermissingleader"
+            {{- end }}
+          expr: sum by (app,cluster,pod,strimzi_io_name,namespace) (zookeeper_leader) == 0
+          for: 2m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+            {{- with .Values.defaultRules.extraLabels.l2Support }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.ZookeeperQuorumSize | default false) }}
+        - alert: ZookeeperQuorumSize
+          annotations:
+            summary: "Zookeeper cluster {{`{{`}} $labels.strimzi_io_name {{`}}`}} in namespace {{`{{`}} $labels.namespace {{`}}`}} is about to be broken. Current quorum size is {{`{{`}} $value {{`}}`}}"
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-zookeeperquorumsize"
+            {{- end }}
+          expr: max by (app,cluster,namespace,strimzi_io_name,cluster) (zookeeper_quorumsize) == 2
+          for: 2m
+          labels:
+            severity: warning
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        - alert: ZookeeperQuorumSize
+          annotations:
+            summary: "Zookeeper cluster {{`{{`}} $labels.strimzi_io_name {{`}}`}} in namespace {{`{{`}} $labels.namespace {{`}}`}} is broken. Current quorum size is {{`{{`}} $value {{`}}`}}"
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-zookeeperquorumsize"
+            {{- end }}
+          expr: max by (app,cluster,namespace,strimzi_io_name,cluster) (zookeeper_quorumsize) == 1
+          for: 2m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.ZooKeeperMemoryLow | default false) }}
+        - alert: ZooKeeperMemoryLow
+          annotations:
+            summary: "Zookeeper instance {{`{{`}} $labels.name {{`}}`}} of cluster {{`{{`}} $labels.strimzi_io_name {{`}}`}} in namespace {{`{{`}} $labels.namespace {{`}}`}} has low memory. Current memory percentage is {{`{{`}} $value {{`}}`}}"
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-zookeepermemorylow"
+            {{- end }}
+          expr: |
+            sum by (app,cluster,container,pod) (jvm_memory_bytes_used{container="zookeeper", area="heap"})
+              /
+            sum by (app,cluster,container,container,pod) (jvm_memory_bytes_max{container="zookeeper", area="heap"}) *100 > 90
+          for: 10m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.ZooKeeperStatefulsetUnscheduable | default false) }}
+        - alert: ZooKeeperStatefulsetUnscheduable
+          annotations:
+            summary: ZooKeeper instance {{`{{`}} $labels.pod {{`}}`}} in namespace {{`{{`}} $labels.namespace {{`}}`}} is unschedulable for 2m
+            {{- if .Values.runbook.enabled }}
+            runbook_url: {{ .Values.runbook.runbookUrl }}alert-name-zookeeperstatefulsetunscheduable
+            {{- end }}
+          expr: |
+            sum by (app,cluster,namespace,pod) (
+              label_replace(
+                kube_pod_status_scheduled{condition="true", pod=~".*zookeeper-[0-9]"},"app","zookeeper","app",""
+              )
+            ) == 0
+          for: 2m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+            {{- with .Values.defaultRules.extraLabels.l2Support }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+{{- end }}
+{{- end }}

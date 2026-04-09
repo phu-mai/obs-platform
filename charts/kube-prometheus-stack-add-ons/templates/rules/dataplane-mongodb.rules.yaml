@@ -1,0 +1,225 @@
+{{- $kubeTargetVersion := default .Capabilities.KubeVersion.GitVersion .Values.kubeTargetVersionOverride }}
+{{- if and (semverCompare ">=1.14.0-0" $kubeTargetVersion) (semverCompare "<9.9.9-9" $kubeTargetVersion) .Values.defaultRules.rules.dataplaneMongodb }}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ template "kube-prometheus-stack-add-ons.fullname" . }}-dataplane-mongodb
+  namespace: {{ template "kube-prometheus-stack-add-ons.namespace" . }}
+  labels:
+{{ include "kube-prometheus-stack-add-ons.labels" . | indent 4 }}
+spec:
+  groups:
+    - name: mongodb.rules
+      rules:
+        {{- if not (.Values.defaultRules.disabled.MongodbDown | default false) }}
+        - alert: MongodbDown
+          annotations:
+            summary: "MongoDB instance has been down for 2m."
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-mongodbdown"
+            {{- end }}
+          expr: sum by (app,cluster,namespace) (mongodb_up) == 0
+          for: 2m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.MongoStatefulsetUnscheduable | default false) }}
+        - alert: MongoStatefulsetUnscheduable
+          annotations:
+            summary: "MongoDB instance {{`{{`}} $labels.pod {{`}}`}} in namespace {{`{{`}} $labels.namespace {{`}}`}} is unschedulable for 2m"
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-mongostatefulsetunscheduable"
+            {{- end }}
+          expr: |
+            sum by (app,cluster,namespace,pod) (
+                label_replace(
+                    kube_pod_status_scheduled{condition="true", pod=~"mongo-(primary|secondary)-[0-9]"},"app","mongo","app",""
+                )
+            ) == 0
+          for: 2m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+            {{- with .Values.defaultRules.extraLabels.l2Support }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.MongoReplicationLag | default false) }}
+        - alert: MongoReplicationLag
+          annotations:
+            summary: "MongoDB replicaset {{`{{`}} $labels.rs_nm {{`}}`}} in namespace {{`{{`}} $labels.namespace {{`}}`}} has replication lag more than 300s for 5m"
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-mongoreplicationlag"
+            {{- end }}
+          expr: |
+            (mongodb_members_optimeDate{member_state="PRIMARY"}
+              - ON (app,cluster,namespace,rs_nm,rs_state)
+            mongodb_members_optimeDate{member_state="SECONDARY"}) / 1000 > 300
+          for: 5m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.MongoReplsetMermberUnhealthy | default false) }}
+        - alert: MongoReplsetMermberUnhealthy
+          annotations:
+            summary: "MongoDB replicaset member {{`{{`}} $labels.name {{`}}`}} in namespace {{`{{`}} $labels.namespace {{`}}`}} is not healthy for 2m"
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-mongoreplsetmermberhealth"
+            {{- end }}
+          expr: sum by (app,cluster,member_idx,member_state,namespace,rs_nm,rs_state) (mongodb_rs_members_health) == 0
+          for: 2m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.MongoReplsetMemberInRecoveringState | default false) }}
+        - alert: MongoReplsetMemberInRecoveringState
+          annotations:
+            summary: "MongoDB replicaset member {{`{{`}} $labels.name {{`}}`}} in namespace {{`{{`}} $labels.namespace {{`}}`}} is not healthy for 2m. Data is not available for reads from this member"
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-mongoreplsetmemberinrecoveringstate"
+            {{- end }}
+          expr: sum by (app,cluster,member_idx,member_state,namespace,rs_nm,rs_state) (mongodb_rs_members_state) == 3
+          for: 2m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.MongoReplsetMemberUnknown | default false) }}
+        - alert: MongoReplsetMemberUnknown
+          annotations:
+            summary: "MongoDB replicaset member {{`{{`}} $labels.name {{`}}`}} in namespace {{`{{`}} $labels.namespace {{`}}`}} is unknown by by other members in cluster for 2m"
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-mongoreplsetmemberunreachable"
+            {{- end }}
+          expr: sum by (app,cluster,member_idx,member_state,namespace,rs_nm,rs_state) (mongodb_rs_members_state) == 6
+          for: 2m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.MongoReplsetMemberUnreachable | default false) }}
+        - alert: MongoReplsetMemberUnreachable
+          annotations:
+            summary: "MongoDB replicaset member {{`{{`}} $labels.name {{`}}`}} in namespace {{`{{`}} $labels.namespace {{`}}`}} is not reachable by other members in cluster for 2m"
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-mongoreplsetmemberunreachable"
+            {{- end }}
+          expr: sum by (app,cluster,member_idx,member_state,namespace,rs_nm,rs_state) (mongodb_rs_members_state) == 8
+          for: 2m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.MongoReplsetMemberRollback | default false) }}
+        - alert: MongoReplsetMemberRollback
+          annotations:
+            summary: "MongoDB replicaset member {{`{{`}} $labels.name {{`}}`}} in namespace {{`{{`}} $labels.namespace {{`}}`}} is actively performing a rollback for 2m. Data is not available for reads from this member"
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-mongoreplsetmemberrollback"
+            {{- end }}
+          expr: sum by (app,cluster,member_idx,member_state,namespace,rs_nm,rs_state) (mongodb_rs_members_state) == 9
+          for: 2m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.MongoReplsetMemberRemoved | default false) }}
+        - alert: MongoReplsetMemberRemoved
+          annotations:
+            summary: "MongoDB replicaset member {{`{{`}} $labels.name {{`}}`}} in namespace {{`{{`}} $labels.namespace {{`}}`}} was once in a replica set but was subsequently removed for 2m"
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-mongoreplsetmemberremoved"
+            {{- end }}
+          expr: sum by (app,cluster,member_idx,member_state,namespace,rs_nm,rs_state) (mongodb_rs_members_state) == 10
+          for: 2m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.MongoHighConnections | default false) }}
+        - alert: MongoHighConnections
+          annotations:
+            summary: "MongoDB cluster has high connections than 80% available connections for 5m"
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-mongohighconnections"
+            {{- end }}
+          expr: |
+            avg by(app,cluster,namespace,rs_nm,rs_state) (mongodb_ss_connections{conn_type="active"})
+              /
+            avg by (app,cluster,namespace,rs_nm,rs_state) (mongodb_ss_connections{conn_type="available"}) * 100 > 80
+          for: 5m
+          labels:
+            severity: warning
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        - alert: MongoHighConnections
+          annotations:
+            summary: "MongoDB cluster has high connections than 90% available connections for 5m"
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-mongohighconnections"
+            {{- end }}
+          expr: |
+            avg by(app,cluster,namespace,rs_nm,rs_state) (mongodb_ss_connections{conn_type="active"})
+              /
+            avg by (app,cluster,namespace,rs_nm,rs_state) (mongodb_ss_connections{conn_type="available"}) * 100 > 90
+          for: 5m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.MongodbCursorsOpenTooMany | default false) }}
+        - alert: MongodbCursorsOpenTooMany
+          annotations:
+            summary: "Number cursors opened by clients are more than 100 for 5m"
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-mongodbcursorsopentoomany"
+            {{- end }}
+          expr: sum by (app,cluster,namespace,rs_nm,rs_state) (mongodb_ss_metrics_cursor_open{csr_type="total"}) > 100
+          for: 5m
+          labels:
+            severity: warning
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.MongodbCursorsTimeouts | default false) }}
+        - alert: MongodbCursorsTimeouts
+          annotations:
+            summary: "Number cursors timing out are more than 100 for 5m"
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-mongodbcursorstimeouts"
+            {{- end }}
+          expr: sum by (app,cluster,namespace,rs_nm,rs_state) (increase(mongodb_ss_metrics_cursor_timedOut[5m])) > 100
+          for: 5m
+          labels:
+            severity: warning
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+{{- end }}

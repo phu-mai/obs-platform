@@ -1,0 +1,176 @@
+## Provide a name in place of kube-prometheus-stack for `app:` labels
+##
+nameOverride: ""
+
+## Provide a name to substitute for the full names of resources
+##
+fullnameOverride: ""
+
+## Override the deployment namespace
+##
+namespaceOverride: ""
+
+global:
+  scrapeInterval: 30s
+  scrapeTimeout: 30s
+
+## Enable runbook for all rules
+##
+runbook:
+  enabled: false
+  ## Prefix for runbook URLs. Use this to override the first part of the runbookURLs that is common to all rules.
+  runbookUrl: https://github.com/LeapXpert/observability-chart/blob/main/runbook.md#
+
+## Provide a k8s version to auto dashboard import script example: kubeTargetVersionOverride: 1.16.6
+##
+kubeTargetVersionOverride: ""
+
+## Create default rules for monitoring FMOP components
+##
+defaultRules:
+  rules:
+    additionalKubeStateMetrics: true
+    appKafkaClients: true
+    appMethodExecution: true
+    appMongodbClients: true
+    appRedisClients: true
+    appApiServer: false
+    appAudit: true
+    appIgateway: false
+    appAuthentication: false
+    appCustomermodelsync: false
+    appErrorLogs: false
+    appImessageArchivingIntegration: false
+    appSmsIntegration: false
+    appTeam2bintegration: false
+    appWechatIntegration: false
+    appWechatMiniappIntegration: false
+    appWecomIntegration: false
+    appWhatsappArchivedGateway: false
+    appWhatsappNativeIntegration: false
+    appWhatsappintegrationArchived: false
+    blackboxExporter: true
+    certManager: true
+    cloudAwsCloudwatch: true
+    cloudAwsSnapshots: true
+    cloudAzureMetrics: true
+    coreplaneMinio: true
+    coreplaneHashivault: true
+    coreplaneMessaging: true
+    dataplaneElasticsearch: true
+    dataplaneKafka: true
+    dataplaneMongodb: true
+    dataplanePostgres: true
+    dataplaneRedis: true
+    dataplaneZookeeper: true
+    featureDataRetention: true
+    grafanaAgentTracing: true
+    imessageMacInstance: true
+    internalAdditionalKubeStateMetrics: false
+    internalKubernetesResources: false
+    internalKubernetesStorage: false
+    internalNodeExporter: false
+    istio: true
+    loggingPromtail: true
+    recordingDataplaneKafka: true
+    recordingDataplaneMongodb: true
+    recordingDataplanePostgres: true
+    recordingElasticsearch: true
+    recordingIstio: true
+    velero: true
+    whatsappApi: true
+    eventhubs: true
+    prometheus: false
+  ## Disabled PrometheusRule alerts
+  disabled: {}
+  extraLabels: {}
+
+slo:
+  enabled: false
+
+## Define whether alert rules will be generated if these components are deployed on cluster
+##
+namespaceSelector:
+  istiod:
+    enabled: false
+    namespace: ""
+  kafka:
+    enabled: false
+    namespace: ""
+  vault:
+    enabled: false
+    namespace: ""
+  velero:
+    enabled: false
+    namespace: ""
+
+## Define whether dashboards will be generated
+##
+dashboardsSelector:
+  isCentralDashboard: false
+  elasticsearch:
+    enabled: false
+  logging:
+    enabled: false
+  lxpApplicationBusinessMetrics:
+    enabled: false
+  lxpAzureMetrics:
+    enabled: false
+  lxpCore:
+    enabled: false
+  lxpCloudwatchMetrics:
+    enabled: false
+  lxpData:
+    enabled: false
+  lxpGrafanaAgent:
+    enabled: false
+  lxpIstio:
+    enabled: false
+  lxpResourcesByRelease:
+    enabled: false
+  lxpStatus:
+    enabled: false
+  lxpStatusInsights:
+    enabled: false
+  lxpMacInstances:
+    enabled: false
+  lxpKafka:
+    enabled: false
+  lxpInvestigation:
+    enabled: false
+  matrix:
+    enabled: false
+  velero:
+    enabled: false
+  tempo:
+    enabled: false
+
+
+# This variable defines the default threshold for Kafka lag alerts. It is used when specific thresholds are not provided for individual consumer groups
+kafkaDefaultThreshold:
+  threshold: '10'
+  duration: 15m
+
+#This variable holds the configuration for Kafka lag alerts, including topics, consumer groups, and thresholds
+kafkaLagThreshold: []
+  # - threshold: '50'
+  #   duration: 10m
+  #   topics:
+  #     - proxymessaging
+  #     - audit
+  #     - notification
+
+istioTelemetry:
+  namespaces: []
+  nonTcpMetrics:
+    - REQUEST_COUNT
+    - REQUEST_DURATION
+    - REQUEST_SIZE
+    - RESPONSE_SIZE
+    - GRPC_REQUEST_MESSAGES
+    - GRPC_RESPONSE_MESSAGES
+  tcpMetrics:
+    - TCP_OPENED_CONNECTIONS
+    - TCP_CLOSED_CONNECTIONS
+    - TCP_SENT_BYTES
+    - TCP_RECEIVED_BYTES

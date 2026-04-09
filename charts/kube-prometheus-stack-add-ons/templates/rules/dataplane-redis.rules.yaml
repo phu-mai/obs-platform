@@ -1,0 +1,105 @@
+{{- $kubeTargetVersion := default .Capabilities.KubeVersion.GitVersion .Values.kubeTargetVersionOverride }}
+{{- if and (semverCompare ">=1.14.0-0" $kubeTargetVersion) (semverCompare "<9.9.9-9" $kubeTargetVersion) .Values.defaultRules.rules.dataplaneRedis }}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ template "kube-prometheus-stack-add-ons.fullname" . }}-dataplane-redis
+  namespace: {{ template "kube-prometheus-stack-add-ons.namespace" . }}
+  labels:
+{{ include "kube-prometheus-stack-add-ons.labels" . | indent 4 }}
+spec:
+  groups:
+    - name: redis.rules
+      rules:
+        {{- if not (.Values.defaultRules.disabled.RedisDown | default false) }}
+        - alert: RedisDown
+          annotations:
+            summary: "Redis instance {{`{{`}} $labels.pod {{`}}`}} in namespace {{`{{`}} $labels.namespace {{`}}`}} has been down for 2m."
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-redisdown"
+            {{- end }}
+          expr: sum by (app,cluster,namespace,pod) (redis_up{app!=""}) == 0
+          for: 2m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+            {{- with .Values.defaultRules.extraLabels.l2Support }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.RedisOutOfConfiguredMaxmemory | default false) }}
+        - alert: RedisOutOfConfiguredMaxmemory
+          annotations:
+            summary: "Redis instance {{`{{`}} $labels.pod {{`}}`}} in namespace {{`{{`}} $labels.namespace {{`}}`}} is running out of configured maxmemory (> 90%)"
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-redisoutofconfiguredmaxmemory"
+            {{- end }}
+          expr: |
+            sum by (app,cluster,namespace,pod) (redis_memory_used_bytes{app!=""})
+              /
+            sum by (app,cluster,namespace,pod) (redis_memory_max_bytes{app!=""}) * 100 > 90
+          for: 2m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.RedisTooManyConnections | default false) }}
+        - alert: RedisTooManyConnections
+          annotations:
+            summary: "The connected client connections on redis instance {{`{{`}} $labels.pod {{`}}`}} in namespace {{`{{`}} $labels.namespace {{`}}`}} has more than 100 connections for 2m. Current is {{`{{`}} $value {{`}}`}}"
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-redistoomanyconnections"
+            {{- end }}
+          expr: sum by (app,cluster,namespace,pod) (redis_connected_clients{app!=""}) > 500
+          for: 5m
+          labels:
+            severity: warning
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.RedisRejectedConnections | default false) }}
+        - alert: RedisRejectedConnections
+          annotations:
+            summary: "The rejected client connections on redis instance {{`{{`}} $labels.pod {{`}}`}} in namespace {{`{{`}} $labels.namespace {{`}}`}} has been increased for 2m. Current is {{`{{`}} $value {{`}}`}}"
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-redisnotenoughconnections"
+            {{- end }}
+          expr: sum by (app,cluster,namespace,pod) (increase(redis_rejected_connections_total{app!=""}[2m])) > 0
+          for: 5m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+            {{- with .Values.defaultRules.extraLabels.l2Support }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.RedisStatefulsetUnscheduable | default false) }}
+        - alert: RedisStatefulsetUnscheduable
+          annotations:
+            summary: "Redis instance {{`{{`}} $labels.pod {{`}}`}} in namespace {{`{{`}} $labels.namespace {{`}}`}} is unschedulable for 2m"
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-redisstatefulsetunscheduable"
+            {{- end }}
+          expr: |
+            sum by (app,cluster,statefulset) (
+              label_replace(kube_statefulset_status_replicas_ready{statefulset="redis-master"},"app","$1","statefulset","(.+)")
+            )  == 0
+          for: 2m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+            {{- with .Values.defaultRules.extraLabels.l2Support }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+{{- end }}

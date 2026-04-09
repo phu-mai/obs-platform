@@ -1,0 +1,38 @@
+{{- if and .Values.service.static.daemonset.enabled .Values.serviceMonitor.static.daemonset.enabled -}}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "grafana-agent.fullname" . }}-static-daemonset
+  labels:
+    {{- include "grafana-agent.labels" . | nindent 4 }}
+    agent-type: daemonset
+    mode: static
+    {{- with .Values.serviceMonitor.static.daemonset.additionalLabels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  endpoints:
+  - port: http-metrics
+    honorLabels: true
+    {{- if .Values.serviceMonitor.static.daemonset.interval }}
+    interval: {{ .Values.serviceMonitor.static.daemonset.interval }}
+    {{- end }}
+    {{- if .Values.serviceMonitor.static.daemonset.metricRelabelings }}
+    metricRelabelings:
+    {{ tpl (toYaml .Values.serviceMonitor.static.daemonset.metricRelabelings | nindent 6) . }}
+    {{- end }}
+    {{- if .Values.serviceMonitor.static.daemonset.relabelings }}
+    relabelings:
+    {{ tpl (toYaml .Values.serviceMonitor.static.daemonset.relabelings | nindent 6) . }}
+    {{- end }}
+    {{- with .Values.serviceMonitor.static.daemonset.tlsConfig }}
+    tlsConfig:
+    {{- toYaml . | nindent 6 }}
+    {{- end }}
+  selector:
+    matchLabels:
+      {{- include "grafana-agent.selectorLabels" . | nindent 6 }}
+      agent-type: daemonset
+      mode: static
+{{- end }}

@@ -1,0 +1,213 @@
+{{- $kubeTargetVersion := default .Capabilities.KubeVersion.GitVersion .Values.kubeTargetVersionOverride }}
+{{- if and (semverCompare ">=1.14.0-0" $kubeTargetVersion) (semverCompare "<9.9.9-9" $kubeTargetVersion) .Values.defaultRules.rules.appWecomIntegration }}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ template "kube-prometheus-stack-add-ons.fullname" . }}-app-wecom-integration
+  namespace: {{ template "kube-prometheus-stack-add-ons.namespace" . }}
+  labels:
+{{ include "kube-prometheus-stack-add-ons.labels" . | indent 4 }}
+spec:
+  groups:
+    - name: app-wecom-integration.rules
+      rules:
+        {{- if not (.Values.defaultRules.disabled.WecomSsoLoginStartFailed | default false) }}
+        - alert: WecomSsoLoginStartFailed
+          annotations:
+            summary: |
+              User ID {{`{{`}} $labels.id {{`}}`}} with contact {{`{{`}} $labels.contact_id {{`}}`}} from company ID {{`{{`}} $labels.company_id {{`}}`}}
+              has failed SSO start requests
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-wecomssologinstartfailed"
+            {{- end }}
+            description: This alert will be triggered when user has SSO start login failed.
+          expr: increase((sum by (app,cluster,company_id,contact_id,corpid,id,lxp_version) (wecom_sso_login_start_total{app="wecomintegration",success="false"}) OR vector(0))[5m:]) > 0
+          for: 2m
+          labels:
+            severity: warning
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.WecomSsoLoginCompleteFailed | default false) }}
+        - alert: WecomSsoLoginCompleteFailed
+          annotations:
+            summary: |
+              User ID {{`{{`}} $labels.id {{`}}`}} with contact {{`{{`}} $labels.contact_id {{`}}`}} from company ID {{`{{`}} $labels.company_id {{`}}`}}
+              has failed SSO start requests
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-wecomssologincompletefailed"
+            {{- end }}
+            description: This alert will be triggered when user has SSO complete login failed.
+          expr: increase((sum by (app,cluster,company_id,contact_id,corpid,id,lxp_version) (wecom_sso_login_complete_total{app="wecomintegration",success="false"}) OR vector(0))[5m:]) > 0
+          for: 2m
+          labels:
+            severity: warning
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.WecomContactUserCreateFailed | default false) }}
+        - alert: WecomContactUserCreateFailed
+          annotations:
+            summary: |
+              User ID {{`{{`}} $labels.id {{`}}`}} with contact {{`{{`}} $labels.contact_id {{`}}`}} from company ID {{`{{`}} $labels.company_id {{`}}`}}
+              has failed request for user account creation.
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-wecomcontactusercreatefailed"
+            {{- end }}
+            description: This alert will be triggered when service has failed request for user account creation.
+          expr: increase((sum by (app,cluster,company_id,contact_id,corpid,id,lxp_version) (wecom_contact_user_create_total{app="wecomintegration",success="false"}) OR vector(0))[5m:]) > 0
+          for: 2m
+          labels:
+            severity: warning
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.WecomContactClientCreateFailed | default false) }}
+        - alert: WecomContactClientCreateFailed
+          annotations:
+            summary: |
+              User ID {{`{{`}} $labels.id {{`}}`}} with contact {{`{{`}} $labels.contact_id {{`}}`}} from company ID {{`{{`}} $labels.company_id {{`}}`}}
+              has failed request for client account creation.
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-wecomcontactclientcreatefailed"
+            {{- end }}
+            description: This alert will be triggered when service has failed request for client account creation.
+          expr: increase((sum by (app,cluster,company_id,contact_id,corpid,id,lxp_version) (wecom_contact_client_create_total{app="wecomintegration",success="false"}) OR vector(0))[5m:]) > 0
+          for: 2m
+          labels:
+            severity: warning
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.WecomClientVerificationStartFailed | default false) }}
+        - alert: WecomClientVerificationStartFailed
+          annotations:
+            summary: |
+              User ID {{`{{`}} $labels.id {{`}}`}} with contact {{`{{`}} $labels.contact_id {{`}}`}} from company ID {{`{{`}} $labels.company_id {{`}}`}}
+              has wecom client failed to trigger SMS OTP.
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-wecomclientverificationstartfailed"
+            {{- end }}
+            description: This alert will be triggered when wecom client failed to trigger SMS OTP.
+          expr: increase((sum by (app,cluster,company_id,contact_id,corpid,id,lxp_version) (wecom_client_verification_start_total{app="wecomintegration",success="false"}) OR vector(0))[5m:]) > 0
+          for: 2m
+          labels:
+            severity: warning
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.WecomClientVerificationCompleteFailed | default false) }}
+        - alert: WecomClientVerificationCompleteFailed
+          annotations:
+            summary: |
+              User ID {{`{{`}} $labels.id {{`}}`}} with contact {{`{{`}} $labels.contact_id {{`}}`}} from company ID {{`{{`}} $labels.company_id {{`}}`}}
+              has wecom client failed to complete the verification.
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-wecomclientverificationcompletefailed"
+            {{- end }}
+            description: This alert will be triggered when wecom client failed to complete the verification.
+          expr: increase((sum by (app,cluster,company_id,contact_id,corpid,id,lxp_version) (wecom_client_verification_complete_total{app="wecomintegration",success="false"}) OR vector(0))[5m:]) > 0
+          for: 2m
+          labels:
+            severity: warning
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.WecomTencentPlatformApiCallFailed | default false) }}
+        - alert: WecomTencentPlatformApiCallFailed
+          annotations:
+            summary: |
+              wecom-integration service has failed requests to Tencent platform with code {{`{{`}} $labels.code {{`}}`}}
+              and path {{`{{`}} $labels.path {{`}}`}} against host {{`{{`}} $labels.host {{`}}`}}.
+              Ref. https://developer.work.weixin.qq.com/document/path/90313
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-wecomtencentplatformapicallfailed"
+            {{- end }}
+            description: |
+              This alert will be triggered when wecom integration has failed requests to Tencent platform.
+          expr: increase((sum by (app,cluster,code,host,path,lxp_version) (wecom_tencent_platform_api_call_total{app="wecomintegration",code!~"^0|60011|60020|60111|84061|40096|40001|90501|92002|301059|301052|301042"}) OR vector(0))[5m:]) > 0
+          for: 2m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.WecomTencentLicenseExpired | default false) }}
+        - alert: WecomTencentLicenseExpired
+          annotations:
+            summary: |
+              wecom-integration service has failed requests to Tencent platform with code {{`{{`}} $labels.code {{`}}`}}
+              and path {{`{{`}} $labels.path {{`}}`}} against host {{`{{`}} $labels.host {{`}}`}}.
+              Code 301052 indicates that wecom license has expired. We need to renew in next 5 days.
+              If the license renewal is after 5d from alert then all new messages will be archived.
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-wecomtencentlicenseexpired"
+            {{- end }}
+            description: |
+              This alert will be triggered when Wecom license is expired. Immediate wecom license renewal is required
+          expr: increase((sum by (app,cluster,code,host,path,lxp_version) (wecom_tencent_platform_api_call_total{app="wecomintegration",code="301052"}) OR vector(0))[5m:]) > 0
+          for: 2m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+            {{- with .Values.defaultRules.extraLabels.l2Support }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.WecomTencentWhitelistIPMismatched | default false) }}
+        - alert: WecomTencentWhitelistIPMismatched
+          annotations:
+            summary: |
+              wecom-integration service has failed requests to Tencent platform with code {{`{{`}} $labels.code {{`}}`}}
+              and path {{`{{`}} $labels.path {{`}}`}} against host {{`{{`}} $labels.host {{`}}`}}.
+              Code 301042 indicates that wecom requests are denied because IP is not in whitelist of Wecom Enterprise Portal.
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-wecomtencentwhitelistipmismatched"
+            {{- end }}
+            description: |
+              This alert will be triggered when request is denied because IP is not whitelisted. Contact customer for IP whitelisting on Wecom Enterprise Portal.
+          expr: increase((sum by (app,cluster,code,host,path,lxp_version) (wecom_tencent_platform_api_call_total{app="wecomintegration",code="301042"}) OR vector(0))[5m:]) > 0
+          for: 2m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+            {{- with .Values.defaultRules.extraLabels.l2Support }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.WecomTencentInvalidSecret | default false) }}
+        - alert: WecomTencentInvalidSecret
+          annotations:
+            summary: |
+              wecom-integration service has failed requests to Tencent platform with code {{`{{`}} $labels.code {{`}}`}}
+              and path {{`{{`}} $labels.path {{`}}`}} against host {{`{{`}} $labels.host {{`}}`}}.
+              Code 40001 indicates that wecom requests are failed due to invalid secret.
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-wecomtencentinvalidsecret"
+            {{- end }}
+            description: |
+              This alert will be triggered when are failed due to invalid secret. We need to check secret in vault to see if it is correct.
+          expr: increase((sum by (app,cluster,code,host,path,lxp_version) (wecom_tencent_platform_api_call_total{app="wecomintegration",code="40001"}) OR vector(0))[5m:]) > 0
+          for: 2m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+            {{- with .Values.defaultRules.extraLabels.l2Support }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+{{- end }}

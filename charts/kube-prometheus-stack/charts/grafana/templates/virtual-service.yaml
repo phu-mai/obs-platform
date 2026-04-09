@@ -1,0 +1,24 @@
+{{- if .Capabilities.APIVersions.Has "networking.istio.io/v1beta1" }}
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: grafana
+  namespace: {{ .Release.Namespace }}
+spec:
+  gateways:
+    - {{ .Values.istio.ingressNamespace }}/default-gateway
+  hosts:
+  {{- range .Values.istio.domains }}
+    - {{ . }}
+  {{- end }}
+  http:
+    - match:
+      - port: 443
+        uri:
+          prefix: "{{ .Values.istio.uriPrefix }}"
+      route:
+        - destination:
+            host: {{ include "grafana.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local
+            port:
+              number: {{ .Values.service.port }}
+{{- end }}

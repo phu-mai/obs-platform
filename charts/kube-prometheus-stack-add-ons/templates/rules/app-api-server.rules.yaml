@@ -1,0 +1,35 @@
+{{- $kubeTargetVersion := default .Capabilities.KubeVersion.GitVersion .Values.kubeTargetVersionOverride }}
+{{- if and (semverCompare ">=1.14.0-0" $kubeTargetVersion) (semverCompare "<9.9.9-9" $kubeTargetVersion) .Values.defaultRules.rules.appApiServer }}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ template "kube-prometheus-stack-add-ons.fullname" . }}-app-api-server
+  namespace: {{ template "kube-prometheus-stack-add-ons.namespace" . }}
+  labels:
+{{ include "kube-prometheus-stack-add-ons.labels" . | indent 4 }}
+spec:
+  groups:
+    - name: app-api-server.rules
+      rules:
+        {{- if not (.Values.defaultRules.disabled.SSOLoginFailed | default false) }}
+        - alert: SSOLoginFailed
+          annotations:
+            summary: Authentication has many failed SSO login requests
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-ssologinfailed"
+            {{- end }}
+            description: |
+              Api-server has many failed SSO login requests with source {{`{{`}} $labels.loginSource {{`}}`}} and type {{`{{`}} $labels.loginType {{`}}`}}
+              Execute PromQL query increase(sso_user_login_total{app="authentication",success="false"}[5m]) for more information.
+              Execute LogQL queries for more information.
+                - {container="authentication",level="ERROR"}
+          expr: increase((sum by (app,cluster,loginSource,loginType,lxp_version) (sso_user_login_total{app="api-server",success="false"}) OR vector(0))[5m:]) > 0
+          for: 2m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+{{- end }}

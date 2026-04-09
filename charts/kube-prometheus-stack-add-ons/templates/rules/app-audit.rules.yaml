@@ -1,0 +1,91 @@
+{{- $kubeTargetVersion := default .Capabilities.KubeVersion.GitVersion .Values.kubeTargetVersionOverride }}
+{{- if and (semverCompare ">=1.14.0-0" $kubeTargetVersion) (semverCompare "<9.9.9-9" $kubeTargetVersion) .Values.defaultRules.rules.appAudit }}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ template "kube-prometheus-stack-add-ons.fullname" . }}-app-audit
+  namespace: {{ template "kube-prometheus-stack-add-ons.namespace" . }}
+  labels:
+{{ include "kube-prometheus-stack-add-ons.labels" . | indent 4 }}
+spec:
+  groups:
+    - name: app-audit.rules
+      rules:
+        {{- if not (.Values.defaultRules.disabled.AuditExportResultsFailed | default false) }}
+        - alert: AuditExportResultsFailed
+          annotations:
+            summary: "Audit service has failed export task. Task ID is {{`{{`}} $labels.taskId {{`}}`}}"
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-auditexportresultsfailed"
+            {{- end }}
+            description: |
+              This alert will be triggered when audit has failed exporter in specified transport
+              Execute this PromQL query to verify audit_export_results_total{app="audit",success="false"}.
+              You will find taskId and transport information there.
+              Need to check audit log to get failed taskId for further investigation
+          expr: |
+            (
+              increase(
+                (sum by (app,cluster,transport,taskId,lxp_version) (audit_export_results_total{app="audit",success="false"}))[5m:])
+              > 0
+            )
+              or
+            (
+              sum by (app,cluster,transport,taskId,lxp_version) (audit_export_results_total{app="audit",success="false"})
+                unless
+              sum by (app,cluster,transport,taskId,lxp_version) (audit_export_results_total{app="audit",success="false"} offset 5m)
+            )
+          for: 0m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+            {{- with .Values.defaultRules.extraLabels.l2Support }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.AuditRecoverMatrixRoomRequestFailed | default false) }}
+        - alert: AuditRecoverMatrixRoomRequestFailed
+          annotations:
+            summary: "Audit service in namespace {{`{{`}} $labels.namespace {{`}}`}} finds database collection DBMatrixRoom contains corrupted data."
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-auditrecovermatrixroomrequestfailed"
+            {{- end }}
+            description: |
+              This alert will be triggered when audit finds database collection DBMatrixRoom contains corrupted data.
+              Need to check audit log for futher troubleshooting.
+          expr: increase(audit_recover_matrix_room_request{app="audit",success="false"}[5m:]) > 0
+          for: 0m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.AuditPeriodicPollNotWorking | default false) }}
+        - alert: AuditPeriodicPollNotWorking
+          annotations:
+            summary: "Audit service in namespace {{`{{`}} $labels.namespace {{`}}`}} has no new polls since last poll"
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-auditperiodicpollnotworking"
+            {{- end }}
+            description: |
+              This alert will be triggered when audit periodic poll has been detected stop working for 3 polls in a row.
+              Polling interval is 5m.
+              Audit polling is a cron job in the jvm, to get a list of all ExportTask in the database, then start the export on all of them.
+          expr: |
+            (
+              sum by (app,cluster,lxp_version) (audit_poll_for_export_task_total{namespace="lxp-core"})
+                -
+              sum by (app,cluster,lxp_version) (audit_poll_for_export_task_total{namespace="lxp-core"} offset 5m)
+            ) != 1
+          for: 15m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+{{- end }}

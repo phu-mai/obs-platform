@@ -1,0 +1,42 @@
+{{- $kubeTargetVersion := default .Capabilities.KubeVersion.GitVersion .Values.kubeTargetVersionOverride }}
+{{- if and (semverCompare ">=1.14.0-0" $kubeTargetVersion) (semverCompare "<9.9.9-9" $kubeTargetVersion) .Values.defaultRules.rules.appWhatsappArchivedGateway }}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ template "kube-prometheus-stack-add-ons.fullname" . }}-app-whatsapp-archived-gateway
+  namespace: {{ template "kube-prometheus-stack-add-ons.namespace" . }}
+  labels:
+{{ include "kube-prometheus-stack-add-ons.labels" . | indent 4 }}
+spec:
+  groups:
+    - name: app-whatsapp-archived-gateway.rules
+      rules:
+        {{- if not (.Values.defaultRules.disabled.WAGClientOutdated | default false) }}
+        - alert: WAGClientOutdated
+          annotations:
+            summary: "whatsapp-archived-gateway service detected the Whatsapp client version {{`{{`}} $labels.version {{`}}`}} outdated"
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-wagclientoutdated"
+            {{- end }}
+            description: |
+              This alert will be triggered when whatsapp-archived-gateway service detected the Whatsapp client outdated".
+          expr: |
+            (
+              increase(
+                (sum by (app,cluster,version,lxp_version) (whatsapp_gw_wa_client_outdated_counter{app="whatsapp-archived-gateway"}))[5m:])
+              > 0
+            )
+              or
+            (
+              sum by (app,cluster,version,lxp_version) (whatsapp_gw_wa_client_outdated_counter{app="whatsapp-archived-gateway"})
+                unless
+              sum by (app,cluster,version,lxp_version) (whatsapp_gw_wa_client_outdated_counter{app="whatsapp-archived-gateway"} offset 5m)
+            )
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+{{- end }}

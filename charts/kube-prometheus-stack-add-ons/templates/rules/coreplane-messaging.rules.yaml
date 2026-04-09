@@ -1,0 +1,98 @@
+{{- $kubeTargetVersion := default .Capabilities.KubeVersion.GitVersion .Values.kubeTargetVersionOverride }}
+{{- if and (semverCompare ">=1.14.0-0" $kubeTargetVersion) (semverCompare "<9.9.9-9" $kubeTargetVersion) .Values.defaultRules.rules.coreplaneMessaging }}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ template "kube-prometheus-stack-add-ons.fullname" . }}-coreplane-messaging
+  namespace: {{ template "kube-prometheus-stack-add-ons.namespace" . }}
+  labels:
+{{ include "kube-prometheus-stack-add-ons.labels" . | indent 4 }}
+spec:
+  groups:
+    - name: messaging.rules
+      rules:
+        {{- if not (.Values.defaultRules.disabled.MessagingDeploymentNotReady | default false) }}
+        - alert: MessagingDeploymentNotReady
+          annotations:
+            summary: "Messaging {{`{{`}} $labels.deployment {{`}}`}} in namespace {{`{{`}} $labels.namespace {{`}}`}} has no ready replicas for 2m"
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-messagingdeploymentnotready"
+            {{- end }}
+          expr: |
+            sum by (app,cluster,deployment) (
+              label_replace(kube_deployment_status_replicas_ready{deployment=~"synapse.*"},"app","$1","deployment","(.+)")
+            ) == 0
+          for: 2m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+            {{- with .Values.defaultRules.extraLabels.l2Support }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.MessagingHighErrorRate | default false) }}
+        - alert: MessagingHighErrorRate
+          annotations:
+            summary: "Messaging instance {{`{{`}} $labels.pod {{`}}`}} in namespace {{`{{`}} $labels.namespace {{`}}`}} has high error rate for 5m"
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-messaginghigherrorrate"
+            {{- end }}
+          expr: sum by (app,cluster,pod,namespace,code) (rate(synapse_http_server_responses_total{pod=~"synapse.*",code!~"2[0-9][0-9]",job="envoy-stats"}[2m])) > 5
+          for: 5m
+          labels:
+            severity: warning
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        - alert: MessagingHighErrorRate
+          annotations:
+            summary: "Messaging instance {{`{{`}} $labels.pod {{`}}`}} in namespace {{`{{`}} $labels.namespace {{`}}`}} has high error rate for 5m"
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-messaginghigherrorrate"
+            {{- end }}
+          expr: sum by (app,cluster,pod,namespace,code) (rate(synapse_http_server_responses_total{pod=~"synapse.*",code!~"2[0-9][0-9]",job="envoy-stats"}[2m])) > 10
+          for: 5m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.MessagingHighWaitingTimeForDBConnection | default false) }}
+        - alert: MessagingHighWaitingTimeForDBConnection
+          annotations:
+            summary: "Messaging instance {{`{{`}} $labels.pod {{`}}`}} in namespace {{`{{`}} $labels.namespace {{`}}`}} has high waiting time for database connection than 0.5 second for 5m"
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-messaginghighwaitingtimefordbconnection"
+            {{- end }}
+          expr: |
+            sum by (app,cluster,pod,namespace) (rate(synapse_storage_schedule_time_sum{pod=~"synapse.*",job="envoy-stats"}[2m]))
+              /
+            sum by (app,cluster,pod,namespace) (rate(synapse_storage_schedule_time_count{pod=~"synapse.*",job="envoy-stats"}[2m])) > 0.5
+          for: 5m
+          labels:
+            severity: warning
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        - alert: MessagingHighWaitingTimeForDBConnection
+          annotations:
+            summary: "Messaging instance {{`{{`}} $labels.pod {{`}}`}} in namespace {{`{{`}} $labels.namespace {{`}}`}} has high waiting time for database connection than 1 second for 5m"
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-messaginghighwaitingtimefordbconnection"
+            {{- end }}
+          expr: |
+            sum by (app,cluster,pod,namespace) (rate(synapse_storage_schedule_time_sum{pod=~"synapse.*",job="envoy-stats"}[2m]))
+              /
+            sum by (app,cluster,pod,namespace) (rate(synapse_storage_schedule_time_count{pod=~"synapse.*",job="envoy-stats"}[2m])) > 1
+          for: 5m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+{{- end }}

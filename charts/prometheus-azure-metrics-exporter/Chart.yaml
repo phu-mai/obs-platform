@@ -1,0 +1,11 @@
+apiVersion: v2
+name: prometheus-azure-metrics-exporter
+description: A Helm chart for prometheus azure metrics exporter
+home: https://github.com/webdevops/azure-metrics-exporter
+keywords:
+  - azure
+  - prometheus
+  - exporter
+type: application
+version: 0.2.3
+appVersion: 23.12.1

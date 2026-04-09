@@ -1,0 +1,16 @@
+{{- if .Values.agent.flow.daemonset.configMap.create }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "grafana-agent.fullname" . }}-flow-daemonset
+  labels:
+    {{- include "grafana-agent.labels" . | nindent 4 }}
+    agent-type: daemonset
+    mode: flow
+data:
+  {{- if .Values.agent.flow.daemonset.configMap.content }}
+  config.river: |- {{- (tpl  .Values.agent.flow.daemonset.configMap.content .) | nindent 4 }}
+  {{- else }}
+  config.river: |- {{- .Files.Get "config/config.river" | trim | nindent 4 }}
+  {{- end }}
+{{- end }}

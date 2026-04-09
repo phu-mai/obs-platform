@@ -1,0 +1,1408 @@
+{{- if not .Values.dashboardsSelector.isCentralDashboard }}
+{{- if .Values.dashboardsSelector.lxpResourcesByRelease.enabled }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-lxp-resources-by-release
+  namespace: {{ template "kube-prometheus-stack-add-ons.namespace" . }}
+  annotations:
+  labels:
+    grafana_dashboard: "1"
+{{ include "kube-prometheus-stack-add-ons.labels" . | indent 4 }}
+data:
+  lxp-resources-by-release.json: |-
+    {
+      "annotations": {
+        "list": [
+          {
+            "builtIn": 1,
+            "datasource": {
+              "type": "grafana",
+              "uid": "-- Grafana --"
+            },
+            "enable": true,
+            "hide": true,
+            "iconColor": "rgba(0, 211, 255, 1)",
+            "name": "Annotations & Alerts",
+            "target": {
+              "limit": 100,
+              "matchAny": false,
+              "tags": [],
+              "type": "dashboard"
+            },
+            "type": "dashboard"
+          }
+        ]
+      },
+      "editable": true,
+      "fiscalYearStartMonth": 0,
+      "graphTooltip": 1,
+      "id": 15041,
+      "links": [
+        {
+          "asDropdown": true,
+          "icon": "external link",
+          "includeVars": false,
+          "keepTime": true,
+          "tags": [
+            "leapxpert"
+          ],
+          "targetBlank": true,
+          "title": "LXP Dashboards",
+          "tooltip": "",
+          "type": "dashboards",
+          "url": ""
+        }
+      ],
+      "liveNow": false,
+      "panels": [
+        {
+          "datasource": {
+            "type": "datasource",
+            "uid": "grafana"
+          },
+          "gridPos": {
+            "h": 11,
+            "w": 24,
+            "x": 0,
+            "y": 0
+          },
+          "id": 17,
+          "options": {
+            "code": {
+              "language": "plaintext",
+              "showLineNumbers": false,
+              "showMiniMap": false
+            },
+            "content": "### Dashboard Naming\nLeapXpert dashboards will be created with prefix `lxp-`.\n\n`lxp-resource-by-release` contains resource usage of FMOP app, stateful services & volume usage.\n\n### How To\n\n`FMOP Applications`\n  * `FMOP Namespace` droplist is only used `FMOP App Container`\n  * `FMOP App Container` droplist is used to filter specific application. `api-server` is set by default\n  * `FMOP Release Version` droplist is used to filter specific image release versions.\n\n`FMOP Stateful Services`\n  * `FMOP Stateful Container` droplist is used to filter specific stateful services. \n  * `Persistent Volumer` droplist is used to filter specific stateful services.\n\n`Min Interval` is a time span that is used when aggregating or grouping data points by time. This is only used for table graphs.",
+            "mode": "markdown"
+          },
+          "pluginVersion": "10.3.1",
+          "type": "text"
+        },
+        {
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 11
+          },
+          "id": 8,
+          "title": "FMOP Applications",
+          "type": "row"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": -1,
+                "drawStyle": "line",
+                "fillOpacity": 10,
+                "gradientMode": "opacity",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "smooth",
+                "lineStyle": {
+                  "fill": "solid"
+                },
+                "lineWidth": 1,
+                "pointSize": 3,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "auto",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "links": [],
+              "mappings": [],
+              "min": 0,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "unit": "bytes",
+              "unitScale": true
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Limit analytics | Namespace default | Container analytics"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "fixedColor": "red",
+                      "mode": "fixed"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Limit | Namespace default | Container analytics"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "fixedColor": "#E02F44",
+                      "mode": "fixed"
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          "gridPos": {
+            "h": 11,
+            "w": 12,
+            "x": 0,
+            "y": 12
+          },
+          "id": 2,
+          "options": {
+            "legend": {
+              "calcs": [
+                "min",
+                "max",
+                "lastNotNull"
+              ],
+              "displayMode": "table",
+              "placement": "bottom",
+              "showLegend": true,
+              "sortBy": "Name",
+              "sortDesc": true
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "asc"
+            }
+          },
+          "pluginVersion": "8.2.3",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "expr": "sum by (container, namespace, lxp_version) (\n  container_memory_working_set_bytes{container=~\"$fmop_app_container\",namespace=~\"$fmop_namespace\"} \n  * on(container, namespace, pod) \n    group_left (lxp_version) \n  istio_agent_go_info{container=~\"$fmop_app_container\",namespace=~\"$fmop_namespace\",lxp_version=~\"$fmop_release_version\"}\n)",
+              "hide": false,
+              "interval": "",
+              "legendFormat": "Namespace {{`{{namespace}}`}} | Container {{`{{container}}`}} | Usage {{`{{lxp_version}}`}}",
+              "range": true,
+              "refId": "A"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "expr": "max by (container, namespace, lxp_version) (\n    max by (namespace, container, pod) (\n        kube_pod_container_resource_requests{namespace=~\"$fmop_namespace\",container=~\"$fmop_app_container\",resource=\"memory\"}\n    )\n    * on(container, namespace, pod)\n    group_left (lxp_version) istio_agent_go_info{namespace=~\"$fmop_namespace\",container=~\"$fmop_app_container\",lxp_version=~\"$fmop_release_version\"}\n)",
+              "hide": false,
+              "interval": "",
+              "legendFormat": "Namespace {{`{{namespace}}`}} | Container {{`{{container}}`}} | Request {{`{{lxp_version}}`}}",
+              "range": true,
+              "refId": "B"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "expr": "max by (container, namespace, lxp_version) (\n    max by (namespace, container, pod) (\n        kube_pod_container_resource_limits{namespace=~\"$fmop_namespace\",resource=\"memory\",container=~\"$fmop_app_container\"}\n    )\n    * on(container, namespace, pod)\n    group_left (lxp_version) istio_agent_go_info{container=~\"$fmop_app_container\",namespace=~\"$fmop_namespace\",lxp_version=~\"$fmop_release_version\"}\n)",
+              "hide": false,
+              "interval": "",
+              "legendFormat": "Namespace {{`{{namespace}}`}} | Container {{`{{container}}`}} | Limit {{`{{lxp_version}}`}}",
+              "range": true,
+              "refId": "C"
+            }
+          ],
+          "title": "Memory Usage",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": -1,
+                "drawStyle": "line",
+                "fillOpacity": 10,
+                "gradientMode": "opacity",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "smooth",
+                "lineWidth": 1,
+                "pointSize": 3,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "auto",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "links": [],
+              "mappings": [],
+              "min": 0,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "unit": "short",
+              "unitScale": true
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Limit | Namespace default | Container analytics"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "fixedColor": "red",
+                      "mode": "fixed"
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          "gridPos": {
+            "h": 11,
+            "w": 12,
+            "x": 12,
+            "y": 12
+          },
+          "id": 3,
+          "options": {
+            "legend": {
+              "calcs": [
+                "min",
+                "max",
+                "lastNotNull"
+              ],
+              "displayMode": "table",
+              "placement": "bottom",
+              "showLegend": true,
+              "sortBy": "Name",
+              "sortDesc": true
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "asc"
+            }
+          },
+          "pluginVersion": "8.2.3",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "expr": "sum by (container, namespace, lxp_version) (\n  rate(container_cpu_usage_seconds_total{namespace=~\"$fmop_namespace\",container=~\"$fmop_app_container\"}[$__rate_interval])\n    * on(container, namespace, pod) \n      group_left (lxp_version)\n  istio_agent_go_info{namespace=~\"$fmop_namespace\",container=~\"$fmop_app_container\",lxp_version=~\"$fmop_release_version\"}\n)",
+              "hide": false,
+              "interval": "",
+              "legendFormat": "Namespace {{`{{namespace}}`}} | Container {{`{{container}}`}} | Usage {{`{{lxp_version}}`}}",
+              "range": true,
+              "refId": "A"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "expr": "max by (container, namespace, lxp_version) (\n    max by (namespace, container, pod) (\n        kube_pod_container_resource_requests{namespace=~\"$fmop_namespace\",container=~\"$fmop_app_container\",resource=\"cpu\"}\n    )\n    * on(container, namespace, pod)\n    group_left (lxp_version) istio_agent_go_info{namespace=~\"$fmop_namespace\",container=~\"$fmop_app_container\",lxp_version=~\"$fmop_release_version\"}\n)",
+              "hide": false,
+              "interval": "",
+              "legendFormat": "Namespace {{`{{namespace}}`}} | Container {{`{{container}}`}} | Request {{`{{lxp_version}}`}}",
+              "range": true,
+              "refId": "B"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "expr": "max by (container, namespace, lxp_version) (\n    max by (namespace, container, pod) (\n        kube_pod_container_resource_limits{namespace=~\"$fmop_namespace\",container=~\"$fmop_app_container\",resource=\"cpu\"}\n    )\n    * on(container, namespace, pod)\n    group_left (lxp_version) istio_agent_go_info{namespace=~\"$fmop_namespace\",container=~\"$fmop_app_container\",lxp_version=~\"$fmop_release_version\"}\n)",
+              "hide": false,
+              "interval": "",
+              "legendFormat": "Namespace {{`{{namespace}}`}} | Container {{`{{container}}`}} | Limit {{`{{lxp_version}}`}}",
+              "range": true,
+              "refId": "C"
+            }
+          ],
+          "title": "CPU Usage",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "description": "",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "custom": {
+                "align": "center",
+                "cellOptions": {
+                  "type": "auto"
+                },
+                "filterable": true,
+                "inspect": false
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "unitScale": true
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "CPU Requests (m)"
+                },
+                "properties": [
+                  {
+                    "id": "unit",
+                    "value": "short"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "CPU Limits (m)"
+                },
+                "properties": [
+                  {
+                    "id": "unit",
+                    "value": "short"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Memory Requests"
+                },
+                "properties": [
+                  {
+                    "id": "unit",
+                    "value": "bytes"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Memory Limits"
+                },
+                "properties": [
+                  {
+                    "id": "unit",
+                    "value": "bytes"
+                  }
+                ]
+              }
+            ]
+          },
+          "gridPos": {
+            "h": 9,
+            "w": 24,
+            "x": 0,
+            "y": 23
+          },
+          "id": 16,
+          "options": {
+            "cellHeight": "sm",
+            "footer": {
+              "countRows": false,
+              "fields": "",
+              "reducer": [
+                "sum"
+              ],
+              "show": false
+            },
+            "frameIndex": 0,
+            "showHeader": true,
+            "sortBy": [
+              {
+                "desc": false,
+                "displayName": "Container"
+              }
+            ]
+          },
+          "pluginVersion": "10.3.1",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "exemplar": false,
+              "expr": "(max by (namespace, container,pod) (\n  kube_pod_container_resource_requests{namespace=~\"$fmop_namespace\",container=~\"$fmop_app_container\",resource=\"cpu\"}\n) \n* on(container, namespace, pod) \n  group_left (lxp_version) istio_agent_go_info{namespace=~\"$fmop_namespace\",container=~\"$fmop_app_container\"}) * 1000",
+              "format": "table",
+              "hide": false,
+              "instant": false,
+              "interval": "$min_interval",
+              "legendFormat": "__auto",
+              "range": true,
+              "refId": "A"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "exemplar": false,
+              "expr": "(max by (namespace, container,pod) (\n  kube_pod_container_resource_limits{namespace=~\"$fmop_namespace\",container=~\"$fmop_app_container\",resource=\"cpu\"}\n) \n* on(container, namespace, pod) \n  group_left (lxp_version) istio_agent_go_info{namespace=~\"$fmop_namespace\",container=~\"$fmop_app_container\"}) * 1000",
+              "format": "table",
+              "hide": false,
+              "instant": false,
+              "interval": "$min_interval",
+              "legendFormat": "__auto",
+              "range": true,
+              "refId": "B"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "exemplar": false,
+              "expr": "max by (namespace, container, pod) (\n  kube_pod_container_resource_requests{namespace=~\"$fmop_namespace\",container=~\"$fmop_app_container\",resource=\"memory\"}\n)\n* on(container, namespace, pod)\n  group_left (lxp_version) istio_agent_go_info{namespace=~\"$fmop_namespace\",container=~\"$fmop_app_container\"}",
+              "format": "table",
+              "hide": false,
+              "instant": false,
+              "interval": "$min_interval",
+              "legendFormat": "__auto",
+              "range": true,
+              "refId": "C"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "exemplar": false,
+              "expr": "max by (namespace, container, pod) (\n  kube_pod_container_resource_limits{namespace=~\"$fmop_namespace\",container=~\"$fmop_app_container\",resource=\"memory\"}\n)\n* on(container, namespace, pod)\n  group_left (lxp_version) istio_agent_go_info{namespace=~\"$fmop_namespace\",container=~\"$fmop_app_container\"}",
+              "format": "table",
+              "hide": false,
+              "instant": false,
+              "interval": "$min_interval",
+              "legendFormat": "__auto",
+              "range": true,
+              "refId": "D"
+            }
+          ],
+          "title": "Resource Requests & Limits by release version",
+          "transformations": [
+            {
+              "id": "merge",
+              "options": {}
+            },
+            {
+              "id": "organize",
+              "options": {
+                "excludeByName": {
+                  "Time": true,
+                  "pod": true
+                },
+                "indexByName": {},
+                "renameByName": {
+                  "Value #A": "CPU Requests (m)",
+                  "Value #B": "CPU Limits (m)",
+                  "Value #C": "Memory Requests",
+                  "Value #D": "Memory Limits",
+                  "Value #E": "Memory Limit",
+                  "container": "Container",
+                  "lxp_version": "Release Version",
+                  "namespace": "Namespace"
+                }
+              }
+            }
+          ],
+          "type": "table"
+        },
+        {
+          "collapsed": true,
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 32
+          },
+          "id": 13,
+          "panels": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "fieldConfig": {
+                "defaults": {
+                  "color": {
+                    "mode": "palette-classic"
+                  },
+                  "custom": {
+                    "axisBorderShow": false,
+                    "axisCenteredZero": false,
+                    "axisColorMode": "text",
+                    "axisLabel": "",
+                    "axisPlacement": "auto",
+                    "barAlignment": -1,
+                    "drawStyle": "line",
+                    "fillOpacity": 10,
+                    "gradientMode": "opacity",
+                    "hideFrom": {
+                      "legend": false,
+                      "tooltip": false,
+                      "viz": false
+                    },
+                    "insertNulls": false,
+                    "lineInterpolation": "smooth",
+                    "lineStyle": {
+                      "fill": "solid"
+                    },
+                    "lineWidth": 1,
+                    "pointSize": 3,
+                    "scaleDistribution": {
+                      "type": "linear"
+                    },
+                    "showPoints": "auto",
+                    "spanNulls": false,
+                    "stacking": {
+                      "group": "A",
+                      "mode": "none"
+                    },
+                    "thresholdsStyle": {
+                      "mode": "off"
+                    }
+                  },
+                  "links": [],
+                  "mappings": [],
+                  "min": 0,
+                  "thresholds": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "color": "green",
+                        "value": null
+                      }
+                    ]
+                  },
+                  "unit": "bytes",
+                  "unitScale": true
+                },
+                "overrides": []
+              },
+              "gridPos": {
+                "h": 11,
+                "w": 12,
+                "x": 0,
+                "y": 33
+              },
+              "id": 14,
+              "options": {
+                "legend": {
+                  "calcs": [
+                    "min",
+                    "max",
+                    "lastNotNull"
+                  ],
+                  "displayMode": "table",
+                  "placement": "bottom",
+                  "showLegend": true
+                },
+                "tooltip": {
+                  "mode": "multi",
+                  "sort": "asc"
+                }
+              },
+              "pluginVersion": "8.2.3",
+              "targets": [
+                {
+                  "datasource": {
+                    "type": "prometheus",
+                    "uid": "${datasource}"
+                  },
+                  "editorMode": "code",
+                  "expr": "sum by (container, namespace, pod) (\n  container_memory_working_set_bytes{container=~\"$fmop_stateful_container\"} \n)",
+                  "hide": false,
+                  "interval": "",
+                  "legendFormat": "Namespace {{`{{namespace}}`}} | Container {{`{{container}}`}} | Usage {{`{{pod}}`}}",
+                  "range": true,
+                  "refId": "A"
+                },
+                {
+                  "datasource": {
+                    "type": "prometheus",
+                    "uid": "${datasource}"
+                  },
+                  "editorMode": "code",
+                  "expr": "max by (namespace, container) (\n    kube_pod_container_resource_requests{container=~\"$fmop_stateful_container\",resource=\"memory\"}\n)",
+                  "hide": false,
+                  "interval": "",
+                  "legendFormat": "Namespace {{`{{namespace}}`}} | Container {{`{{container}}`}} | Request",
+                  "range": true,
+                  "refId": "B"
+                },
+                {
+                  "datasource": {
+                    "type": "prometheus",
+                    "uid": "${datasource}"
+                  },
+                  "editorMode": "code",
+                  "expr": "max by (namespace, container) (\n    kube_pod_container_resource_limits{container=~\"$fmop_stateful_container\",resource=\"memory\"}\n)",
+                  "hide": false,
+                  "interval": "",
+                  "legendFormat": "Namespace {{`{{namespace}}`}} | Container {{`{{container}}`}} | Limit ",
+                  "range": true,
+                  "refId": "C"
+                }
+              ],
+              "title": "Memory Usage",
+              "type": "timeseries"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "fieldConfig": {
+                "defaults": {
+                  "color": {
+                    "mode": "palette-classic"
+                  },
+                  "custom": {
+                    "axisBorderShow": false,
+                    "axisCenteredZero": false,
+                    "axisColorMode": "text",
+                    "axisLabel": "",
+                    "axisPlacement": "auto",
+                    "barAlignment": -1,
+                    "drawStyle": "line",
+                    "fillOpacity": 10,
+                    "gradientMode": "opacity",
+                    "hideFrom": {
+                      "legend": false,
+                      "tooltip": false,
+                      "viz": false
+                    },
+                    "insertNulls": false,
+                    "lineInterpolation": "smooth",
+                    "lineWidth": 1,
+                    "pointSize": 3,
+                    "scaleDistribution": {
+                      "type": "linear"
+                    },
+                    "showPoints": "auto",
+                    "spanNulls": false,
+                    "stacking": {
+                      "group": "A",
+                      "mode": "none"
+                    },
+                    "thresholdsStyle": {
+                      "mode": "off"
+                    }
+                  },
+                  "links": [],
+                  "mappings": [],
+                  "min": 0,
+                  "thresholds": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "color": "green",
+                        "value": null
+                      }
+                    ]
+                  },
+                  "unit": "short",
+                  "unitScale": true
+                },
+                "overrides": [
+                  {
+                    "matcher": {
+                      "id": "byName",
+                      "options": "Limit | Namespace default | Container analytics"
+                    },
+                    "properties": [
+                      {
+                        "id": "color",
+                        "value": {
+                          "fixedColor": "red",
+                          "mode": "fixed"
+                        }
+                      }
+                    ]
+                  }
+                ]
+              },
+              "gridPos": {
+                "h": 11,
+                "w": 12,
+                "x": 12,
+                "y": 33
+              },
+              "id": 15,
+              "options": {
+                "legend": {
+                  "calcs": [
+                    "min",
+                    "max",
+                    "lastNotNull"
+                  ],
+                  "displayMode": "table",
+                  "placement": "bottom",
+                  "showLegend": true
+                },
+                "tooltip": {
+                  "mode": "multi",
+                  "sort": "asc"
+                }
+              },
+              "pluginVersion": "8.2.3",
+              "targets": [
+                {
+                  "datasource": {
+                    "type": "prometheus",
+                    "uid": "${datasource}"
+                  },
+                  "editorMode": "code",
+                  "expr": "sum by (container, namespace, pod) (\n  rate(container_cpu_usage_seconds_total{container=~\"$fmop_stateful_container\"}[$__rate_interval])\n)",
+                  "hide": false,
+                  "interval": "",
+                  "legendFormat": "Namespace {{`{{namespace}}`}} | Container {{`{{container}}`}} | Usage {{`{{pod}}`}}",
+                  "range": true,
+                  "refId": "A"
+                },
+                {
+                  "datasource": {
+                    "type": "prometheus",
+                    "uid": "${datasource}"
+                  },
+                  "editorMode": "code",
+                  "expr": "max by (namespace, container) (\n    kube_pod_container_resource_requests{container=~\"$fmop_stateful_container\",resource=\"cpu\"}\n)",
+                  "hide": false,
+                  "interval": "",
+                  "legendFormat": "Namespace {{`{{namespace}}`}} | Container {{`{{container}}`}} | Request",
+                  "range": true,
+                  "refId": "B"
+                },
+                {
+                  "datasource": {
+                    "type": "prometheus",
+                    "uid": "${datasource}"
+                  },
+                  "editorMode": "code",
+                  "expr": "max by (namespace, container) (\n    kube_pod_container_resource_limits{container=~\"$fmop_stateful_container\",resource=\"cpu\",}\n)",
+                  "hide": false,
+                  "interval": "",
+                  "legendFormat": "Namespace {{`{{namespace}}`}} | Container {{`{{container}}`}} | Limit",
+                  "range": true,
+                  "refId": "C"
+                }
+              ],
+              "title": "CPU Usage",
+              "type": "timeseries"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "fieldConfig": {
+                "defaults": {
+                  "color": {
+                    "mode": "thresholds"
+                  },
+                  "custom": {
+                    "align": "center",
+                    "cellOptions": {
+                      "type": "auto"
+                    },
+                    "inspect": false
+                  },
+                  "links": [],
+                  "mappings": [],
+                  "min": 0,
+                  "thresholds": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "color": "green",
+                        "value": null
+                      }
+                    ]
+                  },
+                  "unit": "bytes",
+                  "unitScale": true
+                },
+                "overrides": [
+                  {
+                    "matcher": {
+                      "id": "byName",
+                      "options": "Volume Usage (%)"
+                    },
+                    "properties": [
+                      {
+                        "id": "unit",
+                        "value": "percent"
+                      },
+                      {
+                        "id": "thresholds",
+                        "value": {
+                          "mode": "absolute",
+                          "steps": [
+                            {
+                              "color": "green",
+                              "value": null
+                            },
+                            {
+                              "color": "#EAB839",
+                              "value": 80
+                            },
+                            {
+                              "color": "red",
+                              "value": 90
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "id": "custom.cellOptions",
+                        "value": {
+                          "type": "color-background"
+                        }
+                      }
+                    ]
+                  }
+                ]
+              },
+              "gridPos": {
+                "h": 10,
+                "w": 24,
+                "x": 0,
+                "y": 44
+              },
+              "id": 12,
+              "options": {
+                "cellHeight": "sm",
+                "footer": {
+                  "countRows": false,
+                  "enablePagination": true,
+                  "fields": "",
+                  "reducer": [
+                    "sum"
+                  ],
+                  "show": false
+                },
+                "showHeader": true,
+                "sortBy": [
+                  {
+                    "desc": true,
+                    "displayName": "Volume Usage (%)"
+                  }
+                ]
+              },
+              "pluginVersion": "10.3.1",
+              "targets": [
+                {
+                  "datasource": {
+                    "type": "prometheus",
+                    "uid": "${datasource}"
+                  },
+                  "editorMode": "code",
+                  "exemplar": false,
+                  "expr": "sum by (persistentvolumeclaim) (kubelet_volume_stats_capacity_bytes{job=\"kubelet\", metrics_path=\"/metrics\", namespace=~\".*\", persistentvolumeclaim=~\"$persistentvolumeclaim\"})",
+                  "format": "table",
+                  "hide": false,
+                  "instant": true,
+                  "interval": "",
+                  "legendFormat": "__auto",
+                  "range": false,
+                  "refId": "A"
+                },
+                {
+                  "datasource": {
+                    "type": "prometheus",
+                    "uid": "${datasource}"
+                  },
+                  "editorMode": "code",
+                  "exemplar": false,
+                  "expr": "sum by (persistentvolumeclaim) (kubelet_volume_stats_capacity_bytes{job=\"kubelet\", metrics_path=\"/metrics\", namespace=~\".*\", persistentvolumeclaim=~\"$persistentvolumeclaim\"})\n-\nsum by (persistentvolumeclaim) (kubelet_volume_stats_available_bytes{job=\"kubelet\", metrics_path=\"/metrics\", namespace=~\".*\", persistentvolumeclaim=~\"$persistentvolumeclaim\"})",
+                  "format": "table",
+                  "hide": false,
+                  "instant": true,
+                  "legendFormat": "__auto",
+                  "range": false,
+                  "refId": "B"
+                },
+                {
+                  "datasource": {
+                    "type": "prometheus",
+                    "uid": "${datasource}"
+                  },
+                  "editorMode": "code",
+                  "exemplar": false,
+                  "expr": "(sum by (persistentvolumeclaim) (kubelet_volume_stats_capacity_bytes{job=\"kubelet\", metrics_path=\"/metrics\", namespace=~\".*\", persistentvolumeclaim=~\"$persistentvolumeclaim\"})\n-\nsum by (persistentvolumeclaim) (kubelet_volume_stats_available_bytes{job=\"kubelet\", metrics_path=\"/metrics\", namespace=~\".*\", persistentvolumeclaim=~\"$persistentvolumeclaim\"}))\n/\nsum by (persistentvolumeclaim) (kubelet_volume_stats_capacity_bytes{job=\"kubelet\", metrics_path=\"/metrics\", namespace=~\".*\", persistentvolumeclaim=~\"$persistentvolumeclaim\"}) * 100",
+                  "format": "table",
+                  "hide": false,
+                  "instant": true,
+                  "legendFormat": "__auto",
+                  "range": false,
+                  "refId": "C"
+                }
+              ],
+              "title": "Volume Capacity",
+              "transformations": [
+                {
+                  "id": "merge",
+                  "options": {}
+                },
+                {
+                  "id": "organize",
+                  "options": {
+                    "excludeByName": {
+                      "Time": true
+                    },
+                    "includeByName": {},
+                    "indexByName": {},
+                    "renameByName": {
+                      "Value #A": "Volume Capacity (GB)",
+                      "Value #B": "Volume Usage (GB)",
+                      "Value #C": "Volume Usage (%)",
+                      "persistentvolumeclaim": "Persistent Volume Claim"
+                    }
+                  }
+                }
+              ],
+              "type": "table"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "fieldConfig": {
+                "defaults": {
+                  "color": {
+                    "mode": "palette-classic"
+                  },
+                  "custom": {
+                    "axisBorderShow": false,
+                    "axisCenteredZero": false,
+                    "axisColorMode": "text",
+                    "axisLabel": "",
+                    "axisPlacement": "auto",
+                    "barAlignment": 0,
+                    "drawStyle": "line",
+                    "fillOpacity": 10,
+                    "gradientMode": "hue",
+                    "hideFrom": {
+                      "legend": false,
+                      "tooltip": false,
+                      "viz": false
+                    },
+                    "insertNulls": false,
+                    "lineInterpolation": "linear",
+                    "lineStyle": {
+                      "fill": "solid"
+                    },
+                    "lineWidth": 1,
+                    "pointSize": 3,
+                    "scaleDistribution": {
+                      "type": "linear"
+                    },
+                    "showPoints": "auto",
+                    "spanNulls": false,
+                    "stacking": {
+                      "group": "A",
+                      "mode": "none"
+                    },
+                    "thresholdsStyle": {
+                      "mode": "off"
+                    }
+                  },
+                  "links": [],
+                  "mappings": [],
+                  "thresholds": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "color": "green",
+                        "value": null
+                      },
+                      {
+                        "color": "red",
+                        "value": 80
+                      }
+                    ]
+                  },
+                  "unitScale": true
+                },
+                "overrides": []
+              },
+              "gridPos": {
+                "h": 10,
+                "w": 24,
+                "x": 0,
+                "y": 54
+              },
+              "id": 10,
+              "options": {
+                "legend": {
+                  "calcs": [
+                    "min",
+                    "max",
+                    "lastNotNull"
+                  ],
+                  "displayMode": "table",
+                  "placement": "right",
+                  "showLegend": true,
+                  "sortBy": "Max",
+                  "sortDesc": true
+                },
+                "tooltip": {
+                  "mode": "multi",
+                  "sort": "asc"
+                }
+              },
+              "pluginVersion": "10.3.1",
+              "targets": [
+                {
+                  "datasource": {
+                    "type": "prometheus",
+                    "uid": "${datasource}"
+                  },
+                  "editorMode": "code",
+                  "expr": "(sum by (persistentvolumeclaim) (kubelet_volume_stats_capacity_bytes{job=\"kubelet\", metrics_path=\"/metrics\", namespace=~\".*\", persistentvolumeclaim=~\"$persistentvolumeclaim\"})\n-\nsum by (persistentvolumeclaim) (kubelet_volume_stats_available_bytes{job=\"kubelet\", metrics_path=\"/metrics\", namespace=~\".*\", persistentvolumeclaim=~\"$persistentvolumeclaim\"}))\n/\nsum by (persistentvolumeclaim) (kubelet_volume_stats_capacity_bytes{job=\"kubelet\", metrics_path=\"/metrics\", namespace=~\".*\", persistentvolumeclaim=~\"$persistentvolumeclaim\"}) * 100",
+                  "hide": false,
+                  "instant": false,
+                  "legendFormat": "{{`{{persistentvolumeclaim}}`}}",
+                  "range": true,
+                  "refId": "B"
+                }
+              ],
+              "title": "Volume Usage",
+              "type": "timeseries"
+            }
+          ],
+          "title": "FMOP Stateful Services",
+          "type": "row"
+        }
+      ],
+      "refresh": "",
+      "schemaVersion": 39,
+      "tags": [],
+      "templating": {
+        "list": [
+          {
+            "current": {
+              "selected": false,
+              "text": "Prometheus",
+              "value": "Prometheus"
+            },
+            "hide": 0,
+            "includeAll": false,
+            "label": "Datasource",
+            "multi": false,
+            "name": "datasource",
+            "options": [],
+            "query": "prometheus",
+            "queryValue": "saas",
+            "refresh": 1,
+            "regex": "",
+            "skipUrlSync": false,
+            "type": "datasource"
+          },
+          {
+            "current": {
+              "selected": true,
+              "text": [
+                "All"
+              ],
+              "value": [
+                "$__all"
+              ]
+            },
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${datasource}"
+            },
+            "definition": "label_values(grpc_server_handled_total{instance=~\".*:15020\"},namespace)",
+            "hide": 0,
+            "includeAll": true,
+            "label": "FMOP Namespace",
+            "multi": true,
+            "name": "fmop_namespace",
+            "options": [],
+            "query": {
+              "qryType": 1,
+              "query": "label_values(grpc_server_handled_total{instance=~\".*:15020\"},namespace)",
+              "refId": "PrometheusVariableQueryEditor-VariableQuery"
+            },
+            "refresh": 2,
+            "regex": "",
+            "skipUrlSync": false,
+            "sort": 1,
+            "type": "query"
+          },
+          {
+            "current": {
+              "selected": true,
+              "text": [
+                "api-server"
+              ],
+              "value": [
+                "api-server"
+              ]
+            },
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${datasource}"
+            },
+            "definition": "label_values(container_memory_working_set_bytes{namespace=~\"$fmop_namespace\", container!~\"matrix|vault.*|keycloak|minio.*\"},container)",
+            "hide": 0,
+            "includeAll": true,
+            "label": "FMOP App Container",
+            "multi": true,
+            "name": "fmop_app_container",
+            "options": [],
+            "query": {
+              "qryType": 1,
+              "query": "label_values(container_memory_working_set_bytes{namespace=~\"$fmop_namespace\", container!~\"matrix|vault.*|keycloak|minio.*\"},container)",
+              "refId": "PrometheusVariableQueryEditor-VariableQuery"
+            },
+            "refresh": 2,
+            "regex": "",
+            "skipUrlSync": false,
+            "sort": 1,
+            "type": "query"
+          },
+          {
+            "current": {
+              "selected": true,
+              "text": [
+                "All"
+              ],
+              "value": [
+                "$__all"
+              ]
+            },
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${datasource}"
+            },
+            "definition": "label_values(istio_agent_go_info,lxp_version)",
+            "hide": 0,
+            "includeAll": true,
+            "label": "FMOP Release Version",
+            "multi": true,
+            "name": "fmop_release_version",
+            "options": [],
+            "query": {
+              "qryType": 1,
+              "query": "label_values(istio_agent_go_info,lxp_version)",
+              "refId": "PrometheusVariableQueryEditor-VariableQuery"
+            },
+            "refresh": 2,
+            "regex": "",
+            "skipUrlSync": false,
+            "sort": 1,
+            "type": "query"
+          },
+          {
+            "current": {
+              "selected": true,
+              "text": [
+                "keycloak"
+              ],
+              "value": [
+                "keycloak"
+              ]
+            },
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${datasource}"
+            },
+            "definition": "label_values(container_memory_working_set_bytes{container=~\"matrix|keycloak|vault|kafka|zookeeper|minio|elasticsearch|postgres|mongodb-primary|mongodb-secondary|mongodb-arbiter\"},container)",
+            "hide": 0,
+            "includeAll": true,
+            "label": "FMOP Stateful Container",
+            "multi": true,
+            "name": "fmop_stateful_container",
+            "options": [],
+            "query": {
+              "qryType": 1,
+              "query": "label_values(container_memory_working_set_bytes{container=~\"matrix|keycloak|vault|kafka|zookeeper|minio|elasticsearch|postgres|mongodb-primary|mongodb-secondary|mongodb-arbiter\"},container)",
+              "refId": "PrometheusVariableQueryEditor-VariableQuery"
+            },
+            "refresh": 2,
+            "regex": "",
+            "skipUrlSync": false,
+            "sort": 1,
+            "type": "query"
+          },
+          {
+            "allValue": ".*",
+            "current": {
+              "selected": true,
+              "text": [
+                "All"
+              ],
+              "value": [
+                "$__all"
+              ]
+            },
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${datasource}"
+            },
+            "definition": "label_values(kubelet_volume_stats_capacity_bytes,persistentvolumeclaim)",
+            "hide": 0,
+            "includeAll": true,
+            "label": "FMOP Stateful Persistent Volume",
+            "multi": true,
+            "name": "persistentvolumeclaim",
+            "options": [],
+            "query": {
+              "qryType": 1,
+              "query": "label_values(kubelet_volume_stats_capacity_bytes,persistentvolumeclaim)",
+              "refId": "PrometheusVariableQueryEditor-VariableQuery"
+            },
+            "refresh": 2,
+            "regex": "",
+            "skipUrlSync": false,
+            "sort": 1,
+            "type": "query"
+          },
+          {
+            "current": {
+              "selected": false,
+              "text": "15d",
+              "value": "15d"
+            },
+            "hide": 0,
+            "includeAll": false,
+            "label": "Min Interval",
+            "multi": false,
+            "name": "min_interval",
+            "options": [
+              {
+                "selected": false,
+                "text": "7d",
+                "value": "7d"
+              },
+              {
+                "selected": true,
+                "text": "15d",
+                "value": "15d"
+              },
+              {
+                "selected": false,
+                "text": "30d",
+                "value": "30d"
+              }
+            ],
+            "query": "7d,15d,30d",
+            "queryValue": "",
+            "skipUrlSync": false,
+            "type": "custom"
+          }
+        ]
+      },
+      "time": {
+        "from": "now-30d",
+        "to": "now"
+      },
+      "timepicker": {},
+      "timezone": "",
+      "title": "LXP / Resources by Release",
+      "uid": "lxp-resources-by-release",
+      "version": 2,
+      "weekStart": ""
+    }
+{{- end }}
+{{- end }}

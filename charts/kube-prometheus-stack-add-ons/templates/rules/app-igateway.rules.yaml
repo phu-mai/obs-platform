@@ -1,0 +1,111 @@
+{{- $kubeTargetVersion := default .Capabilities.KubeVersion.GitVersion .Values.kubeTargetVersionOverride }}
+{{- if and (semverCompare ">=1.14.0-0" $kubeTargetVersion) (semverCompare "<9.9.9-9" $kubeTargetVersion) .Values.defaultRules.rules.appIgateway }}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ template "kube-prometheus-stack-add-ons.fullname" . }}-app-igateway
+  namespace: {{ template "kube-prometheus-stack-add-ons.namespace" . }}
+  labels:
+{{ include "kube-prometheus-stack-add-ons.labels" . | indent 4 }}
+spec:
+  groups:
+    - name: imessage.rules
+      rules:
+        {{- if not (.Values.defaultRules.disabled.iMessageLargeFileAttachment | default false) }}
+        - alert: iMessageLargeFileAttachment
+          annotations:
+            summary: "The attachment file is larger than 25MB and will not be archived in the FMOP for the igateway {{`{{`}} $labels.domain {{`}}`}} company {{`{{`}} $labels.company_id {{`}}`}}"
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-imessagelargefileattachment"
+            {{- end }}
+          expr: increase((sum by (app,cluster,company_id,domain) (igateway_large_attachments) OR vector(0))[5m:]) > 0
+          for: 0m
+          labels:
+            severity: warning
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.iMessageRetryMessage | default false) }}
+        - alert: iMessageRetryMessage
+          annotations:
+            summary: "The FMOP failed to retry message for archiving in 20m for the igateway {{`{{`}} $labels.domain {{`}}`}} company {{`{{`}} $labels.company_id {{`}}`}}"
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-imessageretrymessage"
+            {{- end }}
+          expr: increase((sum by (app,cluster,company_id,domain) (igateway_retry_messages) OR vector(0))[5m:]) > 0
+          for: 20m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.iMessageRotationDisabled | default false) }}
+        - alert: iMessageRotationDisabled
+          annotations:
+            summary: "Rotation is disabled for igateway {{`{{`}} $labels.domain {{`}}`}}"
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-imessagerotationdisabled"
+            {{- end }}
+          expr: sum by (app,cluster,domain) (igateway_rotation) == 0
+          for: 60m
+          labels:
+            severity: warning
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.iMessageRotationStuck | default false) }}
+        - alert: iMessageRotationStuck
+          annotations:
+            summary: "Rotation is stuck for igateway {{`{{`}} $labels.domain {{`}}`}}"
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-imessagerotationstuck"
+            {{- end }}
+          expr: sum by (app,cluster,domain) (igateway_rotation_stuck) == 1
+          for: 15m
+          labels:
+            severity: warning
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+            {{- with .Values.defaultRules.extraLabels.l1Support }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.iGatewayUnauthorizedAccess | default false) }}
+        - alert: iGatewayUnauthorizedAccess
+          annotations:
+            summary: "An unauthorized user is accessing the Mac Instance {{`{{`}} $labels.instance {{`}}`}}."
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-iGatewayUnauthorizedAccess"
+            {{- end }}
+          expr: sum by (app, cluster, domain, instance, job) (igateway_unauthorized_access)  > 0
+          for: 0m
+          labels:
+            severity: warning
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.igatewayAgentSqliteDbCorrupted | default false) }}
+        - alert: igatewayAgentSqliteDbCorrupted
+          annotations:
+            summary: "iGateway Agent instance {{`{{`}} $labels.instance {{`}}`}} database sqlite has been corrupted."
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-igatewayagentsqlitedbcorrupted"
+            {{- end }}
+          expr: sum by (app, cluster, domain, instance, job) (igateway_agent_sqlite_db_corrupted)  > 0
+          for: 0m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+            {{- with .Values.defaultRules.extraLabels.l2Support }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+{{- end }}

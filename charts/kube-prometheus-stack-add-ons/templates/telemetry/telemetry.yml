@@ -1,0 +1,75 @@
+{{- range .Values.istioTelemetry.namespaces }}
+{{- if $.Capabilities.APIVersions.Has "telemetry.istio.io/v1alpha1" }}
+---
+apiVersion: telemetry.istio.io/v1alpha1
+kind: Telemetry
+metadata:
+  name: istio-proxy-override-metrics
+  namespace: {{ . }}
+  labels:
+{{ include "kube-prometheus-stack-add-ons.labels" $ | indent 4 }}
+spec:
+  metrics:
+    - providers:
+        - name: prometheus
+      overrides:
+        {{- range $.Values.istioTelemetry.nonTcpMetrics }}
+        - match:
+            metric: {{ . }}
+          tagOverrides:
+            destination_canonical_revision:
+              operation: REMOVE
+            destination_canonical_service:
+              operation: REMOVE
+            destination_cluster:
+              operation: REMOVE
+            destination_principal:
+              operation: REMOVE
+            destination_service_name:
+              operation: REMOVE
+            destination_service_namespace:
+              operation: REMOVE
+            destination_service:
+              operation: REMOVE
+            source_app:
+              operation: REMOVE
+            source_canonical_revision:
+              operation: REMOVE
+            source_canonical_service:
+              operation: REMOVE
+            source_cluster:
+              operation: REMOVE
+            source_principal:
+              operation: REMOVE
+            source_version:
+              operation: REMOVE
+        {{- end }}
+        {{- range $.Values.istioTelemetry.tcpMetrics }}
+        - match:
+            metric: {{ . }}
+          tagOverrides:
+            destination_canonical_revision:
+              operation: REMOVE
+            destination_canonical_service:
+              operation: REMOVE
+            destination_cluster:
+              operation: REMOVE
+            destination_principal:
+              operation: REMOVE
+            destination_service:
+              operation: REMOVE
+            source_app:
+              operation: REMOVE
+            source_canonical_revision:
+              operation: REMOVE
+            source_canonical_service:
+              operation: REMOVE
+            source_cluster:
+              operation: REMOVE
+            source_principal:
+              operation: REMOVE
+            source_version:
+              operation: REMOVE
+        {{- end }}
+{{- end }}
+{{- end }}

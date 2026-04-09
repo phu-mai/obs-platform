@@ -1,0 +1,166 @@
+{{- $kubeTargetVersion := default .Capabilities.KubeVersion.GitVersion .Values.kubeTargetVersionOverride }}
+{{- if and (semverCompare ">=1.14.0-0" $kubeTargetVersion) (semverCompare "<9.9.9-9" $kubeTargetVersion) .Values.defaultRules.rules.appTeam2bintegration }}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ template "kube-prometheus-stack-add-ons.fullname" . }}-app-team2bintegration
+  namespace: {{ template "kube-prometheus-stack-add-ons.namespace" . }}
+  labels:
+{{ include "kube-prometheus-stack-add-ons.labels" . | indent 4 }}
+spec:
+  groups:
+    - name: app-team2bintegration.rules
+      rules:
+        {{- if not (.Values.defaultRules.disabled.Teams2bRefreshSubscriptionWebhookFailed | default false) }}
+        - alert: Teams2bRefreshSubscriptionWebhookFailed
+          annotations:
+            summary: "teamstointegration service has failed refreshing subscription triggered webhook"
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-teams2brefreshsubscriptionwebhookfailed"
+            {{- end }}
+            description: |
+              This alert will be triggered when refreshing subscription triggered by webhook gets failed
+              Execute Prometheus query teams2b_refresh_subscription_result_total{app="teamstobintegration",success="false"} for more information
+          expr: increase((sum by (app,cluster,subscription_type,lxp_version) (teams2b_refresh_subscription_result_total{app="teamstobintegration",success="false"}) OR vector(0))[5m:]) > 0
+          for: 2m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.Teams2bIncomingTrafficDroppedWorkingDays | default false) }}
+        - alert: Teams2bIncomingTrafficDroppedWorkingDays
+          annotations:
+            summary: |
+              Teams incoming traffic dropped significantly. Current ratio compared to last week is {{ `{{` }} $value {{ `}}` }}.
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-teams2bincomingtrafficdropped"
+            {{- end }}
+            description: |
+              Teams incoming traffic has dropped more than 50% compared to the previous week
+          expr: |
+            (
+              (
+                sum(increase(teams2b_processed_incoming_message_result_total{message_type="chat_message",success="true"}[1d] offset 7d)) by (app,cluster,lxp_version)
+                /
+                sum(increase(teams2b_processed_incoming_message_result_total{message_type="chat_message",success="true"}[1d])) by (app,cluster,lxp_version)
+              )
+              and on() (0 < day_of_week() < 6)
+            ) > 1.5
+          for: 1h
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.Teams2bNoIncommingTrafficWorkingDays | default false) }}
+        - alert: Teams2bNoIncommingTrafficWorkingDays
+          annotations:
+            summary: |
+              There's no incoming traffic to Teams2b for the last 24 hours.
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-teams2bnoincomingtraffic"
+            {{- end }}
+            description: |
+              There's no incoming traffic to Teams2b service in the last 24 hours during working days.
+          for: 1d
+          expr: |
+            (
+              sum by (app,cluster,lxp_version)
+              (
+                increase(teams2b_processed_incoming_message_result_total{message_type="chat_message",success="true"}[5m])
+              ) and on() (0 < day_of_week() < 6)
+            ) == 0
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.Teams2bOutgoingTrafficDroppedWorkingDays | default false) }}
+        - alert: Teams2bOutgoingTrafficDroppedWorkingDays
+          annotations:
+            summary: |
+              Teams outgoing traffic dropped significantly. Current ratio compared to last week is {{ `{{` }} $value {{ `}}` }}.
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-teams2boutgoingtrafficdropped"
+            {{- end }}
+            description: |
+              Teams outgoing traffic has dropped more than 50% compared to the previous week
+          expr: |
+            (
+              (
+                sum(increase(teams2b_message_from_client_delivered_result_total{app="teamstobintegration"}[1d] offset 7d)) by (app,cluster,lxp_version) /
+                sum(increase(teams2b_message_from_client_delivered_result_total{app="teamstobintegration"}[1d])) by (app,cluster,lxp_version)
+              ) and on() (0 < day_of_week() < 6)
+            ) > 1.5
+          for: 1h
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.Teams2bNoOutgoingTrafficWorkingDays | default false) }}
+        - alert: Teams2bNoOutgoingTrafficWorkingDays
+          annotations:
+            summary: |
+              There's no outgoing traffic to Teams2b for the last 24 hours.
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-teams2bnooutgoingtrafficworkingdays"
+            {{- end }}
+            description: |
+              There's no outgoing traffic to Teams2b service in the last 24 hours during working days.
+          for: 1d
+          expr: |
+            (
+              sum by (app,cluster,lxp_version)
+              (
+                increase(teams2b_message_from_client_delivered_result_total{app="teamstobintegration"}[5m])
+              ) and on() (0 < day_of_week() < 6)
+            ) == 0
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        # {{- if not (.Values.defaultRules.disabled.Teams2bRefreshSubscriptionCronJobFailed | default false) }}
+        # - alert: Teams2bRefreshSubscriptionCronJobFailed
+        #   annotations:
+        #     summary: "teamstointegration service has failed refreshing subscription triggered cronjob"
+        #     {{- if .Values.runbook.enabled }}
+        #     runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-teams2brefreshsubscriptioncronjobfailed"
+        #     {{- end }}
+        #     description: |
+        #       This alert will be triggered when refreshing subscription triggered by cronjob gets failed
+        #       Execute Prometheus query teams2b_refresh_subscription_result_total{app="teamstobintegration",success="false"} for more information
+        #   expr: increase((sum by (app,cluster,lxp_version) (teams2b_handling_subscription_result_total{app="teamstobintegration",success="false",is_first_time="true"}) OR vector(0))[5m:]) > 0
+        #   for: 2m
+        #   labels:
+        #     severity: warning
+        #     {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+        #     {{- toYaml . | nindent 12 }}
+        #     {{- end }}
+
+        # - alert: Teams2bRefreshSubscriptionCronJobFailed
+        #   annotations:
+        #     summary: "teamstointegration service has failed refreshing subscription triggered cronjob"
+        #     {{- if .Values.runbook.enabled }}
+        #     runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-teams2brefreshsubscriptioncronjobfailed"
+        #     {{- end }}
+        #     description: |
+        #       This alert will be triggered when refreshing subscription triggered by cronjob gets failed
+        #       Execute Prometheus query teams2b_refresh_subscription_result_total{app="teamstobintegration",success="false"} for more information
+        #   expr: increase((sum by (app,cluster,lxp_version) (teams2b_handling_subscription_result_total{app="teamstobintegration",success="false",is_first_time="false"}) OR vector(0))[5m:]) > 0
+        #   for: 2m
+        #   labels:
+        #     severity: critical
+        #     {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+        #     {{- toYaml . | nindent 12 }}
+        #     {{- end }}
+        # {{- end }}
+{{- end }}

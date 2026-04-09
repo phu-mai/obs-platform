@@ -1,0 +1,40 @@
+{{- if .Values.probeHttp.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: Probe
+metadata:
+  name: {{ template "prometheus-blackbox-exporter.fullname" . }}-probe-http
+  namespace: {{ template "prometheus-blackbox-exporter.namespace" . }}
+  labels:
+    {{- include "prometheus-blackbox-exporter.labels" . | nindent 4 }}
+    observability: prometheus-operator
+spec:
+  jobName: monitoring/blackbox-exporter/http
+  interval: 30s
+  module: http_2xx_3xx_4xx
+  prober:
+    url: prometheus-blackbox-exporter:9115
+    scheme: http
+    path: /probe
+  targets:
+    staticConfig:
+      static: {{ toYaml .Values.probeHttp.targets | nindent 8 }}
+      relabelingConfigs:
+        - sourceLabels: [__param_module]
+          targetLabel: module
+          action: replace
+        - sourceLabels: [__address__]
+          separator: ;
+          regex: (.*)
+          targetLabel: probe_instance
+          replacement: $1
+          action: replace
+        - sourceLabels: [instance]
+          separator: ;
+          regex: (.*)
+          targetLabel: target
+          replacement: $1
+          action: replace
+        - sourceLabels: []
+          regex: "probe_instance|instance"
+          action: labeldrop
+{{- end }}

@@ -1,0 +1,195 @@
+{{- $kubeTargetVersion := default .Capabilities.KubeVersion.GitVersion .Values.kubeTargetVersionOverride }}
+{{- if and (semverCompare ">=1.14.0-0" $kubeTargetVersion) (semverCompare "<9.9.9-9" $kubeTargetVersion) .Values.defaultRules.rules.featureDataRetention }}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ template "kube-prometheus-stack-add-ons.fullname" . }}-feature-data-retention
+  namespace: {{ template "kube-prometheus-stack-add-ons.namespace" . }}
+  labels:
+{{ include "kube-prometheus-stack-add-ons.labels" . | indent 4 }}
+spec:
+  groups:
+    - name: feature-data-retention.rules
+      rules:
+        {{- if not (.Values.defaultRules.disabled.AuditDataRetentionIsDelayed | default false) }}
+        - alert: AuditDataRetentionIsDelayed
+          annotations:
+            summary: "Audit data retention is delayed on tenant {{`{{`}} $labels.tenantId{{`}}`}}."
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-auditexportrunfailed"
+            {{- end }}
+            description: |
+              This alert will be triggered when audit service has delay data retention.
+          expr: sum by (app,cluster,tenantId) (audit_data_retention_is_alert_delay{app="audit"}) > 0
+          for: 0m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.AuditDataRetentionJobFailed | default false) }}
+        - alert: AuditDataRetentionJobFailed
+          annotations:
+            summary: "Audit data retention has failed job."
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-auditdataretentionjobfailed"
+            {{- end }}
+            description: |
+              This alert will be triggered when audit data retention job is failed with exception {{`{{`}} $labels.exception {{`}}`}}
+              Execute this PromQL query to verify audit_data_retention_job_status_total{app="audit",status="false"}
+              You will find trigger method and tenantId there.
+              Need to query Mongo collection DBJobRetentionStatus for details.
+          expr: increase((sum by (app,cluster,tenantId,dataType,trigger,exception) (audit_data_retention_job_status_total{app="audit",status="false"}) OR vector(0))[5m:]) > 0
+          for: 2m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.AuditDataRetentionJobPartiallyFailed | default false) }}
+        - alert: AuditDataRetentionJobPartiallyFailed
+          annotations:
+            summary: "Audit data retention has failed job."
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-auditdataretentionjobpartiallyfailed"
+            {{- end }}
+            description: |
+              This alert will be triggered when audit data retention job is partially failed with exception {{`{{`}} $labels.exception {{`}}`}}
+              Execute this PromQL query to verify audit_data_retention_job_status_total{app="audit",status="partially_failed"}
+              You will find trigger method and tenantId there.
+              Need to query Mongo collection DBJobRetentionStatus for details.
+          expr: increase((sum by (app,cluster,tenantId,dataType,trigger,exception) (audit_data_retention_job_status_total{app="audit",status="partially_failed"}) OR vector(0))[5m:]) > 0
+          for: 2m
+          labels:
+            severity: warning
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.AuditDataRetentionPendingJobs | default false) }}
+        - alert: AuditDataRetentionPendingJobs
+          annotations:
+            summary: |
+              This alert will be triggered when audit data retention has pending jobs with specified dataType.
+              Execute this PromQL query to verify audit_data_retention_pending_queue_stuck_total{app="audit"}.
+              You will find dataType method and tenantId there.
+              Need to check audit job receiver and audit worker instances for any errors.
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-auditdataretentionpendingjobs"
+            {{- end }}
+            description: |
+              This alert will be triggered when audit data retention has pending jobs.
+              Need to check audit job receiver and audit worker instances for any errors.
+          expr: increase((sum by (app,cluster,dataType,tenantId) (audit_data_retention_pending_queue_stuck_total{app="audit"}) OR vector(0))[5m:]) > 0
+          for: 2m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.AuditDataRetentionMediaFileDeletionFailed | default false) }}
+        - alert: AuditDataRetentionMediaFileDeletionFailed
+          annotations:
+            summary: |
+              This alert will be triggered when audit data retention has minio file deletion failure.
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-auditdataretentionmediafiledeletionfailed"
+            {{- end }}
+          expr: increase((sum by (app,cluster) (audit_minio_file_delete_total{app="audit",success="false"}) OR vector(0))[5m:]) > 0
+          for: 2m
+          labels:
+            severity: warning
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.SearchDataRetentionDocsDeletionFailed | default false) }}
+        - alert: SearchDataRetentionDocsDeletionFailed
+          annotations:
+            summary: |
+              This alert will be triggered when search service has document deletion failure with error {{`{{`}} $labels.error {{`}}`}}
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-searchdataretentiondocsdeletionfailed"
+            {{- end }}
+          expr: increase((sum by (app,cluster,error) (search_delete_es_document_request_total{app="search",success="false"}) OR vector(0))[5m:]) > 0
+          for: 2m
+          labels:
+            severity: warning
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.ProxymessagingDataRetentionPurgeMartrixRoomFailed | default false) }}
+        - alert: ProxymessagingDataRetentionPurgeMartrixRoomFailed
+          annotations:
+            summary: |
+              This alert will be triggered when search service has document deletion failure with error {{`{{`}} $labels.error {{`}}`}}
+              on tenant {{`{{`}} $labels.tenant {{`}}`}}
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-proxymessagingdataretentionpurgemartrixroomfailed"
+            {{- end }}
+          expr: increase((sum by (app,cluster,error,tenant) (proxymessaging_purge_matrix_room_history_request_total{app="proxymessaging",success="false"}) OR vector(0))[5m:]) > 0
+          for: 2m
+          labels:
+            severity: warning
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.AuditDataRetentionMatrixRoomPurgeFailed | default false) }}
+        - alert: AuditDataRetentionMatrixRoomPurgeFailed
+          annotations:
+            summary: |
+              This alert will be triggered when audit service attemps to make
+              synapse purge to get purge job status with error {{`{{`}} $labels.error {{`}}`}} on tenant {{`{{`}} $labels.tenantId {{`}}`}} with
+              room ID {{`{{`}} $labels.matrixRoomId {{`}}`}}
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-auditdataretentionsearchdocsdeletionfailed"
+            {{- end }}
+          expr: increase((sum by (app,cluster,error,matrixRoomId,tenantId) (audit_poll_matrix_room_purge_attempts_total{app="audit",success="false"}) OR vector(0))[5m:]) > 0
+          for: 2m
+          labels:
+            severity: warning
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.AuditDataRetentionDeleteEntityFailed | default false) }}
+        - alert: AuditDataRetentionDeleteEntityFailed
+          annotations:
+            summary: |
+              This alert will be triggered when audit service failed to delete entity on tenantId {{`{{`}} $labels.tenantId {{`}}`}}
+              with error message {{`{{`}} $labels.error {{`}}`}}
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-auditdataretentiondeleteentityfailed"
+            {{- end }}
+          expr: increase((sum by (app,cluster,tenantId,error) (audit_data_retention_delete_entity_api_requests_total{app="audit",success="false"}) OR vector(0))[5m:]) > 0
+          for: 2m
+          labels:
+            severity: warning
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.ProxymessagingDataRetentionRedactEventFailed | default false) }}
+        - alert: ProxymessagingDataRetentionRedactEventFailed
+          annotations:
+            summary: |
+              This alert will be triggered when proxymessaging service failed to redact event to matrix
+              on tenantId {{`{{`}} $labels.tenantId {{`}}`}} with error message {{`{{`}} $labels.error {{`}}`}}
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-proxymessagingdataretentionredacteventfailed"
+            {{- end }}
+          expr: increase((sum by (app,cluster,tenant,error) (proxymessaging_redact_room_event_request_total{app="proxymessaging",success="false"}) OR vector(0))[5m:]) > 0
+          for: 2m
+          labels:
+            severity: warning
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+{{- end }}

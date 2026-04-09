@@ -1,0 +1,700 @@
+# ---------------------------------------------
+prometheusAzureMetricsExporter:
+  enabled: false
+
+prometheus-azure-metrics-exporter:
+  fullnameOverride: prometheus-azure-metrics-exporter
+
+  service:
+    type: ClusterIP
+    port: 8080
+
+  extraEnv:
+    - name: AZURE_CLIENT_ID
+      value: "azure_client_id"
+    - name: AZURE_TENANT_ID
+      value: "azure_tenant_id"
+    - name: AZURE_CLIENT_SECRET
+      value: "azure_client_secret"
+    - name: AZURE_SUBSCRIPTION_ID
+      value: "azure_subscription_id"
+
+  resources:
+    requests:
+      cpu: 1m
+      memory: 1Mi
+    limits:
+      cpu: 1000m
+      memory: 3Gi
+
+  podMonitor:
+    podMetricsEndpoints:
+      services:
+        azureMetricsPostgresFlexible:
+          enabled: false
+        azureMetricsEventHub:
+          enabled: false
+        azureMetricsCacheRedis:
+          enabled: false
+        azureMetricsCosmoMongodb:
+          enabled: false
+        azureFrontdoor:
+          enabled: true
+# ---------------------------------------------
+kubePrometheusStack:
+  enabled: true
+# ---------------------------------------------
+kube-prometheus-stack:
+  fullnameOverride: kube-prometheus-stack
+
+  whatsappMonitor:
+    enabled: true
+    staticTargets: []
+
+  mimirRemoteWrite:
+    enabled: true
+
+  defaultRules:
+    disabled:
+      KubePersistentVolumeFillingUp: true
+      NodeFilesystemSpaceFillingUp: true
+      NodeFilesystemAlmostOutOfSpace: true
+    additionalRuleGroupLabels: {}
+
+  alertmanager:
+    alertmanagerSpec:
+      storage:
+        volumeClaimTemplate:
+          spec:
+            storageClassName: standard
+      resources:
+        requests:
+          cpu: 1m
+          memory: 1Mi
+        limits:
+          cpu: 1000m
+          memory: 3Gi
+    config:
+      global:
+        resolve_timeout: 5m
+      route:
+        group_by:
+          - alertname
+          - severity
+        group_wait: 30s
+        group_interval: 5m
+        repeat_interval: 12h
+        receiver: slack
+        routes:
+          - receiver: "null"
+            match:
+              alertname: Watchdog
+          - receiver: slack
+      receivers:
+        - name: slack
+          slack_configs:
+            - api_url: https://slack.hook.fake.url
+              channel: '#leapxpert_slack_channel'
+              send_resolved: true
+              username: AlertManager - DEV {{ .Status | toUpper }}
+              color: '{{ if eq .Status "firing" }}danger{{ else }}good{{ end }}'
+              icon_emoji: '{{ template "slack.emoji" . }}'
+              icon_url: ""
+              title: '{{ template "slack.title" . }}'
+              title_link: ""
+              pretext: ""
+              text: |-
+                {{ range .Alerts }}
+                  *Summary:* {{ .Annotations.summary }}
+                  *Description:* {{ .Annotations.description }}
+                  *Details:*
+                  {{ range .Labels.SortedPairs }} • *{{ .Name }}:* `{{ .Value }}`
+                  {{ end }}
+                {{ end }}
+        - name: "null"
+      templates:
+        - /etc/alertmanager/config/*.tpl
+
+  prometheusOperator:
+    resources:
+      requests:
+        cpu: 1m
+        memory: 1Mi
+      limits:
+        cpu: 1000m
+        memory: 3Gi
+
+  prometheus:
+    enabled: true
+    prometheusSpec:
+      remoteWrite:
+        - url: https://monitoring.obs.leapxpert.io/api/v1/push
+          headers:
+            X-Scope-OrgID: lxp-ci
+          basicAuth:
+            username:
+              name: kube-prometheus-stack-mimir-auth-secret
+              key: username
+            password:
+              name: kube-prometheus-stack-mimir-auth-secret
+              key: password
+      remoteWriteDashboards: true
+      resources:
+        requests:
+          cpu: 1m
+          memory: 1Mi
+        limits:
+          cpu: 1000m
+          memory: 3Gi
+      storageSpec:
+        volumeClaimTemplate:
+          spec:
+            accessModes:
+              - ReadWriteOnce
+            storageClassName: standard
+      additionalScrapeConfigAppendix: ""
+      awsNodeExporter:
+        - accountId: '000000000000'
+          region: ap-southeast-1
+          accessKey: 000000000000_access_key
+          secretKey: 000000000000_secret_key
+        - accountId: '000000000001'
+          region: ap-southeast-2
+          accessKey: 000000000001_access_key
+          secretKey: 000000000001_secret_key
+      dcNodeExporter:
+        basicAuth:
+          username: example_user
+          password: example_password
+        cluster: lxp-ci
+      certManager:
+        enabled: true
+        namespace: cert-manager
+      externalLabels:
+        cluster: test-cluster-scope
+
+  grafana:
+    adminPassword: random_password
+    persistence:
+      storageClassName: standard
+    resources:
+      requests:
+        cpu: 1m
+        memory: 1Mi
+      limits:
+        cpu: 1000m
+        memory: 3Gi
+    env:
+      GF_AUTH_GITHUB_CLIENT_SECRET: sample_github_client_secret
+    grafana.ini:
+      dashboards:
+        default_home_dashboard_path: /tmp/dashboards/k8s-resources-cluster.json
+      server:
+        root_url: https://sample.domain/grafana/
+        domain: sample.domain
+        serve_from_sub_path: true
+      users:
+        viewers_can_edit: true
+      auth.github:
+        enabled: true
+        client_id: sample_github_client_id
+        client_secret: sample_github_client_secret
+        auth_url: https://github.com/login/oauth/authorize
+        token_url: https://github.com/login/oauth/access_token
+        allow_sign_up: true
+        scopes: user:email, read:org
+        allowed_organizations: LeapXpert
+      auth.basic:
+        enabled: true
+    istio:
+      domains:
+        - ops.domain.local
+
+  kube-state-metrics:
+    resources:
+      requests:
+        cpu: 1m
+        memory: 1Mi
+      limits:
+        cpu: 1000m
+        memory: 3Gi
+
+  prometheus-node-exporter:
+    resources:
+      requests:
+        cpu: 1m
+        memory: 1Mi
+      limits:
+        cpu: 1000m
+        memory: 3Gi
+# ---------------------------------------------
+kubePrometheusStackAddOns:
+  enabled: true
+# ---------------------------------------------
+kube-prometheus-stack-add-ons:
+  fullnameOverride: kube-prometheus-stack-add-ons
+  runbook:
+    enabled: true
+  defaultRules:
+    rules:
+      appMethodExecution: true
+      appApiServer: true
+      appAudit: true
+      appIgateway: true
+      appAuthentication: true
+      appCustomermodelsync: true
+      appErrorLogs: true
+      appImessageArchivingIntegration: true
+      appSmsIntegration: true
+      appTeam2bintegration: true
+      appWechatIntegration: true
+      appWechatMiniappIntegration: true
+      appWecomIntegration: true
+      appWhatsappArchivedGateway: true
+      appWhatsappNativeIntegration: true
+      appWhatsappintegrationArchived: true
+      featureDataRetention: true
+      internalAdditionalKubeStateMetrics: true
+      internalKubernetesResources: true
+      internalKubernetesStorage: true
+      internalNodeExporter: true
+      prometheus: true
+    extraLabels:
+      l1Support:
+        team: l1-support
+      l2Support:
+        team: l2-support
+      devopsSupport:
+        team: devops-support
+  namespaceSelector:
+    istiod:
+      enabled: true
+      namespace: istio-system
+    kafka:
+      enabled: true
+      namespace: default
+    synapse:
+      enabled: true
+      namespace: default
+    vault:
+      enabled: true
+      namespace: default
+    velero:
+      enabled: true
+      namespace: velero
+
+  dashboardsSelector:
+    elasticsearch:
+      enabled: true
+    logging:
+      enabled: true
+    lxpAzureMetrics:
+      enabled: true
+    lxpCore:
+      enabled: true
+    lxpCloudwatchMetrics:
+      enabled: true
+    lxpData:
+      enabled: true
+    lxpIstio:
+      enabled: true
+    lxpKafka:
+      enabled: false
+    matrix:
+      enabled: true
+    slo:
+      enabled: true
+    velero:
+      enabled: true
+
+  istioTelemetry:
+    namespaces:
+      - lxp-core
+      - lxp-integration
+# ---------------------------------------------
+loki:
+  enabled: true
+  namespaceOverride: logging
+  resources:
+    requests:
+      cpu: 1m
+      memory: 1Mi
+    limits:
+      cpu: 1000m
+      memory: 3Gi
+
+# ---------------------------------------------
+lokiLegacy:
+  enabled: false
+# ---------------------------------------------
+loki-legacy:
+  enabled: true
+  fullnameOverride: observability-loki-legacy
+  namespaceOverride: logging
+  resources:
+    requests:
+      cpu: 1m
+      memory: 1Mi
+    limits:
+      cpu: 1000m
+      memory: 3Gi
+  serviceAccount:
+    name: observability-loki-legacy
+# ---------------------------------------------
+opentelemetryCollector:
+  enabled: true
+# ---------------------------------------------
+opentelemetry-collector:
+  namespaceOverride: tracing
+  resources:
+    requests:
+      cpu: 1m
+      memory: 1Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+# ---------------------------------------------
+prometheusBlackboxExporter:
+  enabled: true
+# ---------------------------------------------
+prometheus-blackbox-exporter:
+  fullnameOverride: prometheus-blackbox-exporter
+  replicas: 1
+  resources:
+    requests:
+      cpu: 1m
+      memory: 1Mi
+    limits:
+      cpu: 1000m
+      memory: 3Gi
+  probeHttp:
+    enabled: true
+    targets:
+      - https://api.leapxpert.dev
+      - https://mail.leapxpert.dev
+      - https://matrix.leapxpert.dev/_matrix/client/versions
+      - https://minio-public.leapxpert.dev/minio/login
+      - https://minio.leapxpert.dev/minio/login
+      - https://ops.leapxpert.dev/auth
+      - https://ops.leapxpert.dev/mongo
+      - https://ops.leapxpert.dev/mockserver/dashboard
+      - https://ops.leapxpert.dev/grafana
+      - https://ops.leapxpert.dev/kiali
+      - https://ops.leapxpert.dev/whatsapp/85252106916/
+      - https://org-admin.leapxpert.dev
+      - https://public.leapxpert.dev
+      - https://site-admin.leapxpert.dev
+      - https://start.leapxpert.dev
+      - https://web.leapxpert.dev
+# ---------------------------------------------
+grafana-agent:
+  agent:
+    common:
+      tolerations:
+        - effect: NoSchedule
+          key: node-role.kubernetes.io/master
+          operator: Exists
+        - effect: NoSchedule
+          key: node-role.kubernetes.io/control-plane
+          operator: Exists
+        - effect: NoSchedule
+          key: dedicated
+          operator: Equal
+          value: voip-edge
+    static:
+      daemonset:
+        enabled: true
+        logsClientsConfig:
+          remoteWriteConfig:
+            - url: http://loki:3100/loki/api/v1/push
+              basic_auth:
+                password: bar
+                username: foo
+              external_labels:
+                cluster: cluster-name
+              tenant_id: tenant-id
+          additionalLogsConfigs:
+            - job_name: syslog
+              syslog:
+                listen_address: 0.0.0.0:1514
+                labels:
+                  job: syslog
+              relabel_configs:
+                - source_labels: [__syslog_message_hostname]
+                  target_label: host
+                - source_labels: [__syslog_message_severity]
+                  target_label: level
+                - source_labels: [__syslog_message_app_name]
+                  target_label: app
+                - source_labels: [__syslog_connection_hostname]
+                  target_label: node_name
+        tracesClientsConfig:
+          remoteWriteConfig:
+            - endpoint: tempo.tracing:4317
+              headers:
+                x-scope-orgid: lxp-ci
+                authorization: Basic example_token
+              sending_queue:
+                num_consumers: 4
+                queue_size: 100
+              retry_on_failure:
+                enabled: true
+                initial_interval: 10s
+                max_interval: 60s
+                max_elapsed_time: 10m
+          additionalTracesReceiverConfigs:
+            otlp/2:
+              protocols:
+                grpc:
+                  endpoint: 0.0.0.0:55690
+        metricsClientsConfig:
+          enabled: true
+        integrationsConfig:
+          frontendMonitoring:
+            enabled: true
+            corsAllowedOrigins:
+              - web.am.example.local
+              - org.admin.example.local
+            istioIngress:
+              namespace: istio-system
+              domains:
+                - ops-fd.example.local
+            rateLimiting:
+              burstiness: 100
+              enabled: true
+              rps: 100
+          additionalIntegrationsConfigs:
+            eventhandler:
+              cache_path: /etc/eventhandler/eventhandler.cache
+      statefulset:
+        enabled: true
+        mode: static
+        extraArgs:
+          - -enable-features=integrations-next
+        enableReporting: false
+        logsClientsConfig:
+          remoteWriteConfig:
+            - url: http://loki:3100/loki/api/v1/push
+              basic_auth:
+                password: bar
+                username: foo
+              external_labels:
+                cluster: cluster-name
+              tenant_id: tenant-id
+        snmpMonitoring:
+          enabled: false
+          config:
+            snmpTargets:
+              - name: sbc
+                address: random_ip
+                auth: public_v3
+                module: module_name
+                walk_params: private
+        volumes:
+          extra:
+            - name: queue-volume
+              hostPath:
+                path: /tmp/agent
+        mounts:
+          varlog: true
+          extra:
+            - name: queue-volume
+              mountPath: /tmp/agent
+        resources:
+          limits:
+            cpu: 200m
+            memory: 256Mi
+          requests:
+            cpu: 100m
+            memory: 128Mi
+        volumeClaimTemplates:
+          - metadata:
+              name: data
+            spec:
+              accessModes: [ "ReadWriteOnce" ]
+              storageClassName: standard
+              resources:
+                requests:
+                  storage: 1Gi
+    flow:
+      daemonset:
+        pyroScopeClientsConfig:
+          username: sample_username
+          password: sample_password
+          cluster: lxp-ci
+  service:
+    static:
+      statefulset:
+        enabled: true
+    flow:
+      daemonset:
+        enabled: true
+  serviceMonitor:
+    static:
+      statefulset:
+        enabled: true
+        additionalLabels:
+          observability: prometheus-operator
+# ---------------------------------------------
+prometheusCloudwatchExporter:
+  enabled: true
+# ---------------------------------------------
+prometheus-cloudwatch-exporter:
+  fullnameOverride: prometheus-cloudwatch-exporter
+  region: ap-southeast-1
+  period_seconds: 300
+  services:
+    docdb:
+      enabled: true
+    elasticache:
+      enabled: true
+    rds:
+      enabled: true
+    msk:
+      enabled: true
+    opensearch:
+      enabled: true
+  aws:
+    aws_secret_access_key: random_secret_access_key
+    aws_access_key_id: random_access_key_id
+# ---------------------------------------------
+prometheusMongodbExporter:
+  enabled: true
+# ---------------------------------------------
+prometheus-mongodb-exporter:
+  fullnameOverride: prometheus-mongodb-exporter
+  existingSecret:
+    name: "mongodb-exporter"
+    key: "mongodb-uri"
+  resources:
+    requests:
+      cpu: 1m
+      memory: 1Mi
+    limits:
+      cpu: 1000m
+      memory: 3Gi
+
+# ---------------------------------------------
+prometheusElasticsearchExporter:
+  enabled: true
+# ---------------------------------------------
+prometheus-elasticsearch-exporter:
+  fullnameOverride: prometheus-elasticsearch-exporter
+  resources:
+    requests:
+      cpu: 1m
+      memory: 1Mi
+    limits:
+      cpu: 1000m
+      memory: 3Gi
+  extraEnvSecrets:
+    ES_PASSWORD:
+      secret: elasticsearch
+      key: ELASTIC_PASSWORD
+  secretStore:
+    enabled: true
+# ---------------------------------------------
+promtail:
+  enabled: true
+  namespaceOverride: logging
+  config:
+    clients:
+      - url: http://observability-loki:3100/loki/api/v1/push
+        tenant_id: tenant-id
+        external_labels:
+          cluster: cluster-name
+        basic_auth:
+          username: foo
+          password: bar
+  resources:
+    requests:
+      cpu: 1m
+      memory: 1Mi
+    limits:
+      cpu: 1000m
+      memory: 3Gi
+# ---------------------------------------------
+tempo:
+  enabled: true
+  namespaceOverride: tracing
+  tempo:
+    metricsGenerator:
+      enabled: true
+    resources:
+      requests:
+        cpu: 1m
+        memory: 1Mi
+      limits:
+        cpu: 1000m
+        memory: 3Gi
+  tempoQuery:
+    resources:
+      requests:
+        cpu: 1m
+        memory: 1Mi
+      limits:
+        cpu: 1000m
+        memory: 3Gi
+# ---------------------------------------------
+jaeger:
+  enabled: true
+  namespaceOverride: tracing
+  persistence:
+    enabled: true
+    storageClassName: standard
+    accessModes:
+      - ReadWriteOnce
+    size: 1Gi
+  resources:
+    requests:
+      cpu: 1m
+      memory: 1Mi
+    limits:
+      cpu: 1000m
+      memory: 3Gi
+
+# ---------------------------------------------
+prometheusAwsSnapshotsChecker:
+  enabled: true
+
+prometheus-aws-snapshots-checker:
+  aws:
+    region: us-west-2
+    secrets:
+      awsAccessKeyId: randomAwsAccessKeyId
+      awsSecretAccessKey: randomAwsSecretAccessKeyI
+
+# ---------------------------------------------
+whatsappVersionExporter:
+  enabled: true
+
+# ---------------------------------------------
+prometheusEventhubsExporter:
+  enabled: true
+
+# ---------------------------------------------
+prometheusKafkaExporter:
+  enabled: false
+
+prometheus-kafka-exporter:
+  kafkaServer:
+    # Azure Event Hubs Namespace
+    - example-namespace.servicebus.windows.net:9093
+    # AWS MSK via headless service
+    - kafka-headless.lxp-data.svc.cluster.local:9092
+  # This block is only required for Azure Event Hubs
+  kafkaBrokerVersion: "1.0.0"
+  tls:
+    enabled: true
+    insecureSkipVerify: true
+  sasl:
+    enabled: true
+    handshake: false
+    scram:
+      enabled: true
+      mechanism: plain
+      username: example_user
+      password: example_password
+# ---------------------------------------------
+prometheusNosqlExporter:
+  enabled: true

@@ -1,0 +1,98 @@
+{{- $kubeTargetVersion := default .Capabilities.KubeVersion.GitVersion .Values.kubeTargetVersionOverride }}
+{{- if and (semverCompare ">=1.14.0-0" $kubeTargetVersion) (semverCompare "<9.9.9-9" $kubeTargetVersion) .Values.defaultRules.rules.imessageMacInstance }}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ template "kube-prometheus-stack-add-ons.fullname" . }}-imessage-node-exporter
+  namespace: {{ template "kube-prometheus-stack-add-ons.namespace" . }}
+  labels:
+{{ include "kube-prometheus-stack-add-ons.labels" . | indent 4 }}
+spec:
+  groups:
+    - name: imessage-node-exporter.rules
+      rules:
+        {{- if not (.Values.defaultRules.disabled.MacInstanceDown1H | default false) }}
+        - alert: MacInstanceDown1H
+          annotations:
+            summary: |
+              The Mac instance ID {{`{{`}} $labels.instance {{`}}`}} belongs to AWS Account ID {{`{{`}} $labels.aws_account_id {{`}}`}} in region {{`{{`}} $labels.region {{`}}`}}
+              with public IP {{`{{`}} $labels.public_ip {{`}}`}} mapped {{`{{`}} $labels.domain {{`}}`}} has been down for 1 hour.
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-macinstancedown1h"
+            {{- end }}
+          expr: up{job="node-exporter", sysname="Darwin"} == 0
+          for: 1h
+          labels:
+            severity: warning
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+            {{- with .Values.defaultRules.extraLabels.l1Support }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.MacInstanceDownTimes1D | default false) }}
+        - alert: MacInstanceDownTimes1D
+          annotations:
+            summary: |
+              The Mac instance ID {{`{{`}} $labels.instance {{`}}`}} belongs to AWS Account ID {{`{{`}} $labels.aws_account_id {{`}}`}} in region {{`{{`}} $labels.region {{`}}`}}
+              with public IP {{`{{`}} $labels.public_ip {{`}}`}} mapped {{`{{`}} $labels.domain {{`}}`}} has been down {{`{{`}} $value {{`}}`}} times for the last 1 day.
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-macinstancedowntimes1d"
+            {{- end }}
+          expr: changes(up{job="node-exporter", sysname="Darwin"}[1d]) - resets(up{job="node-exporter", sysname="Darwin"}[1d]) > 3
+          labels:
+            severity: warning
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.MacInstanceCpuHigh | default false) }}
+        - alert: MacInstanceCpuHigh
+          annotations:
+            description: |
+              iMessage Mac instance {{`{{`}} $labels.instance {{`}}`}} belonging AWS Account ID {{`{{`}} $labels.aws_account_id {{`}}`}} in region {{`{{`}} $labels.region {{`}}`}}
+              with public IP {{`{{`}} $labels.public_ip {{`}}`}} mapped {{`{{`}} $labels.domain {{`}}`}}
+              has CPU usage {{`{{`}} printf "%.2f" $value {{`}}`}}%.
+            summary: Instance CPU usage is higher than 80%.
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-macinstancecpuhigh"
+            {{- end }}
+          expr: |-
+            instance:node_cpu_utilisation:rate5m{job="node-exporter", sysname="Darwin"} * 100 > 80
+          for: 5m
+          labels:
+            severity: warning
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.MacInstanceMemoryHigh | default false) }}
+        - alert: MacInstanceMemoryHigh
+          annotations:
+            description: |
+              iMessage Mac instance {{`{{`}} $labels.instance {{`}}`}} belonging AWS Account ID {{`{{`}} $labels.aws_account_id {{`}}`}} in region {{`{{`}} $labels.region {{`}}`}}
+              with public IP {{`{{`}} $labels.public_ip {{`}}`}} mapped {{`{{`}} $labels.domain {{`}}`}}
+              has memory usage {{`{{`}} printf "%.2f" $value {{`}}`}}%.
+            summary: Instance memory usage is higher than 80%.
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-macinstancememoryhigh"
+            {{- end }}
+          expr: |-
+            (
+              node_memory_internal_bytes{job="node-exporter", sysname="Darwin"} -
+              node_memory_purgeable_bytes{job="node-exporter", sysname="Darwin"} +
+              node_memory_wired_bytes{job="node-exporter", sysname="Darwin"} +
+              node_memory_compressed_bytes{job="node-exporter", sysname="Darwin"}
+            )
+            /
+            node_memory_total_bytes{job="node-exporter", sysname="Darwin"} * 100 > 80
+          for: 5m
+          labels:
+            severity: warning
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+{{- end }}

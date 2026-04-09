@@ -1,0 +1,55 @@
+{{- $kubeTargetVersion := default .Capabilities.KubeVersion.GitVersion .Values.kubeTargetVersionOverride }}
+{{- if and (semverCompare ">=1.14.0-0" $kubeTargetVersion) (semverCompare "<9.9.9-9" $kubeTargetVersion) .Values.defaultRules.rules.loggingPromtail }}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ template "kube-prometheus-stack-add-ons.fullname" . }}-promtail
+  namespace: {{ template "kube-prometheus-stack-add-ons.namespace" . }}
+  labels:
+{{ include "kube-prometheus-stack-add-ons.labels" . | indent 4 }}
+spec:
+  groups:
+    - name: promtail.rules
+      rules:
+        {{- if not (.Values.defaultRules.disabled.PromtailRequestsErrors | default false) }}
+        - alert: PromtailRequestsErrors
+          annotations:
+            summary: '{{`{{`}} $labels.job {{`}}`}} {{`{{`}} $labels.route {{`}}`}} is experiencing {{`{{`}} $value {{`|`}} printf "%.2f" {{`}}`}}% errors.'
+          expr: |
+            100 * sum(rate(promtail_request_duration_seconds_count{status_code=~"5..|failed"}[2m])) by (namespace, job, host, instance, cluster)
+              /
+            sum(rate(promtail_request_duration_seconds_count[2m])) by (namespace, job, host, instance, cluster)
+              > 10
+          for: 15m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.PromtailRequestLatency | default false) }}
+        - alert: PromtailRequestLatency
+          annotations:
+            summary: '{{`{{`}} $labels.job {{`}}`}} {{`{{`}} $labels.host {{`}}`}} is experiencing {{`{{`}} $value {{`|`}} printf "%.2f" {{`}}`}}s 99th percentile latency.'
+          expr: histogram_quantile(0.99, sum(rate(promtail_request_duration_seconds_bucket[2m])) by (le,host,job,cluster)) > 1
+          for: 15m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.PromtailFileMissing | default false) }}
+        - alert: PromtailFileMissing
+          annotations:
+            summary: '{{`{{`}} $labels.instance {{`}}`}} {{`{{`}} $labels.job {{`}}`}} {{`{{`}} $labels.path {{`}}`}} matches the glob but is not being tailed.'
+          expr: promtail_file_bytes_total{exported_container!~"istio-init|init-grpc-gateway"} unless promtail_read_bytes_total{exported_container!~"istio-init|init-grpc-gateway"}
+          for: 15m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+{{- end }}

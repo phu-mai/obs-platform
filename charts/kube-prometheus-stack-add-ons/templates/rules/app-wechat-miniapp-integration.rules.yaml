@@ -1,0 +1,154 @@
+{{- $kubeTargetVersion := default .Capabilities.KubeVersion.GitVersion .Values.kubeTargetVersionOverride }}
+{{- if and (semverCompare ">=1.14.0-0" $kubeTargetVersion) (semverCompare "<9.9.9-9" $kubeTargetVersion) .Values.defaultRules.rules.appWechatMiniappIntegration }}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ template "kube-prometheus-stack-add-ons.fullname" . }}-app-wechat-miniapp-integration
+  namespace: {{ template "kube-prometheus-stack-add-ons.namespace" . }}
+  labels:
+{{ include "kube-prometheus-stack-add-ons.labels" . | indent 4 }}
+spec:
+  groups:
+    - name: app-wechat-miniapp-integration.rules
+      rules:
+        {{- if not (.Values.defaultRules.disabled.WechatMiniappEnableIntegrationFailed | default false) }}
+        - alert: WechatMiniappEnableIntegrationFailed
+          annotations:
+            summary: "wechat-miniapp-integration service detected failed enable integration request"
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-wechatminiappenableintegrationfailed"
+            {{- end }}
+            description: |
+              This alert will be triggered when the enable integration requests failed
+          expr: increase((sum by (app,cluster,lxp_version) (wechatminiapp_enable_integration_total{app="wechat-miniapp-integration",operation="enableIntegrationService",success="false"}) OR vector(0))[5m:]) > 0
+          for: 2m
+          labels:
+            severity: warning
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.WechatMiniappDisableIntegrationFailed | default false) }}
+        - alert: WechatMiniappDisableIntegrationFailed
+          annotations:
+            summary: "wechat-miniapp-integration service detected failed disable integration request"
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-wechatminiappdisableintegrationfailed"
+            {{- end }}
+            description: |
+              This alert will be triggered when the disable integration requests failed
+          expr: increase((sum by (app,cluster,lxp_version) (wechatminiapp_disable_integration_total{app="wechat-miniapp-integration",operation="disableIntegrationService",success="false"}) OR vector(0))[5m:]) > 0
+          for: 2m
+          labels:
+            severity: warning
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.WechatMiniappClientAuthenticationFailed | default false) }}
+        - alert: WechatMiniappClientAuthenticationFailed
+          annotations:
+            summary: "wechat-miniapp-integration service detected failed client authentication request"
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-wechatminiappclientauthenticationfailed"
+            {{- end }}
+            description: |
+              This alert will be triggered when the client authentication requests failed
+          expr: increase((sum by (app,cluster,lxp_version) (wechatminiapp_client_authentication_total{app="wechat-miniapp-integration",success="false"}) OR vector(0))[5m:]) > 0
+          for: 5m
+          labels:
+            severity: warning
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.WechatMiniappTriggerOTPFailed | default false) }}
+        - alert: WechatMiniappTriggerOTPFailed
+          annotations:
+            summary: "wechat-miniapp-integration service detected failed OTP trigger request"
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-wechatminiapptriggerotpfailed"
+            {{- end }}
+            description: |
+              This alert will be triggered when the client OTP triggers failed
+          expr: increase((sum by (app,cluster,lxp_version) (wechatminiapp_client_trigger_otp_total{app="wechat-miniapp-integration",success="false"}) OR vector(0))[5m:]) > 0
+          for: 2m
+          labels:
+            severity: warning
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.WechatMiniappVerifyOTPFailed | default false) }}
+        - alert: WechatMiniappVerifyOTPFailed
+          annotations:
+            summary: "wechat-miniapp-integration service detected failed OTP verify request"
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-wechatminiappverifyotpfailed"
+            {{- end }}
+            description: |
+              This alert will be triggered when the client OTP verifies failed
+          expr: increase((sum by (app,cluster,lxp_version) (wechatminiapp_client_verify_otp_total{app="wechat-miniapp-integration",success="false"}) OR vector(0))[5m:]) > 0
+          for: 2m
+          labels:
+            severity: warning
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.WechatMiniappGetOAFailed | default false) }}
+        - alert: WechatMiniappGetOAFailed
+          annotations:
+            summary: "wechat-miniapp-integration service detected failed get official account request"
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-wechatminiappgetoafailed"
+            {{- end }}
+            description: |
+              This alert will be triggered when the official account gets failed
+          expr: increase((sum by (app,cluster,lxp_version) (wechatminiapp_get_wechat_official_account_total{app="wechat-miniapp-integration",operation="getWechatOfficialAccounts",success="false"}) OR vector(0))[5m:]) > 0
+          for: 2m
+          labels:
+            severity: warning
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.WechatMiniappGetWechatMiniappAccountFailed | default false) }}
+        - alert: WechatMiniappGetWechatMiniappAccountFailed
+          annotations:
+            summary: "wechat-miniapp-integration service detected failed get wechat miniapp account request"
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-wechatminiappgetwechatminiappaccountfailed"
+            {{- end }}
+            description: |
+              This alert will be triggered when the wechat miniapp account gets failed
+          expr: increase((sum by (app,cluster,lxp_version) (wechatminiapp_get_wechat_miniapp_account_total{app="wechat-miniapp-integration",operation="getWechatMiniAppAccountsAcrossCompanies",success="false"}) OR vector(0))[5m:]) > 0
+          for: 2m
+          labels:
+            severity: warning
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.WechatMiniappCallAPIServerFailed | default false) }}
+        - alert: WechatMiniappCallAPIServerFailed
+          annotations:
+            summary: "wechat-miniapp-integration service detected failed wechat api server request to endpoint {{`{{`}} $labels.endpoint {{`}}`}}"
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-wechatminiappcallapiserverfailed"
+            {{- end }}
+            description: |
+              This alert will be triggered when the call wechat API server gets failed
+          expr: increase((sum by (app,cluster,endpoint,lxp_version) (wechatminiapp_wechat_server_api_call_total{app="wechat-miniapp-integration",success="false",endpoint!~".*/cgi-bin/message/template/send"}) OR vector(0))[5m:]) > 0
+          for: 5m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+            {{- with .Values.defaultRules.extraLabels.l2Support }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+{{- end }}

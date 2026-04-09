@@ -1,0 +1,24 @@
+{{- if and .Values.namespaceSelector.istiod.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: istiod-metrics
+  namespace: {{ template "kube-prometheus-stack-add-ons.namespace" . }}
+  labels:
+{{ include "kube-prometheus-stack-add-ons.labels" . | indent 4 }}
+spec:
+  namespaceSelector:
+    matchNames:
+      - {{ .Values.namespaceSelector.istiod.namespace }}
+  selector:
+    matchExpressions:
+      - key: app
+        operator: In
+        values:
+          - istiod
+  endpoints:
+    - path: /metrics
+      port: http-monitoring
+      interval: {{ .Values.global.scrapeInterval }}
+      scrapeTimeout: {{ .Values.global.scrapeTimeout }}
+{{- end }}

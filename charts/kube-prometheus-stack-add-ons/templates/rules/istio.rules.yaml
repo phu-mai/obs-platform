@@ -1,0 +1,378 @@
+{{- $kubeTargetVersion := default .Capabilities.KubeVersion.GitVersion .Values.kubeTargetVersionOverride }}
+{{- if and (semverCompare ">=1.14.0-0" $kubeTargetVersion) (semverCompare "<9.9.9-9" $kubeTargetVersion) .Values.defaultRules.rules.istio }}
+{{- if and .Values.namespaceSelector.istiod.enabled }}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ template "kube-prometheus-stack-add-ons.fullname" . }}-istio
+  namespace: {{ template "kube-prometheus-stack-add-ons.namespace" . }}
+  labels:
+{{ include "kube-prometheus-stack-add-ons.labels" . | indent 4 }}
+spec:
+  groups:
+    - name: istio.rules
+      rules:
+        {{- if not (.Values.defaultRules.disabled.IstioDeploymentNotReady | default false) }}
+        - alert: IstioDeploymentNotReady
+          annotations:
+            summary: "Istio component {{`{{`}} $labels.deployment {{`}}`}} in namespace {{`{{`}} $labels.namespace {{`}}`}} has no ready replicas for 2m"
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-istiodeploymentnotready"
+            {{- end }}
+          expr: |
+            sum by (app,cluster,deployment) (
+              label_replace(kube_deployment_status_replicas_ready{deployment=~"istiod|istio-ingressgateway"},"app","$1","deployment","(.+)")
+            ) == 0
+          for: 2m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+            {{- with .Values.defaultRules.extraLabels.l2Support }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.IstioHigh4xxErrorRateByDestinationPercentage | default false) }}
+        - alert: IstioHigh4xxErrorRateByDestinationPercentage
+          annotations:
+            summary: |
+              Istio request rate from source workload {{`{{`}} $labels.source_workload {{`}}`}} in namespace {{`{{`}} $labels.source_workload_namespace {{`}}`}}
+              to destination workload {{`{{`}} $labels.destination_workload {{`}}`}} in namespace {{`{{`}} $labels.destination_workload_namespace {{`}}`}}
+              with protocol {{`{{`}} $labels.request_protocol {{`}}`}} has high percentage with response code 4xx error than for 10m.
+              Current percentage is {{`{{`}} $value {{`}}`}}.
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-istiohigh4xxerrorratebydestinationpercentage"
+            {{- end }}
+            description: |
+              High percentage error rate with response code 4xx in Istio (> 5%)
+              If the total request rate of HTTP 4xx responses continues getting higher then need to check application log for more details.
+          expr: |
+            sum by (
+              app, cluster,
+              destination_workload, destination_workload_namespace,
+              source_workload, source_workload_namespace,
+              request_protocol, lxp_version
+            )
+            (
+              irate(istio_requests_total{reporter="destination",response_code=~"4[0-9][0-9]",destination_workload!~"imessage-archiving-integration|synapse"}[5m])
+            )
+              /
+            sum by (
+              app, cluster,
+              destination_workload, destination_workload_namespace,
+              source_workload, source_workload_namespace,
+              request_protocol, lxp_version
+            )
+            (
+              irate(istio_requests_total{reporter="destination",destination_workload!~"imessage-archiving-integration|synapse"}[5m])
+            )
+            * 100 > 5
+          for: 10m
+          labels:
+            severity: warning
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+            {{- with .Values.defaultRules.extraLabels.l2Support }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        - alert: IstioHigh4xxErrorRateByDestinationPercentage
+          annotations:
+            summary: |
+              Istio request rate from source workload {{`{{`}} $labels.source_workload {{`}}`}} in namespace {{`{{`}} $labels.source_workload_namespace {{`}}`}}
+              to destination workload {{`{{`}} $labels.destination_workload {{`}}`}} in namespace {{`{{`}} $labels.destination_workload_namespace {{`}}`}}
+              with protocol {{`{{`}} $labels.request_protocol {{`}}`}} has high percentage with response code 4xx error than for 15m.
+              Current percentage is {{`{{`}} $value {{`}}`}}.
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-istiohigh4xxerrorratebydestinationpercentage"
+            {{- end }}
+            description: |
+              High percentage error rate with response code 4xx in Istio (> 10%)
+              If the total request rate of HTTP 4xx responses continues getting higher then need to check application log for more details.
+          expr: |
+            sum by (
+              app, cluster,
+              destination_workload, destination_workload_namespace,
+              source_workload, source_workload_namespace,
+              request_protocol, lxp_version
+            )
+            (
+              irate(istio_requests_total{reporter="destination",response_code=~"4[0-9][0-9]",destination_workload!~"imessage-archiving-integration|synapse"}[5m])
+            )
+              /
+            sum by (
+              app, cluster,
+              destination_workload, destination_workload_namespace,
+              source_workload, source_workload_namespace,
+              request_protocol, lxp_version
+            )
+            (
+              irate(istio_requests_total{reporter="destination",destination_workload!~"imessage-archiving-integration|synapse"}[5m])
+            )
+            * 100 > 10
+          for: 15m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+            {{- with .Values.defaultRules.extraLabels.l2Support }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.IstioHigh5xxErrorRateByDestinationPercentage | default false) }}
+        - alert: IstioHigh5xxErrorRateByDestinationPercentage
+          annotations:
+            summary: |
+              Istio request rate from source workload {{`{{`}} $labels.source_workload {{`}}`}} in namespace {{`{{`}} $labels.source_workload_namespace {{`}}`}}
+              to destination workload {{`{{`}} $labels.destination_workload {{`}}`}} in namespace {{`{{`}} $labels.destination_workload_namespace {{`}}`}}
+              with protocol {{`{{`}} $labels.request_protocol {{`}}`}} has high percentage with response code 5xx error than for 10m.
+              Current percentage is {{`{{`}} $value {{`}}`}}.
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-istiohigh4xxerrorratebydestinationpercentage"
+            {{- end }}
+            description: |
+              High percentage error rate with response code 5xx in Istio (> 5%)
+              If the total request rate of HTTP 5xx responses continues getting higher then need to check application log for more details.
+          expr: |
+            sum by (
+              app, cluster,
+              destination_workload, destination_workload_namespace,
+              source_workload, source_workload_namespace,
+              request_protocol, lxp_version
+            )
+            (
+              irate(istio_requests_total{reporter="destination",response_code=~"5[0-9][0-9]",destination_workload!="reconciliation-service"}[5m])
+            )
+              /
+            sum by (
+              app, cluster,
+              destination_workload, destination_workload_namespace,
+              source_workload, source_workload_namespace,
+              request_protocol, lxp_version
+            )
+            (
+              irate(istio_requests_total{reporter="destination",destination_workload!="reconciliation-service"}[5m])
+            )
+            * 100 > 5
+          for: 10m
+          labels:
+            severity: warning
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+            {{- with .Values.defaultRules.extraLabels.l2Support }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        - alert: IstioHigh5xxErrorRateByDestinationPercentage
+          annotations:
+            summary: |
+              Istio request rate from source workload {{`{{`}} $labels.source_workload {{`}}`}} in namespace {{`{{`}} $labels.source_workload_namespace {{`}}`}}
+              to destination workload {{`{{`}} $labels.destination_workload {{`}}`}} in namespace {{`{{`}} $labels.destination_workload_namespace {{`}}`}}
+              with protocol {{`{{`}} $labels.request_protocol {{`}}`}} has high percentage with response code 5xx error than for 15m.
+              Current percentage is {{`{{`}} $value {{`}}`}}.
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-istiohigh4xxerrorratebydestinationpercentage"
+            {{- end }}
+            description: |
+              High percentage error rate with response code 5xx in Istio (> 10%)
+              If the total request rate of HTTP 5xx responses continues getting higher then need to check application log for more details.
+          expr: |
+            sum by (
+              app, cluster,
+              destination_workload, destination_workload_namespace,
+              source_workload, source_workload_namespace,
+              request_protocol, lxp_version
+            )
+            (
+              irate(istio_requests_total{reporter="destination",response_code=~"5[0-9][0-9]",destination_workload!="reconciliation-service"}[5m])
+            )
+              /
+            sum by (
+              app, cluster,
+              destination_workload, destination_workload_namespace,
+              source_workload, source_workload_namespace,
+              request_protocol, lxp_version
+            )
+            (
+              irate(istio_requests_total{reporter="destination",destination_workload!="reconciliation-service"}[5m])
+            )
+            * 100 > 10
+          for: 15m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+            {{- with .Values.defaultRules.extraLabels.l2Support }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.IstioGrpcDeadlineExceededErrors | default false) }}
+        - alert: IstioGrpcDeadlineExceededErrors
+          annotations:
+            summary: |
+              Service {{`{{`}} $labels.destination_workload {{`}}`}} in namespace {{`{{`}} $labels.destination_workload_namespace {{`}}`}} has many DEADLINE_EXCEEDED GRPC requests for the last 15m.
+              Request from {{`{{`}} $labels.source_workload {{`}}`}} in namespace {{`{{`}} $labels.source_workload_namespace {{`}}`}}
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-istiogrpcdeadlineexceedederrors"
+            {{- end }}
+            description: |
+              Service is timing out for GRPC requests. This is unexpected and should be checked soon. In worse case it may cause message lost.
+          expr: |
+            sum by (
+              app, cluster, source_workload, source_workload_namespace,
+              destination_workload, destination_workload_namespace, lxp_version
+            )
+            (
+              increase((sum (istio_requests_total{response_code="0",response_flags="-",request_protocol="grpc",destination_workload="proxymessaging",source_workload=~"imessage-archiving-integration"}) or vector(0))[5m:])
+            ) > 0
+          for: 15m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+            {{- with .Values.defaultRules.extraLabels.l2Support }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.IstioGrpcDeadlineExceededErrorsToIntegrations | default false) }}
+        - alert: IstioGrpcDeadlineExceededErrorsToIntegrations
+          annotations:
+            summary: |
+              Service proxymessaging has many DEADLINE_EXCEEDED GRPC requests from imessage-archiving-integration in cluster "{{`{{`}} $labels.cluster {{`}}`}}".
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-istiogrpcdeadlineexceedederrorstointegrations"
+            {{- end }}
+            description: |
+              Service is timing out for GRPC requests. This is unexpected and should be checked soon. In worse case it may cause message lost.
+          expr: |
+            sum by (
+              app, cluster, source_workload, source_workload_namespace,
+              destination_workload, destination_workload_namespace, lxp_version
+            )
+            (
+              increase(istio_requests_total{response_code="0",response_flags="-",request_protocol="grpc",destination_workload="proxymessaging",source_workload=~"imessage-archiving-integration"}[5m:])
+            ) > 0
+              or
+            (
+              sum by (
+                app, cluster, source_workload, source_workload_namespace,
+                destination_workload, destination_workload_namespace, lxp_version
+              )
+              (
+                istio_requests_total{response_code="0",response_flags="-",request_protocol="grpc",destination_workload="proxymessaging",source_workload=~"imessage-archiving-integration"}
+              )
+                unless
+              sum by (
+                app, cluster, source_workload, source_workload_namespace,
+                destination_workload, destination_workload_namespace, lxp_version
+              )
+              (
+                istio_requests_total{response_code="0",response_flags="-",request_protocol="grpc",destination_workload="proxymessaging",source_workload=~"imessage-archiving-integration"} offset 5m
+              )
+            )
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+            {{- with .Values.defaultRules.extraLabels.l2Support }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.IstioHigh4xxErrorRateImessageArchivingIntegration | default false) }}
+        - alert: IstioHigh4xxErrorRateImessageArchivingIntegration
+          annotations:
+            summary: |
+              Istio request rate from source workload {{`{{`}} $labels.source_workload {{`}}`}} in namespace {{`{{`}} $labels.source_workload_namespace {{`}}`}}
+              to destination workload imessage-archiving-integration in namespace {{`{{`}} $labels.destination_workload_namespace {{`}}`}}
+              with protocol {{`{{`}} $labels.request_protocol {{`}}`}} has high percentage with response code 4xx error than for 15m.
+              Current percentage is {{`{{`}} $value {{`}}`}}.
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-istiohigh4xxerrorrateimessagearchivingintegration"
+            {{- end }}
+            description: |
+              High percentage error rate with response code 4xx in Istio (> 10%)
+              If the total request rate of HTTP 4xx responses continues getting higher then need to check application log for more details.
+          expr: |
+            sum by (
+              app, cluster,
+              destination_workload, destination_workload_namespace,
+              source_workload, source_workload_namespace,
+              request_protocol, lxp_version
+            )
+            (
+              irate(istio_requests_total{reporter="destination",response_code=~"4[0-9][0-9]",response_code!="401",destination_workload="imessage-archiving-integration"}[5m])
+            )
+              /
+            sum by (
+              app, cluster,
+              destination_workload, destination_workload_namespace,
+              source_workload, source_workload_namespace,
+              request_protocol, lxp_version
+            )
+            (
+              irate(istio_requests_total{reporter="destination",response_code!="401",destination_workload="imessage-archiving-integration"}[5m])
+            )
+            * 100 > 10
+          for: 15m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+            {{- with .Values.defaultRules.extraLabels.l2Support }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- if not (.Values.defaultRules.disabled.IstioHigh4xxErrorRateSynapse | default false) }}
+        - alert: IstioHigh4xxErrorRateSynapse
+          annotations:
+            summary: |
+              Istio request rate from source workload {{`{{`}} $labels.source_workload {{`}}`}} in namespace {{`{{`}} $labels.source_workload_namespace {{`}}`}}
+              to destination workload synapse in namespace {{`{{`}} $labels.destination_workload_namespace {{`}}`}}
+              with protocol {{`{{`}} $labels.request_protocol {{`}}`}} has high percentage with response code 4xx error than for 15m.
+              Current percentage is {{`{{`}} $value {{`}}`}}.
+            {{- if .Values.runbook.enabled }}
+            runbook_url: "{{ .Values.runbook.runbookUrl }}alert-name-istiohigh4xxerrorratesynapse"
+            {{- end }}
+            description: |
+              High percentage error rate with response code 4xx in Istio (> 10%)
+              If the total request rate of HTTP 4xx responses continues getting higher then need to check application log for more details.
+          expr: |
+            sum by (
+              app, cluster,
+              destination_workload, destination_workload_namespace,
+              source_workload, source_workload_namespace,
+              request_protocol, response_code, lxp_version
+            )
+            (
+              irate(istio_requests_total{reporter="destination",response_code=~"4[0-9][0-9]",response_code!~"403|404",destination_workload="synapse"}[5m])
+            )
+              /
+            sum by (
+              app, cluster,
+              destination_workload, destination_workload_namespace,
+              source_workload, source_workload_namespace,
+              request_protocol, response_code, lxp_version
+            )
+            (
+              irate(istio_requests_total{reporter="destination",response_code!~"403|404",destination_workload="synapse"}[5m])
+            )
+            * 100 > 10
+          for: 15m
+          labels:
+            severity: critical
+            {{- with .Values.defaultRules.extraLabels.defaultLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+            {{- with .Values.defaultRules.extraLabels.l2Support }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- end }}
+{{- end }}
+{{- end }}

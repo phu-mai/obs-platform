@@ -1,0 +1,38 @@
+{{- if and (.Capabilities.APIVersions.Has "policy/v1beta1/PodSecurityPolicy") .Values.rbac.create .Values.rbac.pspEnabled }}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ include "promtail.fullname" . }}-psp
+  namespace: {{ include "promtail.namespaceName" . }}
+  labels:
+    {{- include "promtail.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ include "promtail.fullname" . }}-psp
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "promtail.serviceAccountName" . }}
+{{- end }}
+
+{{- if and .Values.rbac.create .Values.rbac.namespaceScope.enabled }}
+{{- $root := . }}
+{{- range $namespaces := .Values.rbac.namespaceScope.namespaces }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ include "promtail.fullname" $root }}
+  namespace: {{ $namespaces }}
+  labels:
+    {{- include "promtail.labels" $root | nindent 4 }}
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "promtail.serviceAccountName" $root }}
+    namespace: {{ $namespaces }}
+roleRef:
+  kind: Role
+  name: {{ include "promtail.fullname" $root }}
+  apiGroup: rbac.authorization.k8s.io
+{{- end }}
+{{- end }}
